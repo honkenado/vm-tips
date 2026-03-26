@@ -20,6 +20,14 @@ export default function GroupSection({
 }) {
   const table = useMemo(() => calculateTable(group.teams, group.matches), [group]);
 
+  function handleScoreFocus(e: React.FocusEvent<HTMLInputElement>) {
+    e.target.select();
+  }
+
+  function handleScoreMouseUp(e: React.MouseEvent<HTMLInputElement>) {
+    e.preventDefault();
+  }
+
   return (
     <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr] xl:gap-6">
       <div className="overflow-hidden rounded-[1.5rem] border border-indigo-200/80 bg-white shadow-[0_10px_30px_rgba(37,99,235,0.08)] sm:rounded-[1.75rem]">
@@ -99,10 +107,12 @@ export default function GroupSection({
 
                     <div className="flex items-center justify-center gap-2">
                       <input
-                        type="number"
-                        min="0"
+                        type="text"
                         inputMode="numeric"
+                        pattern="[0-9]*"
                         value={match.homeGoals}
+                        onFocus={handleScoreFocus}
+                        onMouseUp={handleScoreMouseUp}
                         onChange={(e) =>
                           onUpdateMatch(group.name, match.id, "homeGoals", e.target.value)
                         }
@@ -122,10 +132,12 @@ export default function GroupSection({
                       </span>
 
                       <input
-                        type="number"
-                        min="0"
+                        type="text"
                         inputMode="numeric"
+                        pattern="[0-9]*"
                         value={match.awayGoals}
+                        onFocus={handleScoreFocus}
+                        onMouseUp={handleScoreMouseUp}
                         onChange={(e) =>
                           onUpdateMatch(group.name, match.id, "awayGoals", e.target.value)
                         }
@@ -161,10 +173,12 @@ export default function GroupSection({
 
                     <div className="flex items-center justify-center gap-2">
                       <input
-                        type="number"
-                        min="0"
+                        type="text"
                         inputMode="numeric"
+                        pattern="[0-9]*"
                         value={match.homeGoals}
+                        onFocus={handleScoreFocus}
+                        onMouseUp={handleScoreMouseUp}
                         onChange={(e) =>
                           onUpdateMatch(group.name, match.id, "homeGoals", e.target.value)
                         }
@@ -184,10 +198,12 @@ export default function GroupSection({
                       </span>
 
                       <input
-                        type="number"
-                        min="0"
+                        type="text"
                         inputMode="numeric"
+                        pattern="[0-9]*"
                         value={match.awayGoals}
+                        onFocus={handleScoreFocus}
+                        onMouseUp={handleScoreMouseUp}
                         onChange={(e) =>
                           onUpdateMatch(group.name, match.id, "awayGoals", e.target.value)
                         }
