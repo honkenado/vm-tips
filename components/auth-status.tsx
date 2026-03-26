@@ -11,6 +11,7 @@ type UserInfo = {
 type Profile = {
   payment_code: string | null;
   payment_status: 'paid' | 'unpaid';
+  is_admin: boolean | null;
 } | null;
 
 export default function AuthStatus() {
@@ -31,7 +32,7 @@ export default function AuthStatus() {
 
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('payment_code, payment_status')
+          .select('payment_code, payment_status, is_admin')
           .eq('id', user.id)
           .single();
 
@@ -76,11 +77,9 @@ export default function AuthStatus() {
   }
 
   return (
-    <div className="flex items-center gap-4">
-      {/* Email */}
+    <div className="flex flex-wrap items-center gap-3">
       <span className="text-sm text-white/80">{user.email}</span>
 
-      {/* Payment info */}
       {profile && (
         <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm">
           <span className="font-semibold text-white">
@@ -99,7 +98,15 @@ export default function AuthStatus() {
         </div>
       )}
 
-      {/* Logout */}
+      {profile?.is_admin && (
+        <a
+          href="/admin"
+          className="rounded-xl bg-blue-600 px-4 py-2 font-semibold text-white transition hover:bg-blue-500"
+        >
+          Admin
+        </a>
+      )}
+
       <button
         onClick={handleLogout}
         className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white"
