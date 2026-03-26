@@ -99,28 +99,34 @@ export default function LeaderboardSection() {
 
   if (loading) {
     return (
-      <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-        <h2 className="text-xl font-black text-slate-900 md:text-2xl">Leaderboard</h2>
-        <p className="mt-3 text-sm text-slate-600">Laddar leaderboard...</p>
+      <div className="rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-sm sm:rounded-[1.75rem] sm:p-4 md:p-6">
+        <h2 className="text-lg font-black text-slate-900 sm:text-xl md:text-2xl">
+          Leaderboard
+        </h2>
+        <p className="mt-2 text-sm text-slate-600">Laddar leaderboard...</p>
       </div>
     );
   }
 
   if (errorMessage) {
     return (
-      <div className="rounded-[1.75rem] border border-red-200 bg-red-50 p-4 shadow-sm md:p-6">
-        <h2 className="text-xl font-black text-slate-900 md:text-2xl">Leaderboard</h2>
-        <p className="mt-3 text-sm text-red-600">{errorMessage}</p>
+      <div className="rounded-[1.5rem] border border-red-200 bg-red-50 p-3 shadow-sm sm:rounded-[1.75rem] sm:p-4 md:p-6">
+        <h2 className="text-lg font-black text-slate-900 sm:text-xl md:text-2xl">
+          Leaderboard
+        </h2>
+        <p className="mt-2 text-sm text-red-600">{errorMessage}</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+    <div className="rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-sm sm:rounded-[1.75rem] sm:p-4 md:p-6">
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-black text-slate-900 md:text-2xl">Leaderboard</h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <h2 className="text-lg font-black text-slate-900 sm:text-xl md:text-2xl">
+            Leaderboard
+          </h2>
+          <p className="mt-1 text-sm leading-5 text-slate-600">
             Klicka på ett namn för att se poängfördelning och tiebreaker.
           </p>
         </div>
@@ -130,7 +136,7 @@ export default function LeaderboardSection() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white sm:rounded-2xl">
         <div className="hidden grid-cols-[56px_minmax(0,1fr)_68px] bg-slate-100 px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-slate-600 md:grid">
           <div>Plats</div>
           <div>Namn</div>
@@ -155,7 +161,7 @@ export default function LeaderboardSection() {
                   <button
                     type="button"
                     onClick={() => toggleEntry(entry.id)}
-                    className={`grid w-full grid-cols-[48px_minmax(0,1fr)_56px] items-center gap-2 px-3 py-1.5 text-left transition hover:bg-slate-100 md:grid-cols-[56px_minmax(0,1fr)_68px] ${
+                    className={`grid w-full grid-cols-[44px_minmax(0,1fr)_52px] items-center gap-2 px-3 py-2 text-left transition hover:bg-slate-100 sm:grid-cols-[48px_minmax(0,1fr)_56px] md:grid-cols-[56px_minmax(0,1fr)_68px] ${
                       isOpen ? "bg-slate-100/70" : ""
                     }`}
                   >
@@ -171,10 +177,10 @@ export default function LeaderboardSection() {
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <div className="truncate text-sm font-bold leading-tight text-slate-900">
+                        <div className="truncate text-sm font-bold leading-tight text-slate-900 sm:text-[15px]">
                           {formatName(entry)}
                         </div>
-                        <span className="text-[11px] text-slate-400">
+                        <span className="shrink-0 text-[11px] text-slate-400">
                           {isOpen ? "▾" : "▸"}
                         </span>
                       </div>
@@ -189,8 +195,11 @@ export default function LeaderboardSection() {
 
                   {isOpen && (
                     <div className="border-t border-slate-200 bg-slate-50 px-3 py-3">
-                      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                        <DetailCard label="Matchpoäng" value={entry.breakdown?.groupMatchPoints ?? 0} />
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+                        <DetailCard
+                          label="Matchpoäng"
+                          value={entry.breakdown?.groupMatchPoints ?? 0}
+                        />
                         <DetailCard
                           label="Exakt resultat"
                           value={entry.breakdown?.exactScoreBonusPoints ?? 0}
@@ -199,8 +208,14 @@ export default function LeaderboardSection() {
                           label="Tabell"
                           value={entry.breakdown?.tablePlacementPoints ?? 0}
                         />
-                        <DetailCard label="R32" value={entry.breakdown?.round32Points ?? 0} />
-                        <DetailCard label="R16" value={entry.breakdown?.round16Points ?? 0} />
+                        <DetailCard
+                          label="R32"
+                          value={entry.breakdown?.round32Points ?? 0}
+                        />
+                        <DetailCard
+                          label="R16"
+                          value={entry.breakdown?.round16Points ?? 0}
+                        />
                         <DetailCard
                           label="Kvarts"
                           value={entry.breakdown?.quarterfinalPoints ?? 0}
@@ -209,7 +224,10 @@ export default function LeaderboardSection() {
                           label="Semi"
                           value={entry.breakdown?.semifinalPoints ?? 0}
                         />
-                        <DetailCard label="Final" value={entry.breakdown?.finalPoints ?? 0} />
+                        <DetailCard
+                          label="Final"
+                          value={entry.breakdown?.finalPoints ?? 0}
+                        />
                         <DetailCard
                           label="Brons"
                           value={entry.breakdown?.bronzeMatchPoints ?? 0}
@@ -222,24 +240,35 @@ export default function LeaderboardSection() {
                           label="Skyttekung"
                           value={entry.breakdown?.goldenBootPoints ?? 0}
                         />
-                        <DetailCard label="Total" value={entry.breakdown?.total ?? entry.points} />
+                        <DetailCard
+                          label="Total"
+                          value={entry.breakdown?.total ?? entry.points}
+                          highlight
+                        />
                       </div>
 
-                      <div className="mt-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                      <div className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
                         <div className="text-xs font-bold text-slate-900">
                           Tiebreaker: mål i gruppspelet
                         </div>
-                        <div className="mt-1.5 grid gap-1 text-xs text-slate-600 md:grid-cols-3">
-                          <div>
-                            <span className="font-semibold text-slate-700">Tippade:</span>{" "}
+
+                        <div className="mt-2 grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
+                          <div className="rounded-lg bg-slate-50 px-2.5 py-2">
+                            <span className="font-semibold text-slate-700">
+                              Tippade:
+                            </span>{" "}
                             {entry.predicted_group_goals}
                           </div>
-                          <div>
-                            <span className="font-semibold text-slate-700">Faktiska:</span>{" "}
+                          <div className="rounded-lg bg-slate-50 px-2.5 py-2">
+                            <span className="font-semibold text-slate-700">
+                              Faktiska:
+                            </span>{" "}
                             {entry.official_group_goals}
                           </div>
-                          <div>
-                            <span className="font-semibold text-slate-700">Skillnad:</span>{" "}
+                          <div className="rounded-lg bg-slate-50 px-2.5 py-2">
+                            <span className="font-semibold text-slate-700">
+                              Skillnad:
+                            </span>{" "}
                             {entry.group_goals_diff}
                           </div>
                         </div>
@@ -256,13 +285,35 @@ export default function LeaderboardSection() {
   );
 }
 
-function DetailCard({ label, value }: { label: string; value: number }) {
+function DetailCard({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string;
+  value: number;
+  highlight?: boolean;
+}) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-      <div className="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
+    <div
+      className={`rounded-xl border px-3 py-2 ${
+        highlight
+          ? "border-slate-900 bg-slate-900 text-white"
+          : "border-slate-200 bg-white"
+      }`}
+    >
+      <div
+        className={`text-[10px] font-extrabold uppercase tracking-wide ${
+          highlight ? "text-white/75" : "text-slate-500"
+        }`}
+      >
         {label}
       </div>
-      <div className="mt-0.5 tabular-nums text-lg font-black leading-none text-slate-900">
+      <div
+        className={`mt-0.5 tabular-nums text-lg font-black leading-none ${
+          highlight ? "text-white" : "text-slate-900"
+        }`}
+      >
         {value}
       </div>
     </div>
