@@ -2,6 +2,22 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { scorePrediction } from "@/lib/scoring";
 
+type DbPredictionRow = {
+  user_id: string;
+  group_stage: unknown;
+  knockout: unknown;
+  updated_at: string | null;
+};
+
+type DbProfileRow = {
+  id: string;
+  username: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  created_at: string | null;
+  role: string | null;
+};
+
 export async function GET() {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -58,31 +74,29 @@ export async function GET() {
     );
   }
 
-  const officialGroupStage = Array.isArray(resultsRow?.group_stage)
-    ? resultsRow.group_stage
-    : [];
-  const officialKnockout =
-    resultsRow?.knockout && typeof resultsRow.knockout === "object"
-      ? resultsRow.knockout
-      : {};
+  const officialGroupStage = (resultsRow?.group_stage ?? []) as any;
+  const officialKnockout = (resultsRow?.knockout ?? {}) as any;
 
   const predictionMap = new Map(
-    (predictions ?? []).map((prediction) => [prediction.user_id, prediction])
+    ((predictions ?? []) as DbPredictionRow[]).map((prediction) => [
+      prediction.user_id,
+      prediction,
+    ])
   );
 
-  const leaderboard = (profiles ?? []).map((profile) => {
+  const leaderboard = ((profiles ?? []) as DbProfileRow[]).map((profile) => {
     const prediction = predictionMap.get(profile.id);
 
     const hasPrediction = Boolean(prediction);
 
     const breakdown = hasPrediction
-  ? scorePrediction(
-      prediction.group_stage as any,
-      prediction.knockout as any,
-      officialGroupStage as any,
-      officialKnockout as any
-    )
-  : null;
+      ? scorePrediction(
+          (prediction?.group_stage ?? []) as any,
+          (prediction?.knockout ?? {}) as any,
+          officialGroupStage,
+          officialKnockout
+        )
+      : null;
 
     return {
       id: profile.id,
