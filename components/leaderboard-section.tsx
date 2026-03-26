@@ -90,6 +90,13 @@ export default function LeaderboardSection() {
     return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
   }
 
+  function getRowBackgroundClass(index: number, placement: number) {
+    if (placement === 1) return "bg-amber-50";
+    if (placement === 2) return "bg-slate-100";
+    if (placement === 3) return "bg-orange-50";
+    return index % 2 === 0 ? "bg-white" : "bg-slate-50";
+  }
+
   if (loading) {
     return (
       <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm md:p-6">
@@ -124,7 +131,7 @@ export default function LeaderboardSection() {
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <div className="hidden grid-cols-[74px_minmax(0,1fr)_92px] bg-slate-100 px-4 py-2.5 text-[11px] font-extrabold uppercase tracking-wide text-slate-600 md:grid">
+        <div className="hidden grid-cols-[60px_minmax(0,1fr)_72px] bg-slate-100 px-3 py-2 text-[11px] font-extrabold uppercase tracking-wide text-slate-600 md:grid">
           <div>Plats</div>
           <div>Namn</div>
           <div className="text-right">Poäng</div>
@@ -136,22 +143,28 @@ export default function LeaderboardSection() {
           </div>
         ) : (
           <div className="divide-y divide-slate-200">
-            {entries.map((entry) => {
+            {entries.map((entry, index) => {
               const isOpen = openEntryId === entry.id;
+              const rowBackgroundClass = getRowBackgroundClass(
+                index,
+                entry.placement
+              );
 
               return (
-                <div key={entry.id} className="bg-white">
+                <div key={entry.id} className={rowBackgroundClass}>
                   <button
-  type="button"
-  onClick={() => toggleEntry(entry.id)}
-  className="grid w-full grid-cols-[52px_minmax(0,1fr)_64px] items-center gap-2 px-3 py-2 text-left transition hover:bg-slate-50 md:grid-cols-[60px_minmax(0,1fr)_72px]"
->
+                    type="button"
+                    onClick={() => toggleEntry(entry.id)}
+                    className={`grid w-full grid-cols-[52px_minmax(0,1fr)_64px] items-center gap-2 px-3 py-2 text-left transition hover:bg-slate-100 md:grid-cols-[60px_minmax(0,1fr)_72px] ${
+                      isOpen ? "bg-slate-100/70" : ""
+                    }`}
+                  >
                     <div>
                       <div
-  className={`inline-flex min-w-[30px] items-center justify-center rounded-full px-2 py-0.5 text-xs font-black ${getPlacementStyle(
-    entry.placement
-  )}`}
->
+                        className={`inline-flex min-w-[30px] items-center justify-center rounded-full px-2 py-0.5 text-xs font-black ${getPlacementStyle(
+                          entry.placement
+                        )}`}
+                      >
                         {entry.placement}
                       </div>
                     </div>
@@ -168,10 +181,10 @@ export default function LeaderboardSection() {
                     </div>
 
                     <div className="text-right">
-  <div className="text-lg font-black leading-none text-slate-900 md:text-xl">
-    {entry.points}
-  </div>
-</div>
+                      <div className="tabular-nums text-lg font-black leading-none text-slate-900 md:text-xl">
+                        {entry.points}
+                      </div>
+                    </div>
                   </button>
 
                   {isOpen && (
