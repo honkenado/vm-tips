@@ -126,7 +126,7 @@ export default function KnockoutFullSection({
         title="Slutspel"
         subtitle="Slutspelet låses upp när alla gruppmatcher är ifyllda."
       >
-        <div className="rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 p-5 text-amber-900 shadow-sm">
+        <div className="rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 text-sm text-amber-900 shadow-sm sm:p-5 sm:text-base">
           Fyll i samtliga gruppmatcher först för att generera slutspelet.
         </div>
       </SectionCard>
@@ -138,16 +138,16 @@ export default function KnockoutFullSection({
       title="Slutspel"
       subtitle="Fast FIFA-träd med rätt matchnummer och rätt kopplingar mellan rundorna."
     >
-      <div className="mb-6 flex justify-end">
+      <div className="mb-4 flex justify-end sm:mb-6">
         <button
           onClick={onResetKnockout}
-          className="rounded-xl bg-gradient-to-r from-slate-900 to-indigo-950 px-4 py-2 text-sm font-bold text-white shadow-md transition hover:from-slate-800 hover:to-indigo-900"
+          className="min-h-11 rounded-xl bg-gradient-to-r from-slate-900 to-indigo-950 px-4 py-2 text-sm font-bold text-white shadow-md transition hover:from-slate-800 hover:to-indigo-900"
         >
           Nollställ slutspel
         </button>
       </div>
 
-      <div className="grid gap-6 xl:hidden">
+      <div className="grid gap-4 xl:hidden sm:gap-5">
         {[
           { title: "Round of 32", matches: round32 },
           { title: "Round of 16", matches: round16 },
@@ -158,20 +158,21 @@ export default function KnockoutFullSection({
         ].map((round) => (
           <div
             key={round.title}
-            className="overflow-hidden rounded-[1.5rem] border border-indigo-200 bg-white shadow-sm"
+            className="overflow-hidden rounded-[1.25rem] border border-indigo-200 bg-white shadow-sm sm:rounded-[1.5rem]"
           >
             <div className="border-b border-indigo-200 bg-gradient-to-r from-blue-700 via-indigo-700 to-violet-700 px-4 py-3 text-white">
-              <h3 className="text-lg font-extrabold">{round.title}</h3>
+              <h3 className="text-base font-extrabold sm:text-lg">{round.title}</h3>
             </div>
 
-            <div className="bg-gradient-to-b from-indigo-50/50 to-white p-4">
-              <div className="grid gap-3">
+            <div className="bg-gradient-to-b from-indigo-50/50 to-white p-3 sm:p-4">
+              <div className="grid gap-2.5 sm:gap-3">
                 {round.matches.map((match) => (
                   <MatchButtons
                     key={match.id}
                     match={match}
                     selectedWinners={knockoutWinners}
                     onSelectWinner={onSelectWinner}
+                    compact
                   />
                 ))}
               </div>
@@ -179,26 +180,32 @@ export default function KnockoutFullSection({
           </div>
         ))}
 
-        <div className="grid gap-3">
-          <div className="rounded-[1.75rem] border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 via-amber-50 to-yellow-100 p-6 text-center shadow-sm">
-            <div className="mb-2 text-sm font-bold uppercase tracking-[0.2em] text-yellow-700">
+        <div className="grid gap-2.5 sm:gap-3">
+          <div className="rounded-[1.4rem] border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 via-amber-50 to-yellow-100 p-4 text-center shadow-sm sm:rounded-[1.75rem] sm:p-6">
+            <div className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-yellow-700 sm:mb-2 sm:text-sm">
               Guld
             </div>
-            <div className="text-2xl font-extrabold text-slate-900">{champion || "—"}</div>
+            <div className="text-xl font-extrabold text-slate-900 sm:text-2xl">
+              {champion || "—"}
+            </div>
           </div>
 
-          <div className="rounded-[1.75rem] border border-slate-300 bg-gradient-to-br from-slate-50 to-slate-200 p-5 text-center shadow-sm">
-            <div className="mb-2 text-sm font-bold uppercase tracking-[0.2em] text-slate-600">
+          <div className="rounded-[1.4rem] border border-slate-300 bg-gradient-to-br from-slate-50 to-slate-200 p-4 text-center shadow-sm sm:rounded-[1.75rem] sm:p-5">
+            <div className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-slate-600 sm:mb-2 sm:text-sm">
               Silver
             </div>
-            <div className="text-xl font-extrabold text-slate-900">{silverWinner || "—"}</div>
+            <div className="text-lg font-extrabold text-slate-900 sm:text-xl">
+              {silverWinner || "—"}
+            </div>
           </div>
 
-          <div className="rounded-[1.75rem] border border-orange-300 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 p-5 text-center shadow-sm">
-            <div className="mb-2 text-sm font-bold uppercase tracking-[0.2em] text-orange-700">
+          <div className="rounded-[1.4rem] border border-orange-300 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 p-4 text-center shadow-sm sm:rounded-[1.75rem] sm:p-5">
+            <div className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-orange-700 sm:mb-2 sm:text-sm">
               Brons
             </div>
-            <div className="text-xl font-extrabold text-slate-900">{bronzeWinner || "—"}</div>
+            <div className="text-lg font-extrabold text-slate-900 sm:text-xl">
+              {bronzeWinner || "—"}
+            </div>
           </div>
         </div>
       </div>
@@ -241,14 +248,18 @@ export default function KnockoutFullSection({
                   <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-600">
                     Silver
                   </div>
-                  <div className="text-lg font-extrabold text-slate-900">{silverWinner || "—"}</div>
+                  <div className="text-lg font-extrabold text-slate-900">
+                    {silverWinner || "—"}
+                  </div>
                 </div>
 
                 <div className="rounded-[1.5rem] border border-orange-300 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 px-6 py-4 text-center shadow-sm">
                   <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-orange-700">
                     Brons
                   </div>
-                  <div className="text-lg font-extrabold text-slate-900">{bronzeWinner || "—"}</div>
+                  <div className="text-lg font-extrabold text-slate-900">
+                    {bronzeWinner || "—"}
+                  </div>
                 </div>
               </div>
             </div>
