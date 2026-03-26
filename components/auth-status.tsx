@@ -4,26 +4,47 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 type UserInfo = {
+  id: string;
   email?: string;
+} | null;
+
+type Profile = {
+  payment_code: string | null;
+  payment_status: 'paid' | 'unpaid';
 } | null;
 
 export default function AuthStatus() {
   const supabase = createClient();
 
   const [user, setUser] = useState<UserInfo>(null);
+  const [profile, setProfile] = useState<Profile>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function getUser() {
+    async function getUserAndProfile() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      setUser(user ? { email: user.email } : null);
+      if (user) {
+        setUser({ id: user.id, email: user.email });
+
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('payment_code, payment_status')
+          .eq('id', user.id)
+          .single();
+
+        setProfile(profileData);
+      } else {
+        setUser(null);
+        setProfile(null);
+      }
+
       setLoading(false);
     }
 
-    getUser();
+    getUserAndProfile();
   }, [supabase]);
 
   async function handleLogout() {
@@ -55,8 +76,30 @@ export default function AuthStatus() {
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-4">
+      {/* Email */}
       <span className="text-sm text-white/80">{user.email}</span>
+
+      {/* Payment info */}
+      {profile && (
+        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm">
+          <span className="font-semibold text-white">
+            {profile.payment_code}
+          </span>
+
+          <span
+            className={`rounded-full px-2 py-1 text-xs ${
+              profile.payment_status === 'paid'
+                ? 'bg-green-500/20 text-green-300'
+                : 'bg-yellow-500/20 text-yellow-300'
+            }`}
+          >
+            {profile.payment_status === 'paid' ? 'Betald' : 'Ej betald'}
+          </span>
+        </div>
+      )}
+
+      {/* Logout */}
       <button
         onClick={handleLogout}
         className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white"
