@@ -1,4 +1,4 @@
-import { buildNextRound, calculateTable, getKnockoutSeedData } from "@/lib/tournament";
+import { buildNextRound, calculateTable, getKnockoutSeedData, isTournamentGroupStageComplete } from "@/lib/tournament";
 import type { GroupData, KnockoutMatch } from "@/types/tournament";
 
 type KnockoutSelections = Record<string, string>;
@@ -223,6 +223,16 @@ function scoreTeamsInRound(
   return points;
 }
 
+function hasWinnersForMatchIds(
+  winners: KnockoutSelections,
+  matchIds: string[]
+) {
+  return matchIds.every((matchId) => {
+    const winner = winners[matchId];
+    return typeof winner === "string" && winner.trim() !== "";
+  });
+}
+
 export function scoreKnockout(
   predictionGroups: GroupData[],
   predictionKnockout: KnockoutSelections,
@@ -232,47 +242,83 @@ export function scoreKnockout(
   const predictedRounds = buildKnockoutRounds(predictionGroups, predictionKnockout);
   const officialRounds = buildKnockoutRounds(resultGroups, resultKnockout);
 
-  const round32Points = scoreTeamsInRound(
-    uniqueTeamsFromMatches(predictedRounds.round32),
-    uniqueTeamsFromMatches(officialRounds.round32),
-    2
-  );
+  const officialGroupStageComplete = isTournamentGroupStageComplete(resultGroups);
 
-  const round16Points = scoreTeamsInRound(
-    uniqueTeamsFromMatches(predictedRounds.round16),
-    uniqueTeamsFromMatches(officialRounds.round16),
-    2
+  const canScoreRound32 = officialGroupStageComplete;
+  const canScoreRound16 = hasWinnersForMatchIds(
+    resultKnockout,
+    officialRounds.round32.map((match) => match.id)
   );
+  const canScoreQuarterfinals = hasWinnersForMatchIds(
+    resultKnockout,
+    officialRounds.round16.map((match) => match.id)
+  );
+  const canScoreSemifinals = hasWinnersForMatchIds(
+    resultKnockout,
+    officialRounds.quarterfinals.map((match) => match.id)
+  );
+  const canScoreFinalAndBronze = hasWinnersForMatchIds(
+    resultKnockout,
+    officialRounds.semifinals.map((match) => match.id)
+  );
+  const canScoreWinner = Boolean(resultKnockout["m104"]);
 
-  const quarterfinalPoints = scoreTeamsInRound(
-    uniqueTeamsFromMatches(predictedRounds.quarterfinals),
-    uniqueTeamsFromMatches(officialRounds.quarterfinals),
-    3
-  );
+  const round32Points = canScoreRound32
+    ? scoreTeamsInRound(
+        uniqueTeamsFromMatches(predictedRounds.round32),
+        uniqueTeamsFromMatches(officialRounds.round32),
+        2
+      )
+    : 0;
 
-  const semifinalPoints = scoreTeamsInRound(
-    uniqueTeamsFromMatches(predictedRounds.semifinals),
-    uniqueTeamsFromMatches(officialRounds.semifinals),
-    4
-  );
+  const round16Points = canScoreRound16
+    ? scoreTeamsInRound(
+        uniqueTeamsFromMatches(predictedRounds.round16),
+        uniqueTeamsFromMatches(officialRounds.round16),
+        2
+      )
+    : 0;
 
-  const finalPoints = scoreTeamsInRound(
-    uniqueTeamsFromMatches(predictedRounds.final),
-    uniqueTeamsFromMatches(officialRounds.final),
-    7
-  );
+  const quarterfinalPoints = canScoreQuarterfinals
+    ? scoreTeamsInRound(
+        uniqueTeamsFromMatches(predictedRounds.quarterfinals),
+        uniqueTeamsFromMatches(officialRounds.quarterfinals),
+        3
+      )
+    : 0;
 
-  const bronzeMatchPoints = scoreTeamsInRound(
-    uniqueTeamsFromMatches(predictedRounds.bronze),
-    uniqueTeamsFromMatches(officialRounds.bronze),
-    5
-  );
+  const semifinalPoints = canScoreSemifinals
+    ? scoreTeamsInRound(
+        uniqueTeamsFromMatches(predictedRounds.semifinals),
+        uniqueTeamsFromMatches(officialRounds.semifinals),
+        4
+      )
+    : 0;
+
+  const finalPoints = canScoreFinalAndBronze
+    ? scoreTeamsInRound(
+        uniqueTeamsFromMatches(predictedRounds.final),
+        uniqueTeamsFromMatches(officialRounds.final),
+        7
+      )
+    : 0;
+
+  const bronzeMatchPoints = canScoreFinalAndBronze
+    ? scoreTeamsInRound(
+        uniqueTeamsFromMatches(predictedRounds.bronze),
+        uniqueTeamsFromMatches(officialRounds.bronze),
+        5
+      )
+    : 0;
 
   const predictedWinner = predictionKnockout["m104"] ?? "";
   const officialWinner = resultKnockout["m104"] ?? "";
 
   const winnerBonusPoints =
-    predictedWinner && officialWinner && predictedWinner === officialWinner
+    canScoreWinner &&
+    predictedWinner &&
+    officialWinner &&
+    predictedWinner === officialWinner
       ? 12
       : 0;
 
