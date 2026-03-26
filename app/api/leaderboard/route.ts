@@ -76,13 +76,13 @@ export async function GET() {
     const hasPrediction = Boolean(prediction);
 
     const breakdown = hasPrediction
-      ? scorePrediction(
-          prediction.group_stage ?? [],
-          prediction.knockout ?? {},
-          officialGroupStage,
-          officialKnockout
-        )
-      : null;
+  ? scorePrediction(
+      prediction.group_stage as any,
+      prediction.knockout as any,
+      officialGroupStage as any,
+      officialKnockout as any
+    )
+  : null;
 
     return {
       id: profile.id,
