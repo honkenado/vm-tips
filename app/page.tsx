@@ -20,14 +20,16 @@ import {
   isTournamentGroupStageComplete,
   pickRandomWinner,
 } from "@/lib/tournament";
-import type { GroupData, KnockoutMatch, ViewMode } from "@/types/tournament";
+import type { GroupData, KnockoutMatch } from "@/types/tournament";
+
+type AppViewMode = "all" | "groups" | "thirds" | "knockout" | "leaderboard";
 
 export default function HomePage() {
   const [groups, setGroups] = useState<GroupData[]>(initialGroups);
   const [knockoutWinners, setKnockoutWinners] = useState<Record<string, string>>(
     {}
   );
-  const [viewMode, setViewMode] = useState<ViewMode>("all");
+  const [viewMode, setViewMode] = useState<AppViewMode>("all");
   const [activeGroupLetter, setActiveGroupLetter] = useState("A");
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -314,7 +316,7 @@ export default function HomePage() {
                 ].map((item) => (
                   <button
                     key={item.key}
-                    onClick={() => setViewMode(item.key as ViewMode)}
+                    onClick={() => setViewMode(item.key as AppViewMode)}
                     className={`rounded-full px-4 py-2.5 text-sm font-extrabold transition ${
                       viewMode === item.key
                         ? "bg-white text-slate-900 shadow-md"

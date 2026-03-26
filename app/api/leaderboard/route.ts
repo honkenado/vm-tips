@@ -4,8 +4,8 @@ import { scorePrediction } from "@/lib/scoring";
 
 type DbPredictionRow = {
   user_id: string;
-  group_stage: unknown;
-  knockout: unknown;
+  group_stage: any;
+  knockout: any;
   updated_at: string | null;
 };
 
@@ -17,6 +17,38 @@ type DbProfileRow = {
   created_at: string | null;
   role: string | null;
 };
+
+function getTotalGroupGoals(groups: any[]): number {
+  if (!Array.isArray(groups)) return 0;
+
+  let total = 0;
+
+  for (const group of groups) {
+    if (!group?.matches || !Array.isArray(group.matches)) continue;
+
+    for (const match of group.matches) {
+      const homeGoals =
+        match?.homeGoals !== "" && match?.homeGoals != null
+          ? Number(match.homeGoals)
+          : null;
+      const awayGoals =
+        match?.awayGoals !== "" && match?.awayGoals != null
+          ? Number(match.awayGoals)
+          : null;
+
+      if (
+        homeGoals !== null &&
+        awayGoals !== null &&
+        !Number.isNaN(homeGoals) &&
+        !Number.isNaN(awayGoals)
+      ) {
+        total += homeGoals + awayGoals;
+      }
+    }
+  }
+
+  return total;
+}
 
 export async function GET() {
   const supabase = createClient(
@@ -74,10 +106,12 @@ export async function GET() {
     );
   }
 
-  const officialGroupStage = (resultsRow?.group_stage ?? []) as any;
-  const officialKnockout = (resultsRow?.knockout ?? {}) as any;
+  const officialGroupStage = ((resultsRow?.group_stage as any[]) ?? []);
+  const officialKnockout = ((resultsRow?.knockout as Record<string, string>) ?? {});
 
-  const predictionMap = new Map(
+  const officialGroupGoals = getTotalGroupGoals(officialGroupStage);
+
+  const predictionMap = new Map<string, DbPredictionRow>(
     ((predictions ?? []) as DbPredictionRow[]).map((prediction) => [
       prediction.user_id,
       prediction,
@@ -86,17 +120,27 @@ export async function GET() {
 
   const leaderboard = ((profiles ?? []) as DbProfileRow[]).map((profile) => {
     const prediction = predictionMap.get(profile.id);
-
     const hasPrediction = Boolean(prediction);
+
+    const predictedGroupStage = (prediction?.group_stage ?? []) as any[];
+    const predictedKnockout = (prediction?.knockout ?? {}) as Record<string, string>;
 
     const breakdown = hasPrediction
       ? scorePrediction(
-          (prediction?.group_stage ?? []) as any,
-          (prediction?.knockout ?? {}) as any,
-          officialGroupStage,
-          officialKnockout
+          predictedGroupStage as any,
+          predictedKnockout as any,
+          officialGroupStage as any,
+          officialKnockout as any
         )
       : null;
+
+    const predictedGroupGoals = hasPrediction
+      ? getTotalGroupGoals(predictedGroupStage)
+      : 0;
+
+    const groupGoalsDiff = hasPrediction
+      ? Math.abs(predictedGroupGoals - officialGroupGoals)
+      : Number.MAX_SAFE_INTEGER;
 
     return {
       id: profile.id,
@@ -107,21 +151,20 @@ export async function GET() {
       has_prediction: hasPrediction,
       updated_at: prediction?.updated_at ?? null,
       points: breakdown?.total ?? 0,
+      predicted_group_goals: predictedGroupGoals,
+      official_group_goals: officialGroupGoals,
+      group_goals_diff: groupGoalsDiff,
       breakdown,
     };
   });
 
   leaderboard.sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
-
+    if (a.group_goals_diff !== b.group_goals_diff) {
+      return a.group_goals_diff - b.group_goals_diff;
+    }
     if (a.has_prediction && !b.has_prediction) return -1;
     if (!a.has_prediction && b.has_prediction) return 1;
-
-    if (a.updated_at && b.updated_at) {
-      return (
-        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-      );
-    }
 
     const aName = `${a.first_name ?? ""} ${a.last_name ?? ""}`.trim();
     const bName = `${b.first_name ?? ""} ${b.last_name ?? ""}`.trim();

@@ -1,4 +1,4 @@
-import { calculateTable, buildNextRound, getKnockoutSeedData } from "@/lib/tournament";
+import { buildNextRound, calculateTable, getKnockoutSeedData } from "@/lib/tournament";
 import type { GroupData, KnockoutMatch } from "@/types/tournament";
 
 type KnockoutSelections = Record<string, string>;
@@ -28,22 +28,16 @@ function getOutcome(homeGoals: string, awayGoals: string) {
 }
 
 function createOfficialMatchMap(groups: GroupData[]) {
-  const map = new Map<
-    number,
-    {
-      homeGoals: string;
-      awayGoals: string;
-    }
-  >();
+  const map = new Map<number, { homeGoals: string; awayGoals: string }>();
 
-  groups.forEach((group) => {
-    group.matches.forEach((match) => {
+  for (const group of groups) {
+    for (const match of group.matches) {
       map.set(match.matchNumber, {
         homeGoals: match.homeGoals,
         awayGoals: match.awayGoals,
       });
-    });
-  });
+    }
+  }
 
   return map;
 }
@@ -57,18 +51,18 @@ export function scoreGroupMatches(
   let rightOutcomePoints = 0;
   let exactScoreBonusPoints = 0;
 
-  predictionGroups.forEach((group) => {
-    group.matches.forEach((match) => {
+  for (const group of predictionGroups) {
+    for (const match of group.matches) {
       const official = officialMap.get(match.matchNumber);
 
-      if (!official) return;
+      if (!official) continue;
       if (
         match.homeGoals === "" ||
         match.awayGoals === "" ||
         official.homeGoals === "" ||
         official.awayGoals === ""
       ) {
-        return;
+        continue;
       }
 
       const predictedOutcome = getOutcome(match.homeGoals, match.awayGoals);
@@ -84,8 +78,8 @@ export function scoreGroupMatches(
       ) {
         exactScoreBonusPoints += 1;
       }
-    });
-  });
+    }
+  }
 
   return {
     rightOutcomePoints,
@@ -100,18 +94,18 @@ export function scoreTablePlacements(
 ) {
   let points = 0;
 
-  predictionGroups.forEach((predictedGroup) => {
+  for (const predictedGroup of predictionGroups) {
     const officialGroup = resultGroups.find(
       (group) => group.name === predictedGroup.name
     );
 
-    if (!officialGroup) return;
+    if (!officialGroup) continue;
 
     const officialGroupComplete = officialGroup.matches.every(
       (match) => match.homeGoals !== "" && match.awayGoals !== ""
     );
 
-    if (!officialGroupComplete) return;
+    if (!officialGroupComplete) continue;
 
     const predictedTable = calculateTable(
       predictedGroup.teams,
@@ -127,7 +121,7 @@ export function scoreTablePlacements(
         points += 1;
       }
     }
-  });
+  }
 
   return points;
 }
@@ -135,12 +129,20 @@ export function scoreTablePlacements(
 function uniqueTeamsFromMatches(matches: KnockoutMatch[]) {
   const teams = new Set<string>();
 
-  matches.forEach((match) => {
+  for (const match of matches) {
     if (match.home) teams.add(match.home);
     if (match.away) teams.add(match.away);
-  });
+  }
 
   return teams;
+}
+
+function getLoserTeam(match: KnockoutMatch, winners: KnockoutSelections) {
+  const winner = winners[match.id];
+  if (!winner) return "";
+  if (winner === match.home) return match.away;
+  if (winner === match.away) return match.home;
+  return "";
 }
 
 function buildKnockoutRounds(
@@ -149,7 +151,7 @@ function buildKnockoutRounds(
 ) {
   const { round32 } = getKnockoutSeedData(groups);
 
-  const round16 = buildNextRound(round32, winners, "m9x", "Åttondelsfinal").map(
+  const round16 = buildNextRound(round32, winners, "r16", "Åttondelsfinal").map(
     (match, index) => ({
       ...match,
       id: `m${89 + index}`,
@@ -159,7 +161,7 @@ function buildKnockoutRounds(
   const quarterfinals = buildNextRound(
     round16,
     winners,
-    "m9y",
+    "qf",
     "Kvartsfinal"
   ).map((match, index) => ({
     ...match,
@@ -169,36 +171,31 @@ function buildKnockoutRounds(
   const semifinals = buildNextRound(
     quarterfinals,
     winners,
-    "m10x",
+    "sf",
     "Semifinal"
   ).map((match, index) => ({
     ...match,
     id: `m${101 + index}`,
   }));
 
-  const final = buildNextRound(semifinals, winners, "m10y", "Final").map(
+  const final = buildNextRound(semifinals, winners, "final", "Final").map(
     (match) => ({
       ...match,
       id: "m104",
     })
   );
 
-  const bronze = semifinals.length === 2
-    ? [
-        {
-          id: "m103",
-          label: "Bronsmatch",
-          home:
-            winners[semifinals[0].id] === semifinals[0].home
-              ? semifinals[0].away
-              : semifinals[0].home,
-          away:
-            winners[semifinals[1].id] === semifinals[1].home
-              ? semifinals[1].away
-              : semifinals[1].home,
-        },
-      ]
-    : [];
+  const bronze =
+    semifinals.length === 2
+      ? [
+          {
+            id: "m103",
+            label: "Bronsmatch",
+            home: getLoserTeam(semifinals[0], winners),
+            away: getLoserTeam(semifinals[1], winners),
+          },
+        ]
+      : [];
 
   return {
     round32,
