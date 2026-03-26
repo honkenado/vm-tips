@@ -26,28 +26,30 @@ export default function MatchButtons({
     <div
       className={`bg-white/95 shadow-sm backdrop-blur-sm ${
         compact
-          ? "w-[152px] rounded-xl border-2 border-slate-300/90 p-1.5 shadow-[0_6px_18px_rgba(15,23,42,0.08)]"
-          : "rounded-2xl border border-slate-300 p-4"
+          ? "w-full rounded-xl border border-slate-300 p-2 sm:p-2.5 xl:w-[152px] xl:rounded-xl xl:border-2 xl:border-slate-300/90 xl:p-1.5 xl:shadow-[0_6px_18px_rgba(15,23,42,0.08)]"
+          : "w-full rounded-2xl border border-slate-300 p-3 sm:p-4"
       }`}
     >
       {match.label ? (
         <div
           className={`font-bold uppercase tracking-wide text-slate-500 ${
-            compact ? "mb-1 text-[9px] leading-none" : "mb-3 text-xs"
+            compact
+              ? "mb-2 text-[10px] leading-none sm:text-[11px] xl:mb-1 xl:text-[9px]"
+              : "mb-2 text-[11px] sm:mb-3 sm:text-xs"
           }`}
         >
           {match.label}
         </div>
       ) : null}
 
-      <div className={compact ? "grid gap-1" : "grid gap-1.5"}>
+      <div className={compact ? "grid gap-2 xl:gap-1" : "grid gap-2"}>
         <button
           disabled={homeDisabled}
           onClick={() => onSelectWinner(match.id, match.home)}
           className={`font-semibold transition ${
             compact
-              ? "min-h-[24px] rounded-lg px-2 py-0.5 text-[11px]"
-              : "rounded-xl px-4 py-3"
+              ? "min-h-11 rounded-xl px-3 py-2 text-sm xl:min-h-[24px] xl:rounded-lg xl:px-2 xl:py-0.5 xl:text-[11px]"
+              : "min-h-12 rounded-xl px-4 py-3 text-sm sm:text-base"
           } ${
             chosenHome
               ? "bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-[0_6px_14px_rgba(5,150,105,0.28)]"
@@ -61,7 +63,9 @@ export default function MatchButtons({
 
         <div
           className={`text-center font-semibold uppercase tracking-wide text-slate-400 ${
-            compact ? "text-[8px] leading-none" : "text-xs"
+            compact
+              ? "text-[10px] leading-none xl:text-[8px]"
+              : "text-[10px] sm:text-xs"
           }`}
         >
           vs
@@ -72,8 +76,8 @@ export default function MatchButtons({
           onClick={() => onSelectWinner(match.id, match.away)}
           className={`font-semibold transition ${
             compact
-              ? "min-h-[24px] rounded-lg px-2 py-0.5 text-[11px]"
-              : "rounded-xl px-4 py-3"
+              ? "min-h-11 rounded-xl px-3 py-2 text-sm xl:min-h-[24px] xl:rounded-lg xl:px-2 xl:py-0.5 xl:text-[11px]"
+              : "min-h-12 rounded-xl px-4 py-3 text-sm sm:text-base"
           } ${
             chosenAway
               ? "bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-[0_6px_14px_rgba(5,150,105,0.28)]"
@@ -88,7 +92,9 @@ export default function MatchButtons({
         {deadlinePassed && (
           <div
             className={`text-center font-medium text-rose-500 ${
-              compact ? "pt-1 text-[9px]" : "pt-2 text-xs"
+              compact
+                ? "pt-1 text-[10px] xl:text-[9px]"
+                : "pt-1 text-[11px] sm:pt-2 sm:text-xs"
             }`}
           >
             Deadline har passerat
