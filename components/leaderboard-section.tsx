@@ -110,7 +110,7 @@ export default function LeaderboardSection() {
 
   return (
     <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-black text-slate-900 md:text-2xl">Leaderboard</h2>
           <p className="mt-1 text-sm text-slate-600">
@@ -123,117 +123,124 @@ export default function LeaderboardSection() {
         </div>
       </div>
 
-      <div className="space-y-3">
-        {entries.length === 0 && (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="hidden grid-cols-[74px_minmax(0,1fr)_92px] bg-slate-100 px-4 py-2.5 text-[11px] font-extrabold uppercase tracking-wide text-slate-600 md:grid">
+          <div>Plats</div>
+          <div>Namn</div>
+          <div className="text-right">Poäng</div>
+        </div>
+
+        {entries.length === 0 ? (
+          <div className="px-4 py-6 text-sm text-slate-500">
             Inga deltagare hittades ännu.
           </div>
-        )}
+        ) : (
+          <div className="divide-y divide-slate-200">
+            {entries.map((entry) => {
+              const isOpen = openEntryId === entry.id;
 
-        {entries.map((entry) => {
-          const isOpen = openEntryId === entry.id;
-
-          return (
-            <div
-              key={entry.id}
-              className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
-            >
-              <div className="grid grid-cols-[72px_minmax(0,1fr)_90px] items-center gap-3 px-4 py-4 md:grid-cols-[90px_minmax(0,1fr)_120px] md:px-5">
-                <div>
-                  <div
-                    className={`inline-flex min-w-[48px] items-center justify-center rounded-full px-3 py-1 text-sm font-black ${getPlacementStyle(
-                      entry.placement
-                    )}`}
-                  >
-                    {entry.placement}
-                  </div>
-                </div>
-
-                <div className="min-w-0">
+              return (
+                <div key={entry.id} className="bg-white">
                   <button
                     type="button"
                     onClick={() => toggleEntry(entry.id)}
-                    className="w-full text-left"
+                    className="grid w-full grid-cols-[64px_minmax(0,1fr)_74px] items-center gap-3 px-4 py-3 text-left transition hover:bg-slate-50 md:grid-cols-[74px_minmax(0,1fr)_92px]"
                   >
-                    <div className="truncate text-base font-black text-slate-900 md:text-lg">
-                      {formatName(entry)}
+                    <div>
+                      <div
+                        className={`inline-flex min-w-[38px] items-center justify-center rounded-full px-2.5 py-1 text-sm font-black ${getPlacementStyle(
+                          entry.placement
+                        )}`}
+                      >
+                        {entry.placement}
+                      </div>
                     </div>
-                    <div className="mt-1 text-xs text-slate-500">
-                      {isOpen ? "Dölj detaljer" : "Visa detaljer"}
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <div className="truncate text-base font-black text-slate-900">
+                          {formatName(entry)}
+                        </div>
+                        <span className="text-xs text-slate-400">
+                          {isOpen ? "▾" : "▸"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-2xl font-black leading-none text-slate-900">
+                        {entry.points}
+                      </div>
+                      <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                        p
+                      </div>
                     </div>
                   </button>
-                </div>
 
-                <div className="text-right">
-                  <div className="text-2xl font-black text-slate-900 md:text-3xl">
-                    {entry.points}
-                  </div>
-                  <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                    poäng
-                  </div>
-                </div>
-              </div>
-
-              {isOpen && (
-                <div className="border-t border-slate-200 bg-slate-50 px-4 py-4 md:px-5">
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    <DetailCard label="Matchpoäng" value={entry.breakdown?.groupMatchPoints ?? 0} />
-                    <DetailCard
-                      label="Exakt resultat-bonus"
-                      value={entry.breakdown?.exactScoreBonusPoints ?? 0}
-                    />
-                    <DetailCard
-                      label="Tabellplacering"
-                      value={entry.breakdown?.tablePlacementPoints ?? 0}
-                    />
-                    <DetailCard label="R32" value={entry.breakdown?.round32Points ?? 0} />
-                    <DetailCard label="R16" value={entry.breakdown?.round16Points ?? 0} />
-                    <DetailCard
-                      label="Kvartsfinal"
-                      value={entry.breakdown?.quarterfinalPoints ?? 0}
-                    />
-                    <DetailCard
-                      label="Semifinal"
-                      value={entry.breakdown?.semifinalPoints ?? 0}
-                    />
-                    <DetailCard label="Final" value={entry.breakdown?.finalPoints ?? 0} />
-                    <DetailCard
-                      label="Bronsmatch"
-                      value={entry.breakdown?.bronzeMatchPoints ?? 0}
-                    />
-                    <DetailCard
-                      label="Världsmästare"
-                      value={entry.breakdown?.winnerBonusPoints ?? 0}
-                    />
-                    <DetailCard
-                      label="Skyttekung"
-                      value={entry.breakdown?.goldenBootPoints ?? 0}
-                    />
-                    <DetailCard label="Total" value={entry.breakdown?.total ?? entry.points} />
-                  </div>
-
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-4">
-                    <div className="text-sm font-bold text-slate-900">Tiebreaker: mål i gruppspelet</div>
-                    <div className="mt-2 grid gap-2 text-sm text-slate-600 md:grid-cols-3">
-                      <div>
-                        <span className="font-semibold text-slate-700">Tippade mål:</span>{" "}
-                        {entry.predicted_group_goals}
+                  {isOpen && (
+                    <div className="border-t border-slate-200 bg-slate-50 px-4 py-4">
+                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <DetailCard label="Matchpoäng" value={entry.breakdown?.groupMatchPoints ?? 0} />
+                        <DetailCard
+                          label="Exakt resultat-bonus"
+                          value={entry.breakdown?.exactScoreBonusPoints ?? 0}
+                        />
+                        <DetailCard
+                          label="Tabellplacering"
+                          value={entry.breakdown?.tablePlacementPoints ?? 0}
+                        />
+                        <DetailCard label="R32" value={entry.breakdown?.round32Points ?? 0} />
+                        <DetailCard label="R16" value={entry.breakdown?.round16Points ?? 0} />
+                        <DetailCard
+                          label="Kvartsfinal"
+                          value={entry.breakdown?.quarterfinalPoints ?? 0}
+                        />
+                        <DetailCard
+                          label="Semifinal"
+                          value={entry.breakdown?.semifinalPoints ?? 0}
+                        />
+                        <DetailCard label="Final" value={entry.breakdown?.finalPoints ?? 0} />
+                        <DetailCard
+                          label="Bronsmatch"
+                          value={entry.breakdown?.bronzeMatchPoints ?? 0}
+                        />
+                        <DetailCard
+                          label="Världsmästare"
+                          value={entry.breakdown?.winnerBonusPoints ?? 0}
+                        />
+                        <DetailCard
+                          label="Skyttekung"
+                          value={entry.breakdown?.goldenBootPoints ?? 0}
+                        />
+                        <DetailCard label="Total" value={entry.breakdown?.total ?? entry.points} />
                       </div>
-                      <div>
-                        <span className="font-semibold text-slate-700">Faktiska mål:</span>{" "}
-                        {entry.official_group_goals}
-                      </div>
-                      <div>
-                        <span className="font-semibold text-slate-700">Skillnad:</span>{" "}
-                        {entry.group_goals_diff}
+
+                      <div className="mt-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                        <div className="text-sm font-bold text-slate-900">
+                          Tiebreaker: mål i gruppspelet
+                        </div>
+                        <div className="mt-2 grid gap-2 text-sm text-slate-600 md:grid-cols-3">
+                          <div>
+                            <span className="font-semibold text-slate-700">Tippade mål:</span>{" "}
+                            {entry.predicted_group_goals}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-slate-700">Faktiska mål:</span>{" "}
+                            {entry.official_group_goals}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-slate-700">Skillnad:</span>{" "}
+                            {entry.group_goals_diff}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -242,10 +249,12 @@ export default function LeaderboardSection() {
 function DetailCard({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-      <div className="text-xs font-extrabold uppercase tracking-wide text-slate-500">
+      <div className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
         {label}
       </div>
-      <div className="mt-1 text-2xl font-black text-slate-900">{value}</div>
+      <div className="mt-1 text-2xl font-black leading-none text-slate-900">
+        {value}
+      </div>
     </div>
   );
 }
