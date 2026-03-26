@@ -13,13 +13,13 @@ export async function GET() {
     return NextResponse.json({ error: "Inte inloggad" }, { status: 401 });
   }
 
-  const { data: me, error: meError } = await supabase
+  const { data: me } = await supabase
     .from("profiles")
     .select("is_admin")
     .eq("id", user.id)
     .single();
 
-  if (meError || !me?.is_admin) {
+  if (!me?.is_admin) {
     return NextResponse.json({ error: "Ingen behörighet" }, { status: 403 });
   }
 
@@ -27,7 +27,7 @@ export async function GET() {
     .from("profiles")
     .select("id, first_name, last_name, email, payment_code, payment_status, is_admin")
     .order("payment_status", { ascending: true })
-.order("first_name", { ascending: true });
+    .order("first_name", { ascending: true });
 
   if (error) {
     return NextResponse.json({ error: "Kunde inte läsa användare" }, { status: 500 });
@@ -47,29 +47,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Inte inloggad" }, { status: 401 });
   }
 
-  const { data: me, error: meError } = await supabase
+  const { data: me } = await supabase
     .from("profiles")
     .select("is_admin")
     .eq("id", user.id)
     .single();
 
-  if (meError || !me?.is_admin) {
+  if (!me?.is_admin) {
     return NextResponse.json({ error: "Ingen behörighet" }, { status: 403 });
   }
 
   const body = await req.json();
-  const { profileId, paymentStatus } = body as {
-    profileId?: string;
-    paymentStatus?: "paid" | "unpaid";
-  };
-
-  if (!profileId || !paymentStatus) {
-    return NextResponse.json({ error: "Saknar data" }, { status: 400 });
-  }
-
-  if (!["paid", "unpaid"].includes(paymentStatus)) {
-    return NextResponse.json({ error: "Ogiltig status" }, { status: 400 });
-  }
+  const { profileId, paymentStatus } = body;
 
   const { error } = await supabaseAdmin
     .from("profiles")
@@ -77,7 +66,7 @@ export async function POST(req: Request) {
     .eq("id", profileId);
 
   if (error) {
-    return NextResponse.json({ error: "Kunde inte uppdatera status" }, { status: 500 });
+    return NextResponse.json({ error: "Kunde inte uppdatera" }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });
