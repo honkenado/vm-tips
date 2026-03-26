@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { scorePrediction } from "@/lib/scoring";
 
 export async function GET() {
   const supabase = createClient(
@@ -34,7 +35,7 @@ export async function GET() {
 
   const { data: predictions, error: predictionsError } = await supabase
     .from("predictions")
-    .select("user_id, updated_at")
+    .select("user_id, group_stage, knockout, updated_at")
     .eq("tournament_id", tournament.id);
 
   if (predictionsError) {
@@ -44,15 +45,44 @@ export async function GET() {
     );
   }
 
+  const { data: resultsRow, error: resultsError } = await supabase
+    .from("tournament_results")
+    .select("group_stage, knockout")
+    .eq("tournament_id", tournament.id)
+    .maybeSingle();
+
+  if (resultsError) {
+    return NextResponse.json(
+      { error: resultsError.message },
+      { status: 500 }
+    );
+  }
+
+  const officialGroupStage = Array.isArray(resultsRow?.group_stage)
+    ? resultsRow.group_stage
+    : [];
+  const officialKnockout =
+    resultsRow?.knockout && typeof resultsRow.knockout === "object"
+      ? resultsRow.knockout
+      : {};
+
   const predictionMap = new Map(
-    (predictions ?? []).map((prediction) => [
-      prediction.user_id,
-      prediction.updated_at,
-    ])
+    (predictions ?? []).map((prediction) => [prediction.user_id, prediction])
   );
 
   const leaderboard = (profiles ?? []).map((profile) => {
-    const updatedAt = predictionMap.get(profile.id);
+    const prediction = predictionMap.get(profile.id);
+
+    const hasPrediction = Boolean(prediction);
+
+    const breakdown = hasPrediction
+      ? scorePrediction(
+          prediction.group_stage ?? [],
+          prediction.knockout ?? {},
+          officialGroupStage,
+          officialKnockout
+        )
+      : null;
 
     return {
       id: profile.id,
@@ -60,12 +90,16 @@ export async function GET() {
       first_name: profile.first_name,
       last_name: profile.last_name,
       role: profile.role,
-      has_prediction: Boolean(updatedAt),
-      updated_at: updatedAt ?? null,
+      has_prediction: hasPrediction,
+      updated_at: prediction?.updated_at ?? null,
+      points: breakdown?.total ?? 0,
+      breakdown,
     };
   });
 
   leaderboard.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+
     if (a.has_prediction && !b.has_prediction) return -1;
     if (!a.has_prediction && b.has_prediction) return 1;
 
@@ -81,5 +115,10 @@ export async function GET() {
     return aName.localeCompare(bName, "sv");
   });
 
-  return NextResponse.json({ leaderboard });
+  const leaderboardWithPlacement = leaderboard.map((entry, index) => ({
+    ...entry,
+    placement: index + 1,
+  }));
+
+  return NextResponse.json({ leaderboard: leaderboardWithPlacement });
 }
