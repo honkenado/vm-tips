@@ -142,23 +142,23 @@ export default function LeaderboardSection() {
               return (
                 <div key={entry.id} className="bg-white">
                   <button
-                    type="button"
-                    onClick={() => toggleEntry(entry.id)}
-                    className="grid w-full grid-cols-[64px_minmax(0,1fr)_74px] items-center gap-3 px-4 py-3 text-left transition hover:bg-slate-50 md:grid-cols-[74px_minmax(0,1fr)_92px]"
-                  >
+  type="button"
+  onClick={() => toggleEntry(entry.id)}
+  className="grid w-full grid-cols-[52px_minmax(0,1fr)_64px] items-center gap-2 px-3 py-2 text-left transition hover:bg-slate-50 md:grid-cols-[60px_minmax(0,1fr)_72px]"
+>
                     <div>
                       <div
-                        className={`inline-flex min-w-[38px] items-center justify-center rounded-full px-2.5 py-1 text-sm font-black ${getPlacementStyle(
-                          entry.placement
-                        )}`}
-                      >
+  className={`inline-flex min-w-[30px] items-center justify-center rounded-full px-2 py-0.5 text-xs font-black ${getPlacementStyle(
+    entry.placement
+  )}`}
+>
                         {entry.placement}
                       </div>
                     </div>
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <div className="truncate text-base font-black text-slate-900">
+                        <div className="truncate text-sm font-bold text-slate-900 md:text-base">
                           {formatName(entry)}
                         </div>
                         <span className="text-xs text-slate-400">
@@ -168,13 +168,10 @@ export default function LeaderboardSection() {
                     </div>
 
                     <div className="text-right">
-                      <div className="text-2xl font-black leading-none text-slate-900">
-                        {entry.points}
-                      </div>
-                      <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                        p
-                      </div>
-                    </div>
+  <div className="text-lg font-black leading-none text-slate-900 md:text-xl">
+    {entry.points}
+  </div>
+</div>
                   </button>
 
                   {isOpen && (
