@@ -8,6 +8,7 @@ import GroupSection from "@/components/GroupSection";
 import KnockoutFullSection from "@/components/KnockoutFullSection";
 import QualifiedTeamsSection from "@/components/QualifiedTeamsSection";
 import SectionCard from "@/components/SectionCard";
+import { isDeadlinePassed } from "@/lib/config";
 import {
   clearDependentKnockoutSelections,
   buildNextRound,
@@ -185,6 +186,11 @@ export default function HomePage() {
   }
 
   async function savePredictionToDatabase() {
+    if (isDeadlinePassed()) {
+      setSaveMessage("Deadline har passerat – tipset är låst");
+      return;
+    }
+
     try {
       setIsSaving(true);
       setSaveMessage(null);
@@ -223,6 +229,8 @@ export default function HomePage() {
     () => isTournamentGroupStageComplete(groups),
     [groups]
   );
+
+  const deadlinePassed = isDeadlinePassed();
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_#dbeafe_0%,_#eef2ff_28%,_#f8fafc_58%,_#e2e8f0_100%)] px-4 py-5 md:px-6 md:py-8">
@@ -274,12 +282,22 @@ export default function HomePage() {
 
                   <button
                     onClick={savePredictionToDatabase}
-                    disabled={isSaving || !hasLoadedFromDatabase}
+                    disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
                     className="rounded-full border border-white/15 bg-white/10 px-5 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/20 disabled:opacity-50"
                   >
-                    {isSaving ? "Sparar..." : "Spara tips"}
+                    {deadlinePassed
+                      ? "Deadline passerad"
+                      : isSaving
+                      ? "Sparar..."
+                      : "Spara tips"}
                   </button>
                 </div>
+
+                {deadlinePassed && (
+                  <p className="mt-3 text-sm font-semibold text-amber-300">
+                    Deadline har passerat. Tipset är nu låst.
+                  </p>
+                )}
 
                 {saveMessage && (
                   <p className="mt-3 text-sm text-white/80">{saveMessage}</p>

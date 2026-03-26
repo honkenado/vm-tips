@@ -1,3 +1,4 @@
+import { isDeadlinePassed } from "@/lib/config";
 import type { KnockoutMatch } from "@/types/tournament";
 
 export default function MatchButtons({
@@ -11,8 +12,13 @@ export default function MatchButtons({
   onSelectWinner: (matchId: string, team: string) => void;
   compact?: boolean;
 }) {
-  const homeDisabled = !match.home || match.home.startsWith("?");
-  const awayDisabled = !match.away || match.away.startsWith("?");
+  const deadlinePassed = isDeadlinePassed();
+
+  const homeDisabled =
+    deadlinePassed || !match.home || match.home.startsWith("?");
+  const awayDisabled =
+    deadlinePassed || !match.away || match.away.startsWith("?");
+
   const chosenHome = selectedWinners[match.id] === match.home;
   const chosenAway = selectedWinners[match.id] === match.away;
 
@@ -39,7 +45,9 @@ export default function MatchButtons({
           disabled={homeDisabled}
           onClick={() => onSelectWinner(match.id, match.home)}
           className={`font-semibold transition ${
-            compact ? "min-h-[24px] rounded-lg px-2 py-0.5 text-[11px]" : "rounded-xl px-4 py-3"
+            compact
+              ? "min-h-[24px] rounded-lg px-2 py-0.5 text-[11px]"
+              : "rounded-xl px-4 py-3"
           } ${
             chosenHome
               ? "bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-[0_6px_14px_rgba(5,150,105,0.28)]"
@@ -63,7 +71,9 @@ export default function MatchButtons({
           disabled={awayDisabled}
           onClick={() => onSelectWinner(match.id, match.away)}
           className={`font-semibold transition ${
-            compact ? "min-h-[24px] rounded-lg px-2 py-0.5 text-[11px]" : "rounded-xl px-4 py-3"
+            compact
+              ? "min-h-[24px] rounded-lg px-2 py-0.5 text-[11px]"
+              : "rounded-xl px-4 py-3"
           } ${
             chosenAway
               ? "bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-[0_6px_14px_rgba(5,150,105,0.28)]"
@@ -74,6 +84,16 @@ export default function MatchButtons({
             {match.away || "Väntar..."}
           </span>
         </button>
+
+        {deadlinePassed && (
+          <div
+            className={`text-center font-medium text-rose-500 ${
+              compact ? "pt-1 text-[9px]" : "pt-2 text-xs"
+            }`}
+          >
+            Deadline har passerat
+          </div>
+        )}
       </div>
     </div>
   );
