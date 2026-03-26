@@ -26,7 +26,8 @@ export async function GET() {
   const { data, error } = await supabaseAdmin
     .from("profiles")
     .select("id, first_name, last_name, email, payment_code, payment_status, is_admin")
-    .order("first_name", { ascending: true });
+    .order("payment_status", { ascending: true })
+.order("first_name", { ascending: true });
 
   if (error) {
     return NextResponse.json({ error: "Kunde inte läsa användare" }, { status: 500 });
