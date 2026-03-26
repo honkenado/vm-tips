@@ -24,6 +24,14 @@ import type { GroupData, KnockoutMatch } from "@/types/tournament";
 
 type AppViewMode = "all" | "groups" | "thirds" | "knockout" | "leaderboard";
 
+const viewModeItems: { key: AppViewMode; label: string; mobileLabel: string }[] = [
+  { key: "all", label: "Allt", mobileLabel: "Allt" },
+  { key: "groups", label: "Grupper", mobileLabel: "Grupper" },
+  { key: "thirds", label: "Bästa treor", mobileLabel: "Treor" },
+  { key: "knockout", label: "Slutspel", mobileLabel: "Slutspel" },
+  { key: "leaderboard", label: "Leaderboard", mobileLabel: "Tabell" },
+];
+
 export default function HomePage() {
   const [groups, setGroups] = useState<GroupData[]>(initialGroups);
   const [knockoutWinners, setKnockoutWinners] = useState<Record<string, string>>(
@@ -235,7 +243,7 @@ export default function HomePage() {
   const deadlinePassed = isDeadlinePassed();
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_#dbeafe_0%,_#eef2ff_28%,_#f8fafc_58%,_#e2e8f0_100%)] px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-8">
+    <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_#dbeafe_0%,_#eef2ff_28%,_#f8fafc_58%,_#e2e8f0_100%)] px-3 py-3 pb-24 sm:px-4 sm:py-4 sm:pb-6 md:px-6 md:py-8 md:pb-8">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute -left-32 -top-24 h-[420px] w-[420px] rounded-full bg-sky-400/20 blur-3xl" />
         <div className="absolute right-[-120px] top-[140px] h-[420px] w-[420px] rounded-full bg-indigo-500/20 blur-3xl" />
@@ -306,17 +314,11 @@ export default function HomePage() {
                 )}
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { key: "all", label: "Allt" },
-                  { key: "groups", label: "Grupper" },
-                  { key: "thirds", label: "Bästa treor" },
-                  { key: "knockout", label: "Slutspel" },
-                  { key: "leaderboard", label: "Leaderboard" },
-                ].map((item) => (
+              <div className="hidden flex-wrap gap-2 md:flex">
+                {viewModeItems.map((item) => (
                   <button
                     key={item.key}
-                    onClick={() => setViewMode(item.key as AppViewMode)}
+                    onClick={() => setViewMode(item.key)}
                     className={`min-h-11 rounded-full px-4 py-2.5 text-sm font-extrabold transition ${
                       viewMode === item.key
                         ? "bg-white text-slate-900 shadow-md"
@@ -385,6 +387,28 @@ export default function HomePage() {
           {(viewMode === "all" || viewMode === "leaderboard") && (
             <LeaderboardSection />
           )}
+        </div>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-2 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.10)] backdrop-blur md:hidden">
+        <div className="mx-auto grid max-w-3xl grid-cols-5 gap-1">
+          {viewModeItems.map((item) => {
+            const active = viewMode === item.key;
+
+            return (
+              <button
+                key={item.key}
+                onClick={() => setViewMode(item.key)}
+                className={`min-h-12 rounded-2xl px-2 py-2 text-center text-[11px] font-extrabold leading-tight transition ${
+                  active
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-700"
+                }`}
+              >
+                {item.mobileLabel}
+              </button>
+            );
+          })}
         </div>
       </div>
     </main>
