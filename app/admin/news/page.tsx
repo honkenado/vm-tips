@@ -8,7 +8,7 @@ type NewsPost = {
   content: string;
   image_url: string | null;
   created_at: string;
-  published: boolean;
+  is_published?: boolean;
 };
 
 export default function AdminNewsPage() {
@@ -16,14 +16,16 @@ export default function AdminNewsPage() {
   const [content, setContent] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingPosts, setLoadingPosts] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [posts, setPosts] = useState<NewsPost[]>([]);
-  const [loadingPosts, setLoadingPosts] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function loadPosts() {
     try {
       setLoadingPosts(true);
+
       const res = await fetch("/api/news", { cache: "no-store" });
       const data = await res.json();
 
@@ -34,6 +36,7 @@ export default function AdminNewsPage() {
       setPosts(data.posts ?? []);
     } catch (err) {
       console.error(err);
+      setError(err instanceof Error ? err.message : "Kunde inte hämta nyheter");
     } finally {
       setLoadingPosts(false);
     }
@@ -60,7 +63,7 @@ export default function AdminNewsPage() {
           title,
           content,
           image_url: imageUrl,
-          published: true,
+          is_published: true,
         }),
       });
 
@@ -83,30 +86,51 @@ export default function AdminNewsPage() {
     }
   }
 
-  return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 px-4 py-8 md:px-6">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8">
-        <div className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm backdrop-blur">
-          <div className="mb-2 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">
-            Admin • Nyheter
-          </div>
+  async function handleDelete(postId: string) {
+    const confirmed = window.confirm("Vill du verkligen radera nyheten?");
+    if (!confirmed) return;
 
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-            Hantera nyheter
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-600 md:text-base">
-            Skapa och publicera nyheter som visas för alla användare i appen.
+    setDeletingId(postId);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/news/${postId}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Kunde inte radera nyheten");
+      }
+
+      setPosts((prev) => prev.filter((post) => post.id !== postId));
+      setMessage("Nyheten raderades.");
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Något gick fel");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-50 px-4 py-8 md:px-6">
+      <div className="mx-auto max-w-6xl space-y-8">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h1 className="text-3xl font-black text-slate-900">Admin – nyheter</h1>
+          <p className="mt-2 text-slate-600">
+            Skriv, publicera och radera nyheter.
           </p>
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-slate-900">
-                Skapa nyhet
-              </h2>
+              <h2 className="text-xl font-semibold text-slate-900">Skriv nyhet</h2>
               <p className="mt-1 text-sm text-slate-500">
-                Fyll i titel, innehåll och eventuell bildlänk.
+                Lägg upp en ny uppdatering för deltagarna.
               </p>
             </div>
 
@@ -164,19 +188,6 @@ export default function AdminNewsPage() {
                 />
               </div>
 
-              {imageUrl ? (
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                  <img
-                    src={imageUrl}
-                    alt="Förhandsvisning"
-                    className="max-h-72 w-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
-                </div>
-              ) : null}
-
               {message ? (
                 <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                   {message}
@@ -192,7 +203,7 @@ export default function AdminNewsPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? "Publicerar..." : "Publicera nyhet"}
               </button>
@@ -201,9 +212,7 @@ export default function AdminNewsPage() {
 
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-slate-900">
-                Publicerade nyheter
-              </h2>
+              <h2 className="text-xl font-semibold text-slate-900">Befintliga nyheter</h2>
               <p className="mt-1 text-sm text-slate-500">
                 Senaste nyheterna visas överst.
               </p>
@@ -222,32 +231,37 @@ export default function AdminNewsPage() {
                 {posts.map((post) => (
                   <article
                     key={post.id}
-                    className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm"
+                    className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 shadow-sm"
                   >
                     {post.image_url ? (
                       <img
                         src={post.image_url}
                         alt={post.title}
-                        className="h-44 w-full object-cover"
+                        className="h-40 w-full object-cover"
                       />
                     ) : null}
 
                     <div className="p-5">
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <h3 className="text-lg font-semibold text-slate-900">
-                          {post.title}
-                        </h3>
-                        <span className="shrink-0 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                          Publicerad
-                        </span>
+                      <div className="mb-2 text-xs text-slate-400">
+                        {new Date(post.created_at).toLocaleString("sv-SE")}
                       </div>
 
-                      <p className="whitespace-pre-line text-sm leading-6 text-slate-600">
+                      <h3 className="text-lg font-semibold text-slate-900">
+                        {post.title}
+                      </h3>
+
+                      <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
                         {post.content}
                       </p>
 
-                      <div className="mt-4 text-xs text-slate-400">
-                        {new Date(post.created_at).toLocaleString("sv-SE")}
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          onClick={() => handleDelete(post.id)}
+                          disabled={deletingId === post.id}
+                          className="rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {deletingId === post.id ? "Raderar..." : "Radera"}
+                        </button>
                       </div>
                     </div>
                   </article>
