@@ -3,10 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
+    const { id } = await context.params;
 
     const {
       data: { user },
@@ -17,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: "Inte inloggad" }, { status: 401 });
     }
 
-    const leagueParam = params.id;
+    const leagueParam = id;
 
     if (leagueParam === "main") {
       return NextResponse.json({
