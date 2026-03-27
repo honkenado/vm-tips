@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { headers } from "next/headers";
 
 type NewsPost = {
@@ -7,6 +8,11 @@ type NewsPost = {
   image_url: string | null;
   created_at: string;
 };
+
+function truncate(text: string, maxLength: number) {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength).trimEnd() + "...";
+}
 
 async function getNews(): Promise<NewsPost[]> {
   const headersList = await headers();
@@ -35,7 +41,7 @@ export default async function NewsPage() {
   const posts = await getNews();
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 px-4 py-8 md:px-6">
+    <main className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-slate-100 px-4 py-8 md:px-6">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8 rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm backdrop-blur">
           <h1 className="text-3xl font-bold text-slate-900">Nyheter</h1>
@@ -51,15 +57,16 @@ export default async function NewsPage() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {posts.map((post) => (
-              <article
+              <Link
                 key={post.id}
-                className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm"
+                href={`/news/${post.id}`}
+                className="group block overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm transition hover:-translate-y-[2px] hover:shadow-md"
               >
                 {post.image_url ? (
                   <img
                     src={post.image_url}
                     alt={post.title}
-                    className="h-52 w-full object-cover"
+                    className="h-52 w-full object-cover transition group-hover:scale-[1.01]"
                   />
                 ) : null}
 
@@ -69,14 +76,20 @@ export default async function NewsPage() {
                   </h2>
 
                   <p className="mb-4 whitespace-pre-line text-sm leading-6 text-slate-600">
-                    {post.content}
+                    {truncate(post.content, 180)}
                   </p>
 
-                  <div className="text-xs text-slate-400">
-                    {new Date(post.created_at).toLocaleString("sv-SE")}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-xs text-slate-400">
+                      {new Date(post.created_at).toLocaleString("sv-SE")}
+                    </div>
+
+                    <span className="text-sm font-semibold text-emerald-700 transition group-hover:text-emerald-800">
+                      Läs mer →
+                    </span>
                   </div>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         )}
