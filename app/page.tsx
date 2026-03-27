@@ -5,6 +5,7 @@ import BestThirdsSection from "@/components/BestThirdsSection";
 import GroupSection from "@/components/GroupSection";
 import KnockoutFullSection from "@/components/KnockoutFullSection";
 import LeaguesSection from "@/components/leagues-section";
+import NewsPreview from "@/components/NewsPreview";
 import QualifiedTeamsSection from "@/components/QualifiedTeamsSection";
 import SectionCard from "@/components/SectionCard";
 import { useEffect, useMemo, useState } from "react";
@@ -431,6 +432,8 @@ export default function HomePage() {
             </div>
           </div>
         </header>
+
+        <NewsPreview />
 
         <div className="grid gap-4 sm:gap-6 md:gap-8">
           {(viewMode === "all" || viewMode === "groups") && (
