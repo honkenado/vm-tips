@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
 import { scorePrediction } from "@/lib/scoring";
 
 type DbPredictionRow = {
@@ -16,6 +17,7 @@ type DbProfileRow = {
   last_name: string | null;
   created_at: string | null;
   role: string | null;
+  payment_status?: "paid" | "unpaid" | null;
 };
 
 function getTotalGroupGoals(groups: any[]): number {
@@ -50,11 +52,32 @@ function getTotalGroupGoals(groups: any[]): number {
   return total;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
+
+  const authSupabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll() {
+          // Ingen cookie-write behövs här i GET-route
+        },
+      },
+    }
+  );
+
+  const {
+    data: { user },
+  } = await authSupabase.auth.getUser();
+
+  const currentUserId = user?.id ?? null;
 
   const { data: tournament, error: tournamentError } = await supabase
     .from("tournaments")
@@ -71,7 +94,8 @@ export async function GET() {
 
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
-    .select("id, username, first_name, last_name, created_at, role")
+    .select("id, username, first_name, last_name, created_at, role, payment_status")
+    .eq("payment_status", "paid")
     .order("created_at", { ascending: true });
 
   if (profilesError) {
@@ -106,8 +130,9 @@ export async function GET() {
     );
   }
 
-  const officialGroupStage = ((resultsRow?.group_stage as any[]) ?? []);
-  const officialKnockout = ((resultsRow?.knockout as Record<string, string>) ?? {});
+  const officialGroupStage = (resultsRow?.group_stage as any[]) ?? [];
+  const officialKnockout =
+    (resultsRow?.knockout as Record<string, string>) ?? {};
 
   const officialGroupGoals = getTotalGroupGoals(officialGroupStage);
 
@@ -123,7 +148,10 @@ export async function GET() {
     const hasPrediction = Boolean(prediction);
 
     const predictedGroupStage = (prediction?.group_stage ?? []) as any[];
-    const predictedKnockout = (prediction?.knockout ?? {}) as Record<string, string>;
+    const predictedKnockout = (prediction?.knockout ?? {}) as Record<
+      string,
+      string
+    >;
 
     const breakdown = hasPrediction
       ? scorePrediction(
@@ -177,5 +205,8 @@ export async function GET() {
     placement: index + 1,
   }));
 
-  return NextResponse.json({ leaderboard: leaderboardWithPlacement });
+  return NextResponse.json({
+    leaderboard: leaderboardWithPlacement,
+    currentUserId,
+  });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type ScoreBreakdown = {
   groupMatchPoints: number;
@@ -33,11 +33,18 @@ type LeaderboardEntry = {
   breakdown: ScoreBreakdown | null;
 };
 
+type LeaderboardResponse = {
+  leaderboard?: LeaderboardEntry[];
+  currentUserId?: string | null;
+  error?: string;
+};
+
 export default function LeaderboardSection() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [openEntryId, setOpenEntryId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadLeaderboard() {
@@ -45,8 +52,11 @@ export default function LeaderboardSection() {
         setLoading(true);
         setErrorMessage(null);
 
-        const res = await fetch("/api/leaderboard");
-        const data = await res.json();
+        const res = await fetch("/api/leaderboard", {
+          cache: "no-store",
+        });
+
+        const data: LeaderboardResponse = await res.json();
 
         if (!res.ok) {
           setErrorMessage(data.error || "Kunde inte hämta leaderboard");
@@ -54,6 +64,7 @@ export default function LeaderboardSection() {
         }
 
         setEntries(data.leaderboard ?? []);
+        setCurrentUserId(data.currentUserId ?? null);
       } catch (error) {
         console.error("Fel vid hämtning av leaderboard", error);
         setErrorMessage("Kunde inte hämta leaderboard");
@@ -67,14 +78,18 @@ export default function LeaderboardSection() {
 
   function formatName(entry: LeaderboardEntry) {
     const fullName = `${entry.first_name ?? ""} ${entry.last_name ?? ""}`.trim();
-    return fullName || "Namn saknas";
+    return fullName || entry.username || "Namn saknas";
   }
 
   function toggleEntry(id: string) {
     setOpenEntryId((prev) => (prev === id ? null : id));
   }
 
-  function getPlacementStyle(placement: number) {
+  function getPlacementStyle(placement: number, isCurrentUser: boolean) {
+    if (isCurrentUser) {
+      return "bg-emerald-600 text-white ring-1 ring-emerald-500 shadow-md shadow-emerald-200";
+    }
+
     if (placement === 1) {
       return "bg-amber-100 text-amber-700 ring-1 ring-amber-200";
     }
@@ -90,12 +105,29 @@ export default function LeaderboardSection() {
     return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
   }
 
-  function getRowBackgroundClass(index: number, placement: number) {
+  function getRowBackgroundClass(
+    index: number,
+    placement: number,
+    isCurrentUser: boolean
+  ) {
+    if (isCurrentUser) {
+      return "bg-emerald-50";
+    }
+
     if (placement === 1) return "bg-amber-50";
     if (placement === 2) return "bg-slate-100";
     if (placement === 3) return "bg-orange-50";
+
     return index % 2 === 0 ? "bg-white" : "bg-slate-50";
   }
+
+  const currentUserEntry = useMemo(() => {
+    if (!currentUserId) return null;
+    return entries.find((entry) => entry.id === currentUserId) ?? null;
+  }, [entries, currentUserId]);
+
+  const shouldShowStickyUserCard =
+    !!currentUserEntry && currentUserEntry.placement > 3;
 
   if (loading) {
     return (
@@ -136,6 +168,46 @@ export default function LeaderboardSection() {
         </div>
       </div>
 
+      {shouldShowStickyUserCard && currentUserEntry && (
+        <div className="sticky top-3 z-20 mb-3 rounded-2xl border border-emerald-200 bg-emerald-50/95 p-3 shadow-lg backdrop-blur">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="mb-1 flex items-center gap-2">
+                <span className="inline-flex rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
+                  Du
+                </span>
+                <span className="text-xs font-bold text-emerald-800">
+                  Din placering just nu
+                </span>
+              </div>
+
+              <div className="truncate text-sm font-bold text-slate-900">
+                #{currentUserEntry.placement} · {formatName(currentUserEntry)}
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-4">
+              <div className="text-right">
+                <div className="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
+                  Poäng
+                </div>
+                <div className="tabular-nums text-lg font-black text-slate-900">
+                  {currentUserEntry.points}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
+                  Tiebreak
+                </div>
+                <div className="tabular-nums text-lg font-black text-slate-900">
+                  {currentUserEntry.group_goals_diff}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white sm:rounded-2xl">
         <div className="hidden grid-cols-[56px_minmax(0,1fr)_68px] bg-slate-100 px-3 py-2 text-[10px] font-extrabold uppercase tracking-wide text-slate-600 md:grid">
           <div>Plats</div>
@@ -151,24 +223,36 @@ export default function LeaderboardSection() {
           <div className="divide-y divide-slate-200">
             {entries.map((entry, index) => {
               const isOpen = openEntryId === entry.id;
+              const isCurrentUser = currentUserId === entry.id;
               const rowBackgroundClass = getRowBackgroundClass(
                 index,
-                entry.placement
+                entry.placement,
+                isCurrentUser
               );
 
               return (
-                <div key={entry.id} className={rowBackgroundClass}>
+                <div
+                  key={entry.id}
+                  className={`${rowBackgroundClass} ${
+                    isCurrentUser
+                      ? "relative z-10 ring-1 ring-emerald-200"
+                      : ""
+                  }`}
+                >
                   <button
                     type="button"
                     onClick={() => toggleEntry(entry.id)}
-                    className={`grid w-full grid-cols-[44px_minmax(0,1fr)_52px] items-center gap-2 px-3 py-2 text-left transition hover:bg-slate-100 sm:grid-cols-[48px_minmax(0,1fr)_56px] md:grid-cols-[56px_minmax(0,1fr)_68px] ${
-                      isOpen ? "bg-slate-100/70" : ""
-                    }`}
+                    className={`grid w-full grid-cols-[44px_minmax(0,1fr)_52px] items-center gap-2 px-3 py-2 text-left transition sm:grid-cols-[48px_minmax(0,1fr)_56px] md:grid-cols-[56px_minmax(0,1fr)_68px] ${
+                      isCurrentUser
+                        ? "hover:bg-emerald-100/80"
+                        : "hover:bg-slate-100"
+                    } ${isOpen ? (isCurrentUser ? "bg-emerald-100/70" : "bg-slate-100/70") : ""}`}
                   >
                     <div>
                       <div
                         className={`inline-flex min-w-[28px] items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-black ${getPlacementStyle(
-                          entry.placement
+                          entry.placement,
+                          isCurrentUser
                         )}`}
                       >
                         {entry.placement}
@@ -177,24 +261,49 @@ export default function LeaderboardSection() {
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <div className="truncate text-sm font-bold leading-tight text-slate-900 sm:text-[15px]">
+                        <div
+                          className={`truncate text-sm font-bold leading-tight sm:text-[15px] ${
+                            isCurrentUser ? "text-emerald-900" : "text-slate-900"
+                          }`}
+                        >
                           {formatName(entry)}
                         </div>
-                        <span className="shrink-0 text-[11px] text-slate-400">
+
+                        {isCurrentUser && (
+                          <span className="shrink-0 rounded-full border border-emerald-300 bg-white px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700">
+                            Du
+                          </span>
+                        )}
+
+                        <span
+                          className={`shrink-0 text-[11px] ${
+                            isCurrentUser ? "text-emerald-500" : "text-slate-400"
+                          }`}
+                        >
                           {isOpen ? "▾" : "▸"}
                         </span>
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <div className="tabular-nums text-base font-black leading-none text-slate-900 md:text-lg">
+                      <div
+                        className={`tabular-nums text-base font-black leading-none md:text-lg ${
+                          isCurrentUser ? "text-emerald-800" : "text-slate-900"
+                        }`}
+                      >
                         {entry.points}
                       </div>
                     </div>
                   </button>
 
                   {isOpen && (
-                    <div className="border-t border-slate-200 bg-slate-50 px-3 py-3">
+                    <div
+                      className={`border-t px-3 py-3 ${
+                        isCurrentUser
+                          ? "border-emerald-200 bg-emerald-50/60"
+                          : "border-slate-200 bg-slate-50"
+                      }`}
+                    >
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
                         <DetailCard
                           label="Matchpoäng"
@@ -247,7 +356,13 @@ export default function LeaderboardSection() {
                         />
                       </div>
 
-                      <div className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
+                      <div
+                        className={`mt-3 rounded-xl border px-3 py-3 ${
+                          isCurrentUser
+                            ? "border-emerald-200 bg-white"
+                            : "border-slate-200 bg-white"
+                        }`}
+                      >
                         <div className="text-xs font-bold text-slate-900">
                           Tiebreaker: mål i gruppspelet
                         </div>
