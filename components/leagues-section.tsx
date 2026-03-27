@@ -1,5 +1,15 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
+type MyLeague = {
+  id: string;
+  name: string;
+  join_code: string;
+  created_by: string;
+  created_at: string;
+};
+
 type LeagueCard = {
   id: string;
   name: string;
@@ -10,14 +20,10 @@ type LeagueCard = {
 export default function LeaguesSection({
   myLeagues,
 }: {
-  myLeagues: {
-    id: string;
-    name: string;
-    join_code: string;
-    created_by: string;
-    created_at: string;
-  }[];
+  myLeagues: MyLeague[];
 }) {
+  const router = useRouter();
+
   const leagues: LeagueCard[] = [
     {
       id: "main-league",
@@ -97,6 +103,11 @@ export default function LeaguesSection({
 
             <button
               type="button"
+              onClick={() =>
+                league.type === "main"
+                  ? router.push("/")
+                  : router.push(`/league/${league.id}`)
+              }
               className="mt-4 min-h-11 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800"
             >
               Öppna liga
