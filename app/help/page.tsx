@@ -10,13 +10,15 @@ function HelpImage({
 }) {
   return (
     <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
-      <div className="relative aspect-[16/7] w-full bg-slate-100">
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          className="object-cover object-top"
-        />
+      <div className="relative w-full bg-slate-100 p-3">
+        <div className="relative aspect-[16/6] w-full">
+          <Image
+            src={src}
+            alt={alt}
+            fill
+            className="object-contain"
+          />
+        </div>
       </div>
     </div>
   );
