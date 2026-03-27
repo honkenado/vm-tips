@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type MyLeague = {
   id: string;
@@ -15,6 +15,7 @@ type LeagueCard = {
   name: string;
   join_code?: string;
   type: "main" | "private";
+  href: string;
 };
 
 export default function LeaguesSection({
@@ -22,19 +23,19 @@ export default function LeaguesSection({
 }: {
   myLeagues: MyLeague[];
 }) {
-  const router = useRouter();
-
   const leagues: LeagueCard[] = [
     {
       id: "main-league",
       name: "Huvudligan",
       type: "main",
+      href: "/league/main",
     },
     ...myLeagues.map((league) => ({
       id: league.id,
       name: league.name,
       join_code: league.join_code,
       type: "private" as const,
+      href: `/league/${league.id}`,
     })),
   ];
 
@@ -57,9 +58,10 @@ export default function LeaguesSection({
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {leagues.map((league) => (
-          <div
+          <Link
             key={league.id}
-            className={`rounded-2xl border p-4 shadow-sm ${
+            href={league.href}
+            className={`group block rounded-2xl border p-4 shadow-sm transition hover:-translate-y-[2px] hover:shadow-md ${
               league.type === "main"
                 ? "border-indigo-200 bg-gradient-to-br from-indigo-50 via-blue-50 to-white"
                 : "border-slate-200 bg-slate-50"
@@ -67,7 +69,7 @@ export default function LeaguesSection({
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-base font-bold text-slate-900">
+                <div className="text-base font-bold text-slate-900 group-hover:underline">
                   {league.name}
                 </div>
 
@@ -101,18 +103,10 @@ export default function LeaguesSection({
                 : "Den här ligan använder samma tips som huvudligan."}
             </div>
 
-            <button
-              type="button"
-              onClick={() =>
-                league.type === "main"
-                  ? router.push("/")
-                  : router.push(`/league/${league.id}`)
-              }
-              className="mt-4 min-h-11 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800"
-            >
+            <div className="mt-4 min-h-11 w-full rounded-xl bg-slate-900 px-4 py-2 text-center text-sm font-bold text-white transition group-hover:bg-slate-800">
               Öppna liga
-            </button>
-          </div>
+            </div>
+          </Link>
         ))}
       </div>
     </div>
