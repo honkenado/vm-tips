@@ -19,12 +19,15 @@ function truncate(text: string, maxLength: number) {
 export default function NewsPreview() {
   const [posts, setPosts] = useState<NewsPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadNews() {
       try {
+        setErrorMessage(null);
+
         const res = await fetch("/api/news", {
           cache: "no-store",
         });
@@ -40,8 +43,12 @@ export default function NewsPreview() {
         }
       } catch (error) {
         console.error("Kunde inte läsa nyheter:", error);
+
         if (isMounted) {
           setPosts([]);
+          setErrorMessage(
+            error instanceof Error ? error.message : "Okänt fel vid hämtning av nyheter"
+          );
         }
       } finally {
         if (isMounted) {
@@ -70,8 +77,32 @@ export default function NewsPreview() {
     );
   }
 
+  if (errorMessage) {
+    return (
+      <section className="mb-4 sm:mb-6 md:mb-8">
+        <div className="rounded-[28px] border border-red-200 bg-white p-5 shadow-sm md:p-6">
+          <h2 className="text-xl font-bold text-slate-900 md:text-2xl">
+            Senaste nytt
+          </h2>
+          <p className="mt-2 text-sm text-red-600">
+            Kunde inte läsa nyheter: {errorMessage}
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   if (posts.length === 0) {
-    return null;
+    return (
+      <section className="mb-4 sm:mb-6 md:mb-8">
+        <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+          <h2 className="text-xl font-bold text-slate-900 md:text-2xl">
+            Senaste nytt
+          </h2>
+          <p className="mt-2 text-sm text-slate-500">Inga publicerade nyheter än.</p>
+        </div>
+      </section>
+    );
   }
 
   return (
@@ -100,15 +131,16 @@ export default function NewsPreview() {
         <div className="p-4 md:p-6">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {posts.map((post) => (
-              <article
+              <Link
                 key={post.id}
-                className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 shadow-sm transition hover:shadow-md"
+                href={`/news/${post.id}`}
+                className="group block overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 shadow-sm transition hover:-translate-y-[2px] hover:shadow-md"
               >
                 {post.image_url ? (
                   <img
                     src={post.image_url}
                     alt={post.title}
-                    className="h-40 w-full object-cover"
+                    className="h-40 w-full object-cover transition group-hover:scale-[1.01]"
                   />
                 ) : null}
 
@@ -124,8 +156,12 @@ export default function NewsPreview() {
                   <p className="text-sm leading-6 text-slate-600">
                     {truncate(post.content, 140)}
                   </p>
+
+                  <div className="mt-3 text-sm font-semibold text-emerald-700 transition group-hover:text-emerald-800">
+                    Läs mer →
+                  </div>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
 
