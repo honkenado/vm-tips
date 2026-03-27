@@ -103,12 +103,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const { data: existingPrediction } = await serviceSupabase
+    .from("predictions")
+    .select("golden_boot_corrected")
+    .eq("user_id", user.id)
+    .eq("tournament_id", tournament.id)
+    .maybeSingle();
+
   const payload = {
     user_id: user.id,
     tournament_id: tournament.id,
     group_stage: groups,
     knockout,
     golden_boot: goldenBoot,
+    golden_boot_corrected: existingPrediction?.golden_boot_corrected ?? null,
   };
 
   const { error } = await serviceSupabase

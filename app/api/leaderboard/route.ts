@@ -8,6 +8,7 @@ type DbPredictionRow = {
   group_stage: any;
   knockout: any;
   golden_boot: string | null;
+  golden_boot_corrected: string | null; // ⭐ LÄGG TILL
   updated_at: string | null;
 };
 
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest) {
 
   const { data: predictions, error: predictionsError } = await supabase
     .from("predictions")
-    .select("user_id, group_stage, knockout, golden_boot, updated_at")
+    .select("user_id, group_stage, knockout, golden_boot, golden_boot_corrected, updated_at")
     .eq("tournament_id", tournament.id);
 
   if (predictionsError) {
@@ -154,7 +155,10 @@ export async function GET(request: NextRequest) {
         string,
         string
       >;
-      const predictedGoldenBoot = prediction?.golden_boot ?? "";
+      const predictedGoldenBoot =
+  prediction?.golden_boot_corrected?.trim() ||
+  prediction?.golden_boot?.trim() ||
+  "";
 
       const rawBreakdown =
         hasPrediction && isPaid
