@@ -337,81 +337,73 @@ export default function HomePage() {
       </div>
 
       <div className="mx-auto max-w-[1600px]">
-        <header className="relative mb-4 overflow-hidden rounded-[2rem] border border-white/20 bg-gradient-to-r from-blue-900 via-indigo-800 to-slate-950 p-4 text-white shadow-[0_20px_50px_rgba(15,23,42,0.28)] sm:mb-6 sm:p-5 md:mb-8 md:p-8">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.16),_transparent_35%)]" />
-          <div className="absolute right-[-80px] top-[-80px] h-56 w-56 rounded-full bg-cyan-300/10 blur-3xl" />
+        <header className="relative mb-4 overflow-hidden rounded-[2rem] border border-white/20 bg-gradient-to-r from-blue-900 via-indigo-800 to-slate-950 p-4 text-white shadow-[0_20px_50px_rgba(15,23,42,0.28)] sm:mb-5 sm:p-5 md:mb-6 md:p-6">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.14),_transparent_35%)]" />
+          <div className="absolute right-[-80px] top-[-80px] h-44 w-44 rounded-full bg-cyan-300/10 blur-3xl" />
 
           <div className="relative">
-            <div className="mb-4 flex justify-start lg:justify-end">
-              <AuthStatus />
-            </div>
-
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-3xl">
-                <div className="mb-3 inline-flex rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-100 sm:text-[11px]">
+            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0">
+                <div className="mb-2 inline-flex rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-100 sm:text-[11px]">
                   FIFA World Cup 2026
                 </div>
 
-                <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl md:text-6xl">
+                <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl md:text-4xl">
                   Addes VM tips
                 </h1>
 
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-200 md:text-[15px]">
                   Tippa grupper, följ de bästa treorna och spela hela slutspelet fram till
-                  den slutliga världsmästaren.
+                  världsmästaren.
                 </p>
+              </div>
 
-                <div className="mt-5 flex flex-wrap gap-2.5 sm:gap-3">
-                  <button
-                    onClick={runAddeBoy}
-                    className="min-h-11 rounded-full bg-emerald-500 px-4 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/25 transition hover:translate-y-[-1px] hover:bg-emerald-600 sm:px-5"
-                  >
-                    Adde Boy
-                  </button>
+              <div className="flex justify-start lg:justify-end">
+                <AuthStatus />
+              </div>
+            </div>
 
-                  <button
-                    onClick={resetAll}
-                    className="min-h-11 rounded-full border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/20 sm:px-5"
-                  >
-                    Nollställ
-                  </button>
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={savePredictionToDatabase}
+                  disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
+                  className="min-h-10 rounded-full bg-white px-4 py-2 text-sm font-extrabold text-slate-900 shadow-md transition hover:bg-slate-100 disabled:opacity-50"
+                >
+                  {deadlinePassed
+                    ? "Deadline passerad"
+                    : isSaving
+                    ? "Sparar..."
+                    : "Spara tips"}
+                </button>
 
-                  <button
-                    onClick={savePredictionToDatabase}
-                    disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
-                    className="min-h-11 rounded-full border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/20 disabled:opacity-50 sm:px-5"
-                  >
-                    {deadlinePassed
-                      ? "Deadline passerad"
-                      : isSaving
-                      ? "Sparar..."
-                      : "Spara tips"}
-                  </button>
+                <button
+                  onClick={createLeague}
+                  className="min-h-10 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/20"
+                >
+                  Skapa liga
+                </button>
 
-                  <button
-                    onClick={createLeague}
-                    className="min-h-11 rounded-full border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/20 sm:px-5"
-                  >
-                    Skapa liga
-                  </button>
+                <button
+                  onClick={joinLeague}
+                  className="min-h-10 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/20"
+                >
+                  Gå med i liga
+                </button>
 
-                  <button
-                    onClick={joinLeague}
-                    className="min-h-11 rounded-full border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/20 sm:px-5"
-                  >
-                    Gå med i liga
-                  </button>
-                </div>
+                <button
+                  onClick={runAddeBoy}
+                  className="min-h-10 rounded-full border border-emerald-400/30 bg-emerald-500/90 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-500"
+                >
+                  Adde Boy
+                </button>
 
-                {deadlinePassed && (
-                  <p className="mt-3 text-sm font-semibold text-amber-300">
-                    Deadline har passerat. Tipset är nu låst.
-                  </p>
-                )}
-
-                {saveMessage && (
-                  <p className="mt-3 text-sm text-white/80">{saveMessage}</p>
-                )}
+                <button
+                  onClick={resetAll}
+                  className="min-h-10 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/20"
+                >
+                  Nollställ
+                </button>
               </div>
 
               <div className="hidden flex-wrap gap-2 md:flex">
@@ -419,7 +411,7 @@ export default function HomePage() {
                   <button
                     key={item.key}
                     onClick={() => setViewMode(item.key)}
-                    className={`min-h-11 rounded-full px-4 py-2.5 text-sm font-extrabold transition ${
+                    className={`min-h-10 rounded-full px-4 py-2 text-sm font-extrabold transition ${
                       viewMode === item.key
                         ? "bg-white text-slate-900 shadow-md"
                         : "border border-white/10 bg-white/10 text-white hover:bg-white/20"
@@ -430,6 +422,20 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
+
+            {(deadlinePassed || saveMessage) && (
+              <div className="mt-3 flex flex-col gap-2">
+                {deadlinePassed && (
+                  <p className="text-sm font-semibold text-amber-300">
+                    Deadline har passerat. Tipset är nu låst.
+                  </p>
+                )}
+
+                {saveMessage && (
+                  <p className="text-sm text-white/80">{saveMessage}</p>
+                )}
+              </div>
+            )}
           </div>
         </header>
 
