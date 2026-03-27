@@ -72,6 +72,35 @@ export default function HomePage() {
     loadPredictionFromDatabase();
   }, []);
 
+  async function createLeague() {
+    const name = prompt("Vad ska ligan heta?");
+    if (!name) return;
+
+    try {
+      const res = await fetch("/api/leagues/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Kunde inte skapa liga");
+        return;
+      }
+
+      alert(
+        `Liga skapad!\n\nKod: ${data.league.join_code}\n\nDela koden med dina vänner.`
+      );
+    } catch (error) {
+      console.error("Fel vid skapande av liga", error);
+      alert("Något gick fel när ligan skulle skapas");
+    }
+  }
+
   function updateMatch(
     groupName: string,
     matchId: number,
@@ -300,6 +329,13 @@ export default function HomePage() {
                       : isSaving
                       ? "Sparar..."
                       : "Spara tips"}
+                  </button>
+
+                  <button
+                    onClick={createLeague}
+                    className="min-h-11 rounded-full border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/20 sm:px-5"
+                  >
+                    Skapa liga
                   </button>
                 </div>
 
