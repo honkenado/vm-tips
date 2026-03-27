@@ -21,6 +21,7 @@ export default function AdminNewsPage() {
   const [error, setError] = useState<string | null>(null);
   const [posts, setPosts] = useState<NewsPost[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
 
   async function loadPosts() {
     try {
@@ -46,6 +47,23 @@ export default function AdminNewsPage() {
     loadPosts();
   }, []);
 
+  function resetForm() {
+    setTitle("");
+    setContent("");
+    setImageUrl("");
+    setEditingPostId(null);
+  }
+
+  function startEditing(post: NewsPost) {
+    setTitle(post.title);
+    setContent(post.content);
+    setImageUrl(post.image_url ?? "");
+    setEditingPostId(post.id);
+    setMessage(null);
+    setError(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -54,6 +72,37 @@ export default function AdminNewsPage() {
     setError(null);
 
     try {
+      if (editingPostId) {
+        const res = await fetch(`/api/news/${editingPostId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title,
+            content,
+            image_url: imageUrl,
+            is_published: true,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "Kunde inte uppdatera nyheten");
+        }
+
+        setPosts((prev) =>
+          prev.map((post) =>
+            post.id === editingPostId ? { ...post, ...data.post } : post
+          )
+        );
+
+        setMessage("Nyheten uppdaterades.");
+        resetForm();
+        return;
+      }
+
       const res = await fetch("/api/news", {
         method: "POST",
         headers: {
@@ -74,9 +123,7 @@ export default function AdminNewsPage() {
       }
 
       setMessage("Nyheten publicerades.");
-      setTitle("");
-      setContent("");
-      setImageUrl("");
+      resetForm();
       await loadPosts();
     } catch (err) {
       console.error(err);
@@ -106,6 +153,11 @@ export default function AdminNewsPage() {
       }
 
       setPosts((prev) => prev.filter((post) => post.id !== postId));
+
+      if (editingPostId === postId) {
+        resetForm();
+      }
+
       setMessage("Nyheten raderades.");
     } catch (err) {
       console.error(err);
@@ -121,16 +173,20 @@ export default function AdminNewsPage() {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <h1 className="text-3xl font-black text-slate-900">Admin – nyheter</h1>
           <p className="mt-2 text-slate-600">
-            Skriv, publicera och radera nyheter.
+            Skriv, uppdatera och radera nyheter.
           </p>
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-slate-900">Skriv nyhet</h2>
+              <h2 className="text-xl font-semibold text-slate-900">
+                {editingPostId ? "Redigera nyhet" : "Skriv nyhet"}
+              </h2>
               <p className="mt-1 text-sm text-slate-500">
-                Lägg upp en ny uppdatering för deltagarna.
+                {editingPostId
+                  ? "Ändra innehållet och spara uppdateringen."
+                  : "Lägg upp en ny uppdatering för deltagarna."}
               </p>
             </div>
 
@@ -200,13 +256,31 @@ export default function AdminNewsPage() {
                 </div>
               ) : null}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loading ? "Publicerar..." : "Publicera nyhet"}
-              </button>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loading
+                    ? editingPostId
+                      ? "Sparar..."
+                      : "Publicerar..."
+                    : editingPostId
+                    ? "Spara ändringar"
+                    : "Publicera nyhet"}
+                </button>
+
+                {editingPostId ? (
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Avbryt
+                  </button>
+                ) : null}
+              </div>
             </form>
           </section>
 
@@ -254,7 +328,14 @@ export default function AdminNewsPage() {
                         {post.content}
                       </p>
 
-                      <div className="mt-4 flex justify-end">
+                      <div className="mt-4 flex flex-wrap justify-end gap-2">
+                        <button
+                          onClick={() => startEditing(post)}
+                          className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-800 transition hover:bg-slate-100"
+                        >
+                          Redigera
+                        </button>
+
                         <button
                           onClick={() => handleDelete(post.id)}
                           disabled={deletingId === post.id}
