@@ -1,6 +1,7 @@
 "use client";
 
 import AuthStatus from "@/components/auth-status";
+import Image from "next/image";
 import BestThirdsSection from "@/components/BestThirdsSection";
 import GroupSection from "@/components/GroupSection";
 import KnockoutFullSection from "@/components/KnockoutFullSection";
@@ -343,20 +344,32 @@ export default function HomePage() {
 
           <div className="relative">
             <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-              <div className="min-w-0">
-                <div className="mb-2 inline-flex rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-100 sm:text-[11px]">
-                  FIFA World Cup 2026
-                </div>
+              import Image from "next/image";
 
-                <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl md:text-[2.1rem]">
-                  Addes VM tips
-                </h1>
+...
 
-                <p className="mt-2 max-w-2xl text-sm leading-5 text-slate-200 md:text-sm">
-                  Tippa grupper, följ de bästa treorna och spela hela slutspelet fram till
-                  världsmästaren.
-                </p>
-              </div>
+<div className="min-w-0 flex flex-col gap-3">
+  <div className="mb-1 inline-flex w-fit rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-100 sm:text-[11px]">
+    FIFA World Cup 2026
+  </div>
+
+  {/* LOGO */}
+  <div className="flex items-center">
+    <Image
+      src="/logo.png"
+      alt="Addes VM tips"
+      width={220}
+      height={220}
+      priority
+      className="h-auto w-[120px] sm:w-[150px] md:w-[180px] drop-shadow-[0_8px_20px_rgba(0,0,0,0.35)]"
+    />
+  </div>
+
+  <p className="max-w-2xl text-sm leading-6 text-slate-200 md:text-[15px]">
+    Tippa grupper, följ de bästa treorna och spela hela slutspelet fram till
+    världsmästaren.
+  </p>
+</div>
 
               <div className="flex justify-start lg:justify-end">
                 <AuthStatus />
