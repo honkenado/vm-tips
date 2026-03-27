@@ -75,7 +75,7 @@ export default function NewsPreview() {
   }
 
   return (
-    <section className="mx-auto mb-8 max-w-7xl px-4 md:px-6">
+    <section className="mb-4 sm:mb-6 md:mb-8">
       <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 bg-gradient-to-r from-sky-500 via-cyan-500 to-emerald-500 px-5 py-4 md:px-6">
           <div className="flex items-center justify-between gap-3">
