@@ -112,10 +112,16 @@ export default function MembersListSection() {
 
               {/* NAME */}
               <div>
-                <div className="font-semibold text-slate-900">
-                  {member.display_name}
-                </div>
-              </div>
+  <div className="font-semibold text-slate-900">
+    {member.display_name}
+  </div>
+
+  {member.role === "admin" && (
+    <div className="text-xs text-slate-400">
+      honkenado@gmail.com
+    </div>
+  )}
+</div>
             </div>
 
             {/* ROLE */}
