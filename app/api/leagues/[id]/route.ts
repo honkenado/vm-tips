@@ -17,12 +17,36 @@ export async function GET(
       return NextResponse.json({ error: "Inte inloggad" }, { status: 401 });
     }
 
-    const leagueId = params.id;
+    const leagueParam = params.id;
+
+    if (leagueParam === "main") {
+      return NextResponse.json({
+        league: {
+          id: "main",
+          name: "Huvudligan",
+          join_code: "MAIN",
+          created_by: null,
+          created_at: null,
+        },
+        members: [],
+        isMainLeague: true,
+      });
+    }
+
+    const { data: league, error: leagueError } = await supabase
+      .from("leagues")
+      .select("id, name, join_code, created_by, created_at")
+      .eq("join_code", leagueParam.toUpperCase())
+      .single();
+
+    if (leagueError || !league) {
+      return NextResponse.json({ error: "Liga hittades inte" }, { status: 404 });
+    }
 
     const { data: membership, error: membershipError } = await supabase
       .from("league_members")
       .select("id")
-      .eq("league_id", leagueId)
+      .eq("league_id", league.id)
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -40,16 +64,6 @@ export async function GET(
       );
     }
 
-    const { data: league, error: leagueError } = await supabase
-      .from("leagues")
-      .select("id, name, join_code, created_by, created_at")
-      .eq("id", leagueId)
-      .single();
-
-    if (leagueError || !league) {
-      return NextResponse.json({ error: "Liga hittades inte" }, { status: 404 });
-    }
-
     const { data: memberRows, error: membersError } = await supabase
       .from("league_members")
       .select(
@@ -65,7 +79,7 @@ export async function GET(
           )
         `
       )
-      .eq("league_id", leagueId);
+      .eq("league_id", league.id);
 
     if (membersError) {
       return NextResponse.json(
@@ -77,7 +91,6 @@ export async function GET(
     const members = (memberRows ?? [])
       .map((row: any) => {
         const profile = row.profiles;
-
         if (!profile) return null;
 
         return {
@@ -94,6 +107,7 @@ export async function GET(
     return NextResponse.json({
       league,
       members,
+      isMainLeague: false,
     });
   } catch (error) {
     console.error("Fel i league route:", error);

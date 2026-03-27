@@ -33,7 +33,7 @@ export default function LeaguesSection({
       name: league.name,
       join_code: league.join_code,
       type: "private" as const,
-      href: `/league/${league.id}`,
+      href: `/league/${league.join_code}`,
     })),
   ];
 

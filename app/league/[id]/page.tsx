@@ -7,8 +7,8 @@ type League = {
   id: string;
   name: string;
   join_code: string;
-  created_by: string;
-  created_at: string;
+  created_by: string | null;
+  created_at: string | null;
 };
 
 type LeagueMember = {
@@ -51,6 +51,7 @@ export default function LeaguePage() {
   const [globalLeaderboard, setGlobalLeaderboard] = useState<
     GlobalLeaderboardEntry[]
   >([]);
+  const [isMainLeague, setIsMainLeague] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -75,6 +76,7 @@ export default function LeaguePage() {
 
         setLeague(leagueData.league ?? null);
         setMembers(leagueData.members ?? []);
+        setIsMainLeague(Boolean(leagueData.isMainLeague));
 
         if (leaderboardRes.ok) {
           setGlobalLeaderboard(leaderboardData.leaderboard ?? []);
@@ -116,6 +118,22 @@ export default function LeaguePage() {
   }
 
   const table = useMemo(() => {
+    if (isMainLeague) {
+      return globalLeaderboard
+        .filter((entry) => true)
+        .map((entry) => ({
+          id: entry.id,
+          name:
+            `${entry.first_name ?? ""} ${entry.last_name ?? ""}`.trim() ||
+            entry.username ||
+            "Namn saknas",
+          payment_status: "paid" as const,
+          points: entry.points,
+          globalPlacement: entry.placement,
+          joined_at: null,
+        }));
+    }
+
     const globalMap = new Map(globalLeaderboard.map((entry) => [entry.id, entry]));
 
     const entries: LeagueTableEntry[] = members.map((member) => {
@@ -144,7 +162,7 @@ export default function LeaguePage() {
     });
 
     return entries;
-  }, [members, globalLeaderboard]);
+  }, [members, globalLeaderboard, isMainLeague]);
 
   const paidCount = table.filter((entry) => entry.payment_status === "paid").length;
   const unpaidCount = table.filter((entry) => entry.payment_status !== "paid").length;
@@ -213,7 +231,7 @@ export default function LeaguePage() {
               <div className="inline-flex rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-700">
                 {paidCount} aktiva
               </div>
-              {unpaidCount > 0 && (
+              {!isMainLeague && unpaidCount > 0 && (
                 <div className="inline-flex rounded-full bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-700">
                   {unpaidCount} ej betalda
                 </div>
@@ -228,7 +246,9 @@ export default function LeaguePage() {
               Liga-tabell
             </h2>
             <p className="mt-1 text-sm text-slate-600">
-              Ej betalande medlemmar visas med 0 poäng tills betalningen är registrerad.
+              {isMainLeague
+                ? "Det här är den officiella huvudligan."
+                : "Ej betalande medlemmar visas med 0 poäng tills betalningen är registrerad."}
             </p>
           </div>
 
