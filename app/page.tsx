@@ -329,17 +329,17 @@ export default function HomePage() {
   const deadlinePassed = isDeadlinePassed();
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_#dbeafe_0%,_#eef2ff_28%,_#f8fafc_58%,_#e2e8f0_100%)] px-3 py-3 pb-24 sm:px-4 sm:py-4 sm:pb-6 md:px-6 md:py-8 md:pb-8">
+    <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_#ecfdf5_0%,_#f8fafc_35%,_#f1f5f9_68%,_#e2e8f0_100%)] px-3 py-3 pb-24 sm:px-4 sm:py-4 sm:pb-6 md:px-6 md:py-8 md:pb-8">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-32 -top-24 h-[420px] w-[420px] rounded-full bg-sky-400/20 blur-3xl" />
-        <div className="absolute right-[-120px] top-[140px] h-[420px] w-[420px] rounded-full bg-indigo-500/20 blur-3xl" />
-        <div className="absolute bottom-[-140px] left-[18%] h-[360px] w-[360px] rounded-full bg-emerald-400/15 blur-3xl" />
+        <div className="absolute -left-32 -top-24 h-[420px] w-[420px] rounded-full bg-emerald-400/12 blur-3xl" />
+        <div className="absolute right-[-120px] top-[140px] h-[420px] w-[420px] rounded-full bg-green-500/10 blur-3xl" />
+        <div className="absolute bottom-[-140px] left-[18%] h-[360px] w-[360px] rounded-full bg-slate-400/10 blur-3xl" />
       </div>
 
       <div className="mx-auto max-w-[1600px]">
-        <header className="relative mb-4 overflow-hidden rounded-[2rem] border border-white/20 bg-gradient-to-r from-blue-900 via-indigo-800 to-slate-950 p-3 text-white shadow-[0_20px_50px_rgba(15,23,42,0.28)] sm:mb-5 sm:p-4 md:mb-6 md:p-5">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.14),_transparent_35%)]" />
-          <div className="absolute right-[-80px] top-[-80px] h-40 w-40 rounded-full bg-cyan-300/10 blur-3xl" />
+        <header className="relative mb-4 overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-gradient-to-r from-emerald-950 via-green-900 to-slate-950 p-3 text-white shadow-[0_20px_50px_rgba(15,23,42,0.20)] sm:mb-5 sm:p-4 md:mb-6 md:p-5">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.10),_transparent_35%)]" />
+          <div className="absolute right-[-80px] top-[-80px] h-40 w-40 rounded-full bg-emerald-300/10 blur-3xl" />
 
           <div className="relative">
             <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -393,7 +393,7 @@ export default function HomePage() {
 
                 <button
                   onClick={runAddeBoy}
-                  className="h-9 rounded-full border border-emerald-400/30 bg-emerald-500/90 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-emerald-500"
+                  className="h-9 rounded-full border border-emerald-300/20 bg-emerald-500 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-emerald-400"
                 >
                   Adde Boy
                 </button>
@@ -455,7 +455,7 @@ export default function HomePage() {
                       onClick={() => setActiveGroupLetter(letter)}
                       className={`min-h-11 rounded-full px-4 py-2 text-sm font-extrabold transition ${
                         activeGroupLetter === letter
-                          ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20"
+                          ? "bg-gradient-to-r from-emerald-700 to-green-700 text-white shadow-lg shadow-emerald-500/20"
                           : complete
                           ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                           : "border border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
