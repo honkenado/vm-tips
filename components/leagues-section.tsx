@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 type MyLeague = {
   id: string;
   name: string;
@@ -58,7 +56,7 @@ export default function LeaguesSection({
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {leagues.map((league) => (
-          <Link
+          <a
             key={league.id}
             href={league.href}
             className={`group block rounded-2xl border p-4 shadow-sm transition hover:-translate-y-[2px] hover:shadow-md ${
@@ -106,7 +104,7 @@ export default function LeaguesSection({
             <div className="mt-4 min-h-11 w-full rounded-xl bg-slate-900 px-4 py-2 text-center text-sm font-bold text-white transition group-hover:bg-slate-800">
               Öppna liga
             </div>
-          </Link>
+          </a>
         ))}
       </div>
     </div>
