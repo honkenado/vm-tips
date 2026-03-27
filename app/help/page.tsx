@@ -89,7 +89,7 @@ export default function HelpPage() {
 
           <HelpCard
             title="4. Ligor och kompisligor"
-            text="Du kan skapa en egen liga eller gå med i en befintlig via ligakod. På ligosidan ser du dina ligor och kan jämföra dig med andra deltagare."
+            text="Du kan skapa en egen liga eller gå med i en befintlig via ligakod. På ligasidan ser du dina ligor och kan jämföra dig med andra deltagare."
             imageSrc="/help/leagues.png"
             imageAlt="Ligor i Addes VM-tips"
           />
