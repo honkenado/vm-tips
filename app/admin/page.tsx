@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type Profile = {
@@ -99,12 +98,12 @@ export default function AdminPage() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Link
+              <a
                 href="/admin/news"
                 className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700"
               >
                 Skriv nyhet
-              </Link>
+              </a>
             </div>
           </div>
         </div>
