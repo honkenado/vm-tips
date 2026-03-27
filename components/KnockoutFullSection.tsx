@@ -98,9 +98,9 @@ export default function KnockoutFullSection({
   }) => {
     const wrapperClass =
       emphasis === "final"
-        ? "rounded-[1.25rem] border border-yellow-300 bg-gradient-to-br from-yellow-50/90 via-amber-50/90 to-yellow-100/90 p-2 shadow-[0_10px_25px_rgba(234,179,8,0.18)]"
+        ? "rounded-[1.25rem] border border-yellow-300 bg-gradient-to-br from-yellow-50/95 via-amber-50/95 to-yellow-100/95 p-2 shadow-[0_10px_25px_rgba(234,179,8,0.18)]"
         : emphasis === "bronze"
-        ? "rounded-[1.25rem] border border-orange-300 bg-gradient-to-br from-orange-50/90 via-amber-50/90 to-orange-100/90 p-2 shadow-[0_10px_25px_rgba(249,115,22,0.14)]"
+        ? "rounded-[1.25rem] border border-orange-300 bg-gradient-to-br from-orange-50/95 via-amber-50/95 to-orange-100/95 p-2 shadow-[0_10px_25px_rgba(249,115,22,0.14)]"
         : "";
 
     return (
@@ -141,7 +141,7 @@ export default function KnockoutFullSection({
       <div className="mb-4 flex justify-end sm:mb-6">
         <button
           onClick={onResetKnockout}
-          className="min-h-11 rounded-xl bg-gradient-to-r from-slate-900 to-indigo-950 px-4 py-2 text-sm font-bold text-white shadow-md transition hover:from-slate-800 hover:to-indigo-900"
+          className="h-10 rounded-xl bg-gradient-to-r from-emerald-900 via-green-900 to-slate-950 px-4 py-2 text-sm font-bold text-white shadow-md transition hover:opacity-95"
         >
           Nollställ slutspel
         </button>
@@ -158,13 +158,13 @@ export default function KnockoutFullSection({
         ].map((round) => (
           <div
             key={round.title}
-            className="overflow-hidden rounded-[1.25rem] border border-indigo-200 bg-white shadow-sm sm:rounded-[1.5rem]"
+            className="overflow-hidden rounded-[1.25rem] border border-emerald-200 bg-white shadow-sm sm:rounded-[1.5rem]"
           >
-            <div className="border-b border-indigo-200 bg-gradient-to-r from-blue-700 via-indigo-700 to-violet-700 px-4 py-3 text-white">
+            <div className="border-b border-emerald-200 bg-gradient-to-r from-emerald-900 via-green-900 to-slate-950 px-4 py-3 text-white">
               <h3 className="text-base font-extrabold sm:text-lg">{round.title}</h3>
             </div>
 
-            <div className="bg-gradient-to-b from-indigo-50/50 to-white p-3 sm:p-4">
+            <div className="bg-gradient-to-b from-emerald-50/40 to-white p-3 sm:p-4">
               <div className="grid gap-2.5 sm:gap-3">
                 {round.matches.map((match) => (
                   <MatchButtons
@@ -211,11 +211,11 @@ export default function KnockoutFullSection({
       </div>
 
       <div className="hidden xl:block">
-        <div className="overflow-visible rounded-[1.75rem] border border-indigo-200/80 bg-white shadow-[0_12px_35px_rgba(37,99,235,0.08)]">
-          <div className="border-b border-indigo-200 bg-gradient-to-r from-blue-700 via-indigo-700 to-violet-700 px-5 py-4 text-white">
+        <div className="overflow-visible rounded-[1.75rem] border border-emerald-200/80 bg-white shadow-[0_12px_35px_rgba(5,150,105,0.08)]">
+          <div className="border-b border-emerald-200 bg-gradient-to-r from-emerald-900 via-green-900 to-slate-950 px-5 py-4 text-white">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-100/90">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-100/80">
                   Knockout stage
                 </p>
                 <h3 className="mt-1 text-xl font-black tracking-tight">Slutspelsträd</h3>
@@ -227,12 +227,12 @@ export default function KnockoutFullSection({
             </div>
           </div>
 
-          <div className="relative overflow-hidden bg-gradient-to-b from-indigo-100 via-sky-50 to-violet-100 px-5 pb-14 pt-2">
+          <div className="relative overflow-hidden bg-gradient-to-b from-emerald-100/80 via-white to-green-100/70 px-5 pb-14 pt-2">
             <div className="pointer-events-none absolute inset-0">
-              <div className="absolute -left-24 top-4 h-72 w-72 rounded-full bg-blue-400/25 blur-3xl" />
-              <div className="absolute right-[-70px] top-14 h-80 w-80 rounded-full bg-violet-400/22 blur-3xl" />
-              <div className="absolute bottom-[-90px] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-cyan-300/18 blur-3xl" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.75),_transparent_60%)]" />
+              <div className="absolute -left-24 top-4 h-72 w-72 rounded-full bg-emerald-400/18 blur-3xl" />
+              <div className="absolute right-[-70px] top-14 h-80 w-80 rounded-full bg-green-400/16 blur-3xl" />
+              <div className="absolute bottom-[-90px] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-emerald-300/16 blur-3xl" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.72),_transparent_60%)]" />
             </div>
 
             <div className="relative mb-3 flex justify-center">
@@ -265,7 +265,7 @@ export default function KnockoutFullSection({
             </div>
 
             <div className="relative flex w-full justify-center">
-              <div className="relative rounded-[2rem] bg-white/15 px-4 py-4 backdrop-blur-[1px] ring-1 ring-white/25">
+              <div className="relative rounded-[2rem] bg-white/25 px-4 py-4 backdrop-blur-[1px] ring-1 ring-emerald-200/60">
                 <div className="pointer-events-none absolute inset-y-4 left-1/2 w-[188px] -translate-x-1/2 rounded-[1.75rem] bg-gradient-to-b from-yellow-100/35 via-white/15 to-orange-100/35" />
 
                 <div
