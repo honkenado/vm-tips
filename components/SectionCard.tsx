@@ -11,9 +11,9 @@ export default function SectionCard({
 }) {
   return (
     <section className="relative overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white/90 shadow-[0_14px_40px_rgba(15,23,42,0.10)] backdrop-blur-sm sm:rounded-[2rem]">
-      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-600 via-cyan-400 to-emerald-500" />
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-700 via-green-500 to-emerald-400" />
 
-      <div className="border-b border-slate-200 bg-gradient-to-r from-white via-slate-50 to-white px-4 py-4 sm:px-5 sm:py-5 md:px-6">
+      <div className="border-b border-slate-200 bg-gradient-to-r from-white via-emerald-50/30 to-white px-4 py-4 sm:px-5 sm:py-5 md:px-6">
         <h2 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
           {title}
         </h2>

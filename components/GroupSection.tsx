@@ -30,11 +30,11 @@ export default function GroupSection({
 
   return (
     <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr] xl:gap-6">
-      <div className="overflow-hidden rounded-[1.5rem] border border-indigo-200/80 bg-white shadow-[0_10px_30px_rgba(37,99,235,0.08)] sm:rounded-[1.75rem]">
-        <div className="border-b border-indigo-200 bg-gradient-to-r from-blue-700 via-indigo-700 to-violet-700 px-4 py-3 text-white sm:px-5 sm:py-4">
+      <div className="overflow-hidden rounded-[1.5rem] border border-emerald-200/80 bg-white shadow-[0_10px_30px_rgba(5,150,105,0.08)] sm:rounded-[1.75rem]">
+        <div className="border-b border-emerald-200 bg-gradient-to-r from-emerald-900 via-green-900 to-slate-950 px-4 py-3 text-white sm:px-5 sm:py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-100/90 sm:text-xs">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-100/80 sm:text-xs">
                 Gruppspel
               </p>
               <h3 className="mt-1 text-lg font-black tracking-tight sm:text-xl">
@@ -44,24 +44,24 @@ export default function GroupSection({
 
             <button
               onClick={() => onResetGroup(group.name)}
-              className="min-h-10 rounded-full border border-white/20 bg-white/15 px-4 py-2 text-xs font-extrabold text-white transition hover:bg-white/25"
+              className="h-9 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-extrabold text-white transition hover:bg-white/20"
             >
               Nollställ grupp
             </button>
           </div>
         </div>
 
-        <div className="bg-gradient-to-b from-blue-50 via-indigo-50/50 to-white p-3 sm:p-5">
+        <div className="bg-gradient-to-b from-emerald-50/50 via-white to-slate-50 p-3 sm:p-5">
           <div className="space-y-3 sm:space-y-4">
             {group.matches.map((match, index) => {
               const isFilled = match.homeGoals !== "" && match.awayGoals !== "";
 
               const cardTone =
                 index % 3 === 0
-                  ? "border-blue-200 from-blue-50 to-white"
+                  ? "border-emerald-200 from-emerald-50 to-white"
                   : index % 3 === 1
-                  ? "border-violet-200 from-violet-50 to-white"
-                  : "border-cyan-200 from-cyan-50 to-white";
+                  ? "border-green-200 from-green-50 to-white"
+                  : "border-slate-200 from-slate-50 to-white";
 
               return (
                 <div
@@ -77,7 +77,7 @@ export default function GroupSection({
                       className={`inline-flex w-fit rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] sm:text-[11px] ${
                         isFilled
                           ? "bg-emerald-200 text-emerald-800 ring-1 ring-emerald-300"
-                          : "bg-indigo-100 text-indigo-700"
+                          : "bg-emerald-100 text-emerald-700"
                       }`}
                     >
                       Match {match.matchNumber}
@@ -119,7 +119,7 @@ export default function GroupSection({
                         className={`h-11 w-12 rounded-xl border bg-white px-2 text-center text-lg font-black shadow-sm outline-none transition [appearance:textfield] ${
                           isFilled
                             ? "border-emerald-300 text-emerald-950 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                            : "border-indigo-200 text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                            : "border-emerald-200 text-slate-900 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                         }`}
                       />
 
@@ -144,7 +144,7 @@ export default function GroupSection({
                         className={`h-11 w-12 rounded-xl border bg-white px-2 text-center text-lg font-black shadow-sm outline-none transition [appearance:textfield] ${
                           isFilled
                             ? "border-emerald-300 text-emerald-950 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                            : "border-indigo-200 text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                            : "border-emerald-200 text-slate-900 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                         }`}
                       />
                     </div>
@@ -185,7 +185,7 @@ export default function GroupSection({
                         className={`h-12 w-14 rounded-xl border bg-white px-2 text-center text-lg font-black shadow-sm outline-none transition [appearance:textfield] ${
                           isFilled
                             ? "border-emerald-300 text-emerald-950 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                            : "border-indigo-200 text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                            : "border-emerald-200 text-slate-900 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                         }`}
                       />
 
@@ -210,7 +210,7 @@ export default function GroupSection({
                         className={`h-12 w-14 rounded-xl border bg-white px-2 text-center text-lg font-black shadow-sm outline-none transition [appearance:textfield] ${
                           isFilled
                             ? "border-emerald-300 text-emerald-950 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                            : "border-indigo-200 text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                            : "border-emerald-200 text-slate-900 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                         }`}
                       />
                     </div>
@@ -233,7 +233,7 @@ export default function GroupSection({
       </div>
 
       <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.08)] sm:rounded-[1.75rem]">
-        <div className="border-b border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 px-4 py-3 text-white sm:px-5 sm:py-4">
+        <div className="border-b border-slate-200 bg-gradient-to-r from-slate-950 via-emerald-950 to-green-950 px-4 py-3 text-white sm:px-5 sm:py-4">
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-300 sm:text-xs">
             Gruppställning
           </p>
@@ -257,7 +257,7 @@ export default function GroupSection({
                   index === 0
                     ? "bg-gradient-to-r from-emerald-50 to-emerald-100/60"
                     : index === 1
-                    ? "bg-gradient-to-r from-sky-50 to-sky-100/60"
+                    ? "bg-gradient-to-r from-green-50 to-green-100/60"
                     : index === 2
                     ? "bg-gradient-to-r from-amber-50 to-amber-100/60"
                     : "bg-white";
@@ -266,7 +266,7 @@ export default function GroupSection({
                   index === 0
                     ? "bg-emerald-600 text-white"
                     : index === 1
-                    ? "bg-sky-600 text-white"
+                    ? "bg-green-600 text-white"
                     : index === 2
                     ? "bg-amber-500 text-white"
                     : "bg-slate-200 text-slate-700";
@@ -324,7 +324,7 @@ export default function GroupSection({
                     index === 0
                       ? "bg-gradient-to-r from-emerald-50 to-emerald-100/60"
                       : index === 1
-                      ? "bg-gradient-to-r from-sky-50 to-sky-100/60"
+                      ? "bg-gradient-to-r from-green-50 to-green-100/60"
                       : index === 2
                       ? "bg-gradient-to-r from-amber-50 to-amber-100/60"
                       : "bg-white";
@@ -333,7 +333,7 @@ export default function GroupSection({
                     index === 0
                       ? "bg-emerald-600 text-white"
                       : index === 1
-                      ? "bg-sky-600 text-white"
+                      ? "bg-green-600 text-white"
                       : index === 2
                       ? "bg-amber-500 text-white"
                       : "bg-slate-200 text-slate-700";
@@ -378,8 +378,8 @@ export default function GroupSection({
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
               Gruppetta
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-sky-700">
-              <span className="h-2 w-2 rounded-full bg-sky-500" />
+            <div className="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-green-700">
+              <span className="h-2 w-2 rounded-full bg-green-500" />
               Grupptvåa
             </div>
             <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-amber-700">
