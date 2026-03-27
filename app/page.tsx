@@ -388,6 +388,13 @@ export default function HomePage() {
                   Hjälp
                 </Link>
 
+                <Link
+                  href="/medlemmar"
+                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
+                >
+                  Medlemmar
+                </Link>
+
                 <button
                   onClick={savePredictionToDatabase}
                   disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
