@@ -1,4 +1,4 @@
-import MembersSection from "@/components/MembersSection";
+import MembersListSection from "@/components/MembersListSection";
 
 export default function MembersPage() {
   return (
@@ -13,7 +13,7 @@ export default function MembersPage() {
         </p>
       </div>
 
-      <MembersSection />
+      <MembersListSection />
     </main>
   );
 }
