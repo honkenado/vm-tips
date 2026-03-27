@@ -26,8 +26,8 @@ export default function MatchButtons({
     <div
       className={`bg-white/95 shadow-sm backdrop-blur-sm ${
         compact
-          ? "w-full rounded-xl border border-slate-300 p-2 sm:p-2.5 xl:w-[152px] xl:rounded-xl xl:border-2 xl:border-slate-300/90 xl:p-1.5 xl:shadow-[0_6px_18px_rgba(15,23,42,0.08)]"
-          : "w-full rounded-2xl border border-slate-300 p-3 sm:p-4"
+          ? "w-full rounded-xl border border-emerald-200/80 p-2 sm:p-2.5 xl:w-[152px] xl:rounded-xl xl:border xl:border-emerald-200 xl:p-1.5 xl:shadow-[0_6px_18px_rgba(5,150,105,0.08)]"
+          : "w-full rounded-2xl border border-emerald-200/80 p-3 sm:p-4"
       }`}
     >
       {match.label ? (
@@ -52,8 +52,8 @@ export default function MatchButtons({
               : "min-h-12 rounded-xl px-4 py-3 text-sm sm:text-base"
           } ${
             chosenHome
-              ? "bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-[0_6px_14px_rgba(5,150,105,0.28)]"
-              : "border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 text-slate-900 hover:from-slate-100 hover:to-slate-200"
+              ? "bg-gradient-to-r from-emerald-700 to-green-600 text-white shadow-[0_6px_14px_rgba(5,150,105,0.28)]"
+              : "border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white text-slate-900 hover:from-emerald-100 hover:to-slate-50"
           } ${homeDisabled ? "cursor-not-allowed opacity-50" : ""}`}
         >
           <span className="block truncate text-center leading-tight">
@@ -80,8 +80,8 @@ export default function MatchButtons({
               : "min-h-12 rounded-xl px-4 py-3 text-sm sm:text-base"
           } ${
             chosenAway
-              ? "bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-[0_6px_14px_rgba(5,150,105,0.28)]"
-              : "border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 text-slate-900 hover:from-slate-100 hover:to-slate-200"
+              ? "bg-gradient-to-r from-emerald-700 to-green-600 text-white shadow-[0_6px_14px_rgba(5,150,105,0.28)]"
+              : "border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white text-slate-900 hover:from-emerald-100 hover:to-slate-50"
           } ${awayDisabled ? "cursor-not-allowed opacity-50" : ""}`}
         >
           <span className="block truncate text-center leading-tight">
