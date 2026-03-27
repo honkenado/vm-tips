@@ -4,11 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 
 type MemberEntry = {
   id: string;
-  username: string | null;
   first_name: string | null;
   last_name: string | null;
   role: string | null;
-  created_at: string | null;
   display_name: string;
   member_number: number;
 };
@@ -18,7 +16,7 @@ type MembersResponse = {
   error?: string;
 };
 
-export default function MembersSection() {
+export default function MembersListSection() {
   const [members, setMembers] = useState<MemberEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -27,13 +25,7 @@ export default function MembersSection() {
   useEffect(() => {
     async function loadMembers() {
       try {
-        setLoading(true);
-        setErrorMessage(null);
-
-        const res = await fetch("/api/members", {
-          cache: "no-store",
-        });
-
+        const res = await fetch("/api/members", { cache: "no-store" });
         const data: MembersResponse = await res.json();
 
         if (!res.ok) {
@@ -42,8 +34,7 @@ export default function MembersSection() {
         }
 
         setMembers(data.members ?? []);
-      } catch (error) {
-        console.error("Fel vid hämtning av medlemmar", error);
+      } catch {
         setErrorMessage("Kunde inte hämta medlemmar");
       } finally {
         setLoading(false);
@@ -55,112 +46,84 @@ export default function MembersSection() {
 
   const filteredMembers = useMemo(() => {
     const query = search.trim().toLowerCase();
-
     if (!query) return members;
 
-    return members.filter((member) => {
-      const fullName = member.display_name.toLowerCase();
-      const username = (member.username ?? "").toLowerCase();
-      return fullName.includes(query) || username.includes(query);
-    });
+    return members.filter((m) =>
+      m.display_name.toLowerCase().includes(query)
+    );
   }, [members, search]);
 
+  function getInitials(name: string) {
+    const parts = name.split(" ");
+    return parts.map((p) => p[0]).join("").slice(0, 2).toUpperCase();
+  }
+
   if (loading) {
-    return (
-      <div className="rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-sm sm:rounded-[1.75rem] sm:p-4 md:p-6">
-        <h2 className="text-lg font-black text-slate-900 sm:text-xl md:text-2xl">
-          Medlemmar
-        </h2>
-        <p className="mt-2 text-sm text-slate-600">Laddar medlemmar...</p>
-      </div>
-    );
+    return <p className="text-slate-500">Laddar medlemmar...</p>;
   }
 
   if (errorMessage) {
-    return (
-      <div className="rounded-[1.5rem] border border-red-200 bg-red-50 p-3 shadow-sm sm:rounded-[1.75rem] sm:p-4 md:p-6">
-        <h2 className="text-lg font-black text-slate-900 sm:text-xl md:text-2xl">
-          Medlemmar
-        </h2>
-        <p className="mt-2 text-sm text-red-600">{errorMessage}</p>
-      </div>
-    );
+    return <p className="text-red-500">{errorMessage}</p>;
   }
 
   return (
-    <div className="rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-sm sm:rounded-[1.75rem] sm:p-4 md:p-6">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+      
+      {/* HEADER */}
+      <div className="mb-5 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-black text-slate-900 sm:text-xl md:text-2xl">
+          <h2 className="text-xl font-black text-slate-900">
             Alla medlemmar
           </h2>
-          <p className="mt-1 text-sm leading-5 text-slate-600">
-            Här visas alla som har skapat konto i Addes VM-tips.
+          <p className="text-sm text-slate-500">
+            {members.length} registrerade användare
           </p>
         </div>
-
-        <div className="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700">
-          {filteredMembers.length} av {members.length} medlemmar
-        </div>
       </div>
 
-      <div className="mb-4">
-        <input
-          type="text"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Sök namn eller användarnamn..."
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-        />
-      </div>
+      {/* SEARCH */}
+      <input
+        type="text"
+        placeholder="Sök namn..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="mb-5 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+      />
 
-      <div className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white sm:rounded-2xl">
-        <div className="hidden grid-cols-[64px_minmax(0,1fr)_120px] bg-slate-100 px-4 py-3 text-[10px] font-extrabold uppercase tracking-wide text-slate-600 md:grid">
-          <div>#</div>
-          <div>Namn</div>
-          <div className="text-right">Roll</div>
-        </div>
+      {/* LIST */}
+      <div className="space-y-2">
+        {filteredMembers.map((member, index) => (
+          <div
+            key={member.id}
+            className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 transition hover:shadow-md hover:border-emerald-200"
+          >
+            {/* LEFT */}
+            <div className="flex items-center gap-3">
+              
+              {/* NUMBER */}
+              <div className="text-xs font-bold text-slate-400 w-6">
+                {member.member_number}
+              </div>
 
-        {filteredMembers.length === 0 ? (
-          <div className="px-4 py-6 text-sm text-slate-500">
-            Inga medlemmar matchade din sökning.
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-200">
-            {filteredMembers.map((member, index) => (
-              <div
-                key={member.id}
-                className={`grid grid-cols-[52px_minmax(0,1fr)] items-center gap-3 px-3 py-3 transition hover:bg-slate-50 md:grid-cols-[64px_minmax(0,1fr)_120px] md:px-4 ${
-                  index % 2 === 0 ? "bg-white" : "bg-slate-50/60"
-                }`}
-              >
-                <div>
-                  <div className="inline-flex min-w-[32px] items-center justify-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700 ring-1 ring-slate-200">
-                    {member.member_number}
-                  </div>
-                </div>
+              {/* AVATAR */}
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
+                {getInitials(member.display_name)}
+              </div>
 
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-bold text-slate-900 sm:text-[15px]">
-                    {member.display_name}
-                  </div>
-
-                  {member.username && (
-                    <div className="mt-0.5 truncate text-xs text-slate-500">
-                      @{member.username}
-                    </div>
-                  )}
-                </div>
-
-                <div className="hidden text-right md:block">
-                  <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-200">
-                    {member.role === "admin" ? "Admin" : "Medlem"}
-                  </span>
+              {/* NAME */}
+              <div>
+                <div className="font-semibold text-slate-900">
+                  {member.display_name}
                 </div>
               </div>
-            ))}
+            </div>
+
+            {/* ROLE */}
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+              {member.role === "admin" ? "Admin" : "Medlem"}
+            </span>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );
