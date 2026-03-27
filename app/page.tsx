@@ -1,13 +1,13 @@
 "use client";
 
-import LeaderboardSection from "@/components/leaderboard-section";
 import AuthStatus from "@/components/auth-status";
-import { useEffect, useMemo, useState } from "react";
 import BestThirdsSection from "@/components/BestThirdsSection";
 import GroupSection from "@/components/GroupSection";
 import KnockoutFullSection from "@/components/KnockoutFullSection";
+import LeaguesSection from "@/components/leagues-section";
 import QualifiedTeamsSection from "@/components/QualifiedTeamsSection";
 import SectionCard from "@/components/SectionCard";
+import { useEffect, useMemo, useState } from "react";
 import { isDeadlinePassed } from "@/lib/config";
 import {
   clearDependentKnockoutSelections,
@@ -22,7 +22,7 @@ import {
 } from "@/lib/tournament";
 import type { GroupData, KnockoutMatch } from "@/types/tournament";
 
-type AppViewMode = "all" | "groups" | "thirds" | "knockout" | "leaderboard";
+type AppViewMode = "all" | "groups" | "thirds" | "knockout" | "leagues";
 
 type MyLeague = {
   id: string;
@@ -37,7 +37,7 @@ const viewModeItems: { key: AppViewMode; label: string; mobileLabel: string }[] 
   { key: "groups", label: "Grupper", mobileLabel: "Grupper" },
   { key: "thirds", label: "Bästa treor", mobileLabel: "Treor" },
   { key: "knockout", label: "Slutspel", mobileLabel: "Slutspel" },
-  { key: "leaderboard", label: "Leaderboard", mobileLabel: "Tabell" },
+  { key: "leagues", label: "Ligor", mobileLabel: "Ligor" },
 ];
 
 export default function HomePage() {
@@ -432,40 +432,6 @@ export default function HomePage() {
           </div>
         </header>
 
-        {myLeagues.length > 0 && (
-          <div className="mb-4 rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-sm sm:mb-6 sm:rounded-[1.75rem] sm:p-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-lg font-black text-slate-900 sm:text-xl">
-                  Mina ligor
-                </h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Här ser du ligorna du är med i och koden du kan dela vidare.
-                </p>
-              </div>
-
-              <div className="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700">
-                {myLeagues.length} ligor
-              </div>
-            </div>
-
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {myLeagues.map((league) => (
-                <div
-                  key={league.id}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
-                >
-                  <div className="text-base font-bold text-slate-900">{league.name}</div>
-
-                  <div className="mt-2 inline-flex rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
-                    Kod: {league.join_code}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="grid gap-4 sm:gap-6 md:gap-8">
           {(viewMode === "all" || viewMode === "groups") && (
             <SectionCard title="Grupper" subtitle="Välj grupp och fyll i dina matchresultat.">
@@ -517,8 +483,8 @@ export default function HomePage() {
             />
           )}
 
-          {(viewMode === "all" || viewMode === "leaderboard") && (
-            <LeaderboardSection />
+          {(viewMode === "all" || viewMode === "leagues") && (
+            <LeaguesSection myLeagues={myLeagues} />
           )}
         </div>
       </div>
