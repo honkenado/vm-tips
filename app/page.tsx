@@ -24,6 +24,14 @@ import type { GroupData, KnockoutMatch } from "@/types/tournament";
 
 type AppViewMode = "all" | "groups" | "thirds" | "knockout" | "leaderboard";
 
+type MyLeague = {
+  id: string;
+  name: string;
+  join_code: string;
+  created_by: string;
+  created_at: string;
+};
+
 const viewModeItems: { key: AppViewMode; label: string; mobileLabel: string }[] = [
   { key: "all", label: "Allt", mobileLabel: "Allt" },
   { key: "groups", label: "Grupper", mobileLabel: "Grupper" },
@@ -42,6 +50,22 @@ export default function HomePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [hasLoadedFromDatabase, setHasLoadedFromDatabase] = useState(false);
+  const [myLeagues, setMyLeagues] = useState<MyLeague[]>([]);
+
+  async function loadMyLeagues() {
+    try {
+      const res = await fetch("/api/leagues/my");
+      const data = await res.json();
+
+      if (!res.ok) {
+        return;
+      }
+
+      setMyLeagues((data.leagues ?? []) as MyLeague[]);
+    } catch (error) {
+      console.error("Kunde inte hämta ligor", error);
+    }
+  }
 
   useEffect(() => {
     async function loadPredictionFromDatabase() {
@@ -70,6 +94,7 @@ export default function HomePage() {
     }
 
     loadPredictionFromDatabase();
+    loadMyLeagues();
   }, []);
 
   async function createLeague() {
@@ -92,12 +117,43 @@ export default function HomePage() {
         return;
       }
 
+      await loadMyLeagues();
+
       alert(
         `Liga skapad!\n\nKod: ${data.league.join_code}\n\nDela koden med dina vänner.`
       );
     } catch (error) {
       console.error("Fel vid skapande av liga", error);
       alert("Något gick fel när ligan skulle skapas");
+    }
+  }
+
+  async function joinLeague() {
+    const joinCode = prompt("Ange ligakod");
+    if (!joinCode) return;
+
+    try {
+      const res = await fetch("/api/leagues/join", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ joinCode }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Kunde inte gå med i ligan");
+        return;
+      }
+
+      await loadMyLeagues();
+
+      alert(`Du gick med i ligan: ${data.league.name}`);
+    } catch (error) {
+      console.error("Fel vid join league", error);
+      alert("Något gick fel när du skulle gå med i ligan");
     }
   }
 
@@ -155,7 +211,7 @@ export default function HomePage() {
     setSaveMessage(null);
   }
 
-  function runHarryBoy() {
+  function runAddeBoy() {
     const randomGroups: GroupData[] = initialGroups.map((group) => ({
       ...group,
       matches: group.matches.map((match) => {
@@ -306,10 +362,10 @@ export default function HomePage() {
 
                 <div className="mt-5 flex flex-wrap gap-2.5 sm:gap-3">
                   <button
-                    onClick={runHarryBoy}
+                    onClick={runAddeBoy}
                     className="min-h-11 rounded-full bg-emerald-500 px-4 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/25 transition hover:translate-y-[-1px] hover:bg-emerald-600 sm:px-5"
                   >
-                    Harry Boy
+                    Adde Boy
                   </button>
 
                   <button
@@ -336,6 +392,13 @@ export default function HomePage() {
                     className="min-h-11 rounded-full border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/20 sm:px-5"
                   >
                     Skapa liga
+                  </button>
+
+                  <button
+                    onClick={joinLeague}
+                    className="min-h-11 rounded-full border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-white/20 sm:px-5"
+                  >
+                    Gå med i liga
                   </button>
                 </div>
 
@@ -368,6 +431,40 @@ export default function HomePage() {
             </div>
           </div>
         </header>
+
+        {myLeagues.length > 0 && (
+          <div className="mb-4 rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-sm sm:mb-6 sm:rounded-[1.75rem] sm:p-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-black text-slate-900 sm:text-xl">
+                  Mina ligor
+                </h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  Här ser du ligorna du är med i och koden du kan dela vidare.
+                </p>
+              </div>
+
+              <div className="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700">
+                {myLeagues.length} ligor
+              </div>
+            </div>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {myLeagues.map((league) => (
+                <div
+                  key={league.id}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
+                >
+                  <div className="text-base font-bold text-slate-900">{league.name}</div>
+
+                  <div className="mt-2 inline-flex rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
+                    Kod: {league.join_code}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-4 sm:gap-6 md:gap-8">
           {(viewMode === "all" || viewMode === "groups") && (
