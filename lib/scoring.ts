@@ -1,4 +1,9 @@
-import { buildNextRound, calculateTable, getKnockoutSeedData, isTournamentGroupStageComplete } from "@/lib/tournament";
+import {
+  buildNextRound,
+  calculateTable,
+  getKnockoutSeedData,
+  isTournamentGroupStageComplete,
+} from "@/lib/tournament";
 import type { GroupData, KnockoutMatch } from "@/types/tournament";
 
 type KnockoutSelections = Record<string, string>;
@@ -17,6 +22,10 @@ export type ScoreBreakdown = {
   goldenBootPoints: number;
   total: number;
 };
+
+function normalizeText(value?: string | null) {
+  return (value ?? "").trim().toLowerCase();
+}
 
 function getOutcome(homeGoals: string, awayGoals: string) {
   const home = Number(homeGoals);
@@ -239,7 +248,10 @@ export function scoreKnockout(
   resultGroups: GroupData[],
   resultKnockout: KnockoutSelections
 ) {
-  const predictedRounds = buildKnockoutRounds(predictionGroups, predictionKnockout);
+  const predictedRounds = buildKnockoutRounds(
+    predictionGroups,
+    predictionKnockout
+  );
   const officialRounds = buildKnockoutRounds(resultGroups, resultKnockout);
 
   const officialGroupStageComplete = isTournamentGroupStageComplete(resultGroups);
@@ -267,7 +279,7 @@ export function scoreKnockout(
     ? scoreTeamsInRound(
         uniqueTeamsFromMatches(predictedRounds.round32),
         uniqueTeamsFromMatches(officialRounds.round32),
-        2
+        1
       )
     : 0;
 
@@ -362,9 +374,8 @@ export function scorePrediction(
   );
 
   const goldenBootPoints =
-    predictedGoldenBoot &&
-    officialGoldenBoot &&
-    predictedGoldenBoot === officialGoldenBoot
+    normalizeText(predictedGoldenBoot) !== "" &&
+    normalizeText(predictedGoldenBoot) === normalizeText(officialGoldenBoot)
       ? 7
       : 0;
 

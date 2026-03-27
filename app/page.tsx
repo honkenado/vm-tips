@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import AuthStatus from "@/components/auth-status";
 import BestThirdsSection from "@/components/BestThirdsSection";
+import GoldenBootSection from "@/components/GoldenBootSection";
 import GroupSection from "@/components/GroupSection";
 import KnockoutFullSection from "@/components/KnockoutFullSection";
 import LeaguesSection from "@/components/leagues-section";
@@ -25,7 +26,13 @@ import {
 } from "@/lib/tournament";
 import type { GroupData, KnockoutMatch } from "@/types/tournament";
 
-type AppViewMode = "all" | "groups" | "thirds" | "knockout" | "leagues";
+type AppViewMode =
+  | "all"
+  | "groups"
+  | "thirds"
+  | "knockout"
+  | "goldenboot"
+  | "leagues";
 
 type MyLeague = {
   id: string;
@@ -35,19 +42,22 @@ type MyLeague = {
   created_at: string;
 };
 
-const viewModeItems: { key: AppViewMode; label: string; mobileLabel: string }[] = [
-  { key: "all", label: "Allt", mobileLabel: "Allt" },
-  { key: "groups", label: "Grupper", mobileLabel: "Grupper" },
-  { key: "thirds", label: "Bästa treor", mobileLabel: "Treor" },
-  { key: "knockout", label: "Slutspel", mobileLabel: "Slutspel" },
-  { key: "leagues", label: "Ligor", mobileLabel: "Ligor" },
-];
+const viewModeItems: { key: AppViewMode; label: string; mobileLabel: string }[] =
+  [
+    { key: "all", label: "Allt", mobileLabel: "Allt" },
+    { key: "groups", label: "Grupper", mobileLabel: "Grupper" },
+    { key: "thirds", label: "Bästa treor", mobileLabel: "Treor" },
+    { key: "knockout", label: "Slutspel", mobileLabel: "Slutspel" },
+    { key: "goldenboot", label: "Skyttekung", mobileLabel: "Skytt" },
+    { key: "leagues", label: "Ligor", mobileLabel: "Ligor" },
+  ];
 
 export default function HomePage() {
   const [groups, setGroups] = useState<GroupData[]>(initialGroups);
   const [knockoutWinners, setKnockoutWinners] = useState<Record<string, string>>(
     {}
   );
+  const [goldenBoot, setGoldenBoot] = useState("");
   const [viewMode, setViewMode] = useState<AppViewMode>("all");
   const [activeGroupLetter, setActiveGroupLetter] = useState("A");
   const [isSaving, setIsSaving] = useState(false);
@@ -88,6 +98,10 @@ export default function HomePage() {
 
         if (data.prediction?.knockout) {
           setKnockoutWinners(data.prediction.knockout);
+        }
+
+        if (data.prediction?.golden_boot) {
+          setGoldenBoot(data.prediction.golden_boot);
         }
       } catch (error) {
         console.error("Kunde inte läsa från databasen", error);
@@ -265,6 +279,7 @@ export default function HomePage() {
 
     setGroups(randomGroups);
     setKnockoutWinners(winners);
+    setGoldenBoot("");
     setViewMode("all");
     setActiveGroupLetter("A");
     setSaveMessage(null);
@@ -278,6 +293,7 @@ export default function HomePage() {
   function resetAll() {
     setGroups(initialGroups);
     setKnockoutWinners({});
+    setGoldenBoot("");
     setViewMode("all");
     setActiveGroupLetter("A");
     setSaveMessage(null);
@@ -301,6 +317,7 @@ export default function HomePage() {
         body: JSON.stringify({
           groups,
           knockout: knockoutWinners,
+          goldenBoot,
         }),
       });
 
@@ -522,6 +539,10 @@ export default function HomePage() {
             />
           )}
 
+          {(viewMode === "all" || viewMode === "goldenboot") && (
+            <GoldenBootSection value={goldenBoot} onChange={setGoldenBoot} />
+          )}
+
           {(viewMode === "all" || viewMode === "leagues") && (
             <LeaguesSection myLeagues={myLeagues} />
           )}
@@ -529,7 +550,7 @@ export default function HomePage() {
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-2 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.10)] backdrop-blur md:hidden">
-        <div className="mx-auto grid max-w-3xl grid-cols-5 gap-1">
+        <div className="mx-auto grid max-w-4xl grid-cols-6 gap-1">
           {viewModeItems.map((item) => {
             const active = viewMode === item.key;
 

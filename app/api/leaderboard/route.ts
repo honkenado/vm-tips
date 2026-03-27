@@ -7,6 +7,7 @@ type DbPredictionRow = {
   user_id: string;
   group_stage: any;
   knockout: any;
+  golden_boot: string | null;
   updated_at: string | null;
 };
 
@@ -17,7 +18,7 @@ type DbProfileRow = {
   last_name: string | null;
   created_at: string | null;
   role: string | null;
-  payment_status?: "paid" | "unpaid" | null;
+  payment_status: "paid" | "unpaid" | null;
 };
 
 function getTotalGroupGoals(groups: any[]): number {
@@ -33,6 +34,7 @@ function getTotalGroupGoals(groups: any[]): number {
         match?.homeGoals !== "" && match?.homeGoals != null
           ? Number(match.homeGoals)
           : null;
+
       const awayGoals =
         match?.awayGoals !== "" && match?.awayGoals != null
           ? Number(match.awayGoals)
@@ -66,9 +68,7 @@ export async function GET(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll() {
-          // Ingen cookie-write behövs här i GET-route
-        },
+        setAll() {},
       },
     }
   );
@@ -95,7 +95,6 @@ export async function GET(request: NextRequest) {
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
     .select("id, username, first_name, last_name, created_at, role, payment_status")
-    .eq("payment_status", "paid")
     .order("created_at", { ascending: true });
 
   if (profilesError) {
@@ -107,7 +106,7 @@ export async function GET(request: NextRequest) {
 
   const { data: predictions, error: predictionsError } = await supabase
     .from("predictions")
-    .select("user_id, group_stage, knockout, updated_at")
+    .select("user_id, group_stage, knockout, golden_boot, updated_at")
     .eq("tournament_id", tournament.id);
 
   if (predictionsError) {
@@ -119,7 +118,7 @@ export async function GET(request: NextRequest) {
 
   const { data: resultsRow, error: resultsError } = await supabase
     .from("tournament_results")
-    .select("group_stage, knockout")
+    .select("group_stage, knockout, golden_boot")
     .eq("tournament_id", tournament.id)
     .maybeSingle();
 
@@ -133,6 +132,7 @@ export async function GET(request: NextRequest) {
   const officialGroupStage = (resultsRow?.group_stage as any[]) ?? [];
   const officialKnockout =
     (resultsRow?.knockout as Record<string, string>) ?? {};
+  const officialGoldenBoot = resultsRow?.golden_boot ?? "";
 
   const officialGroupGoals = getTotalGroupGoals(officialGroupStage);
 
@@ -143,48 +143,56 @@ export async function GET(request: NextRequest) {
     ])
   );
 
-  const leaderboard = ((profiles ?? []) as DbProfileRow[]).map((profile) => {
-    const prediction = predictionMap.get(profile.id);
-    const hasPrediction = Boolean(prediction);
+  const leaderboard = ((profiles ?? []) as DbProfileRow[])
+    .map((profile) => {
+      const prediction = predictionMap.get(profile.id);
+      const hasPrediction = Boolean(prediction);
+      const isPaid = profile.payment_status === "paid";
 
-    const predictedGroupStage = (prediction?.group_stage ?? []) as any[];
-    const predictedKnockout = (prediction?.knockout ?? {}) as Record<
-      string,
-      string
-    >;
+      const predictedGroupStage = (prediction?.group_stage ?? []) as any[];
+      const predictedKnockout = (prediction?.knockout ?? {}) as Record<
+        string,
+        string
+      >;
+      const predictedGoldenBoot = prediction?.golden_boot ?? "";
 
-    const breakdown = hasPrediction
-      ? scorePrediction(
-          predictedGroupStage as any,
-          predictedKnockout as any,
-          officialGroupStage as any,
-          officialKnockout as any
-        )
-      : null;
+      const rawBreakdown =
+        hasPrediction && isPaid
+          ? scorePrediction(
+              predictedGroupStage,
+              predictedKnockout,
+              officialGroupStage,
+              officialKnockout,
+              predictedGoldenBoot,
+              officialGoldenBoot
+            )
+          : null;
 
-    const predictedGroupGoals = hasPrediction
-      ? getTotalGroupGoals(predictedGroupStage)
-      : 0;
+      const predictedGroupGoals =
+        hasPrediction && isPaid ? getTotalGroupGoals(predictedGroupStage) : 0;
 
-    const groupGoalsDiff = hasPrediction
-      ? Math.abs(predictedGroupGoals - officialGroupGoals)
-      : Number.MAX_SAFE_INTEGER;
+      const groupGoalsDiff =
+        hasPrediction && isPaid
+          ? Math.abs(predictedGroupGoals - officialGroupGoals)
+          : Number.MAX_SAFE_INTEGER;
 
-    return {
-      id: profile.id,
-      username: profile.username,
-      first_name: profile.first_name,
-      last_name: profile.last_name,
-      role: profile.role,
-      has_prediction: hasPrediction,
-      updated_at: prediction?.updated_at ?? null,
-      points: breakdown?.total ?? 0,
-      predicted_group_goals: predictedGroupGoals,
-      official_group_goals: officialGroupGoals,
-      group_goals_diff: groupGoalsDiff,
-      breakdown,
-    };
-  });
+      return {
+        id: profile.id,
+        username: profile.username,
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        role: profile.role,
+        payment_status: profile.payment_status,
+        has_prediction: isPaid ? hasPrediction : false,
+        updated_at: isPaid ? prediction?.updated_at ?? null : null,
+        points: isPaid ? rawBreakdown?.total ?? 0 : 0,
+        predicted_group_goals: predictedGroupGoals,
+        official_group_goals: officialGroupGoals,
+        group_goals_diff: groupGoalsDiff,
+        breakdown: isPaid ? rawBreakdown : null,
+      };
+    })
+    .filter((entry) => entry.payment_status === "paid");
 
   leaderboard.sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
@@ -205,8 +213,12 @@ export async function GET(request: NextRequest) {
     placement: index + 1,
   }));
 
+  const currentUserIsVisible =
+    currentUserId &&
+    leaderboardWithPlacement.some((entry) => entry.id === currentUserId);
+
   return NextResponse.json({
     leaderboard: leaderboardWithPlacement,
-    currentUserId,
+    currentUserId: currentUserIsVisible ? currentUserId : null,
   });
 }
