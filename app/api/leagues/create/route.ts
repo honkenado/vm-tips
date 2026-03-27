@@ -12,7 +12,9 @@ function generateJoinCode(length = 6) {
   return code;
 }
 
-async function generateUniqueJoinCode(supabase: Awaited<ReturnType<typeof createClient>>) {
+async function generateUniqueJoinCode(
+  supabase: Awaited<ReturnType<typeof createClient>>
+) {
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const code = generateJoinCode(6);
 
@@ -45,19 +47,12 @@ export async function POST(req: Request) {
 
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("id, payment_status")
+      .select("id")
       .eq("id", user.id)
       .single();
 
     if (profileError || !profile) {
       return NextResponse.json({ error: "Profil hittades inte" }, { status: 404 });
-    }
-
-    if (profile.payment_status !== "paid") {
-      return NextResponse.json(
-        { error: "Endast betalande deltagare kan skapa egna ligor" },
-        { status: 403 }
-      );
     }
 
     const body = await req.json();
