@@ -337,22 +337,22 @@ export default function HomePage() {
       </div>
 
       <div className="mx-auto max-w-[1600px]">
-        <header className="relative mb-4 overflow-hidden rounded-[2rem] border border-white/20 bg-gradient-to-r from-blue-900 via-indigo-800 to-slate-950 p-4 text-white shadow-[0_20px_50px_rgba(15,23,42,0.28)] sm:mb-5 sm:p-5 md:mb-6 md:p-6">
+        <header className="relative mb-4 overflow-hidden rounded-[2rem] border border-white/20 bg-gradient-to-r from-blue-900 via-indigo-800 to-slate-950 p-3 text-white shadow-[0_20px_50px_rgba(15,23,42,0.28)] sm:mb-5 sm:p-4 md:mb-6 md:p-5">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.14),_transparent_35%)]" />
-          <div className="absolute right-[-80px] top-[-80px] h-44 w-44 rounded-full bg-cyan-300/10 blur-3xl" />
+          <div className="absolute right-[-80px] top-[-80px] h-40 w-40 rounded-full bg-cyan-300/10 blur-3xl" />
 
           <div className="relative">
-            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <div className="mb-2 inline-flex rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-100 sm:text-[11px]">
                   FIFA World Cup 2026
                 </div>
 
-                <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl md:text-4xl">
+                <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl md:text-[2.1rem]">
                   Addes VM tips
                 </h1>
 
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-200 md:text-[15px]">
+                <p className="mt-2 max-w-2xl text-sm leading-5 text-slate-200 md:text-sm">
                   Tippa grupper, följ de bästa treorna och spela hela slutspelet fram till
                   världsmästaren.
                 </p>
@@ -368,7 +368,7 @@ export default function HomePage() {
                 <button
                   onClick={savePredictionToDatabase}
                   disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
-                  className="min-h-10 rounded-full bg-white px-4 py-2 text-sm font-extrabold text-slate-900 shadow-md transition hover:bg-slate-100 disabled:opacity-50"
+                  className="h-9 rounded-full bg-white px-3 py-1.5 text-[13px] font-extrabold text-slate-900 shadow-md transition hover:bg-slate-100 disabled:opacity-50"
                 >
                   {deadlinePassed
                     ? "Deadline passerad"
@@ -379,28 +379,28 @@ export default function HomePage() {
 
                 <button
                   onClick={createLeague}
-                  className="min-h-10 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/20"
+                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
                 >
                   Skapa liga
                 </button>
 
                 <button
                   onClick={joinLeague}
-                  className="min-h-10 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/20"
+                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
                 >
                   Gå med i liga
                 </button>
 
                 <button
                   onClick={runAddeBoy}
-                  className="min-h-10 rounded-full border border-emerald-400/30 bg-emerald-500/90 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-500"
+                  className="h-9 rounded-full border border-emerald-400/30 bg-emerald-500/90 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-emerald-500"
                 >
                   Adde Boy
                 </button>
 
                 <button
                   onClick={resetAll}
-                  className="min-h-10 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/20"
+                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
                 >
                   Nollställ
                 </button>
@@ -411,7 +411,7 @@ export default function HomePage() {
                   <button
                     key={item.key}
                     onClick={() => setViewMode(item.key)}
-                    className={`min-h-10 rounded-full px-4 py-2 text-sm font-extrabold transition ${
+                    className={`h-9 rounded-full px-3 py-1.5 text-[13px] font-bold transition ${
                       viewMode === item.key
                         ? "bg-white text-slate-900 shadow-md"
                         : "border border-white/10 bg-white/10 text-white hover:bg-white/20"
