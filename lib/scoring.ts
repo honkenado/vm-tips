@@ -125,8 +125,15 @@ export function scoreTablePlacements(
       officialGroup.matches
     );
 
-    for (let i = 0; i < 4; i += 1) {
-      if (predictedTable[i]?.team === officialTable[i]?.team) {
+    const maxRows = Math.min(predictedTable.length, officialTable.length, 4);
+
+    for (let i = 0; i < maxRows; i += 1) {
+      const predictedTeam = predictedTable[i]?.team;
+      const officialTeam = officialTable[i]?.team;
+
+      if (!predictedTeam || !officialTeam) continue;
+
+      if (predictedTeam === officialTeam) {
         points += 1;
       }
     }
