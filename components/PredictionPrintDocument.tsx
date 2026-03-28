@@ -47,11 +47,6 @@ function getGroupName(group: RawGroup, index: number) {
   return group.name || group.groupName || `Grupp ${index + 1}`;
 }
 
-function shortGroupName(group: RawGroup, index: number) {
-  const full = getGroupName(group, index);
-  return full.replace("Grupp ", "Grupp ");
-}
-
 function toNumber(value: string | number | null | undefined): number | null {
   if (value === "" || value === null || value === undefined) return null;
   const num = Number(value);
@@ -239,30 +234,6 @@ export default function PredictionPrintDocument({
 
   return (
     <div className="mx-auto max-w-none bg-white text-slate-900 print:text-[10px]">
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: A4 landscape;
-            margin: 8mm;
-          }
-
-          html,
-          body {
-            background: white !important;
-          }
-
-          .print-page-break {
-            break-before: page;
-            page-break-before: always;
-          }
-
-          .print-avoid-break {
-            break-inside: avoid;
-            page-break-inside: avoid;
-          }
-        }
-      `}</style>
-
       <section className="print-avoid-break">
         <header className="mb-3 rounded-xl border border-slate-300 px-4 py-3">
           <div className="flex items-start justify-between gap-4">
@@ -303,7 +274,7 @@ export default function PredictionPrintDocument({
                 className="print-avoid-break rounded-xl border border-slate-300 px-3 py-2"
               >
                 <h3 className="mb-2 text-sm font-extrabold">
-                  {shortGroupName(group, groupIndex)}
+                  {getGroupName(group, groupIndex)}
                 </h3>
 
                 <div className="grid grid-cols-[1.3fr_0.5fr_1.3fr] gap-x-2 gap-y-1 text-[10px] leading-tight">
@@ -312,11 +283,10 @@ export default function PredictionPrintDocument({
                     const awayGoals = match.awayGoals ?? match.awayScore;
 
                     return (
-                      <div
-                        key={match.id || matchIndex}
-                        className="contents"
-                      >
-                        <div className="truncate">{shortenTeamName(match.homeTeam || "Lag 1")}</div>
+                      <div key={match.id || matchIndex} className="contents">
+                        <div className="truncate">
+                          {shortenTeamName(match.homeTeam || "Lag 1")}
+                        </div>
                         <div className="text-center font-bold">
                           {homeGoals ?? "-"}-{awayGoals ?? "-"}
                         </div>
@@ -374,7 +344,7 @@ export default function PredictionPrintDocument({
                 className="print-avoid-break rounded-xl border border-slate-300 px-3 py-2"
               >
                 <h3 className="mb-2 text-sm font-extrabold">
-                  {shortGroupName(group, groupIndex)}
+                  {getGroupName(group, groupIndex)}
                 </h3>
 
                 <div className="grid grid-cols-[1.3fr_0.5fr_1.3fr] gap-x-2 gap-y-1 text-[10px] leading-tight">
@@ -383,11 +353,10 @@ export default function PredictionPrintDocument({
                     const awayGoals = match.awayGoals ?? match.awayScore;
 
                     return (
-                      <div
-                        key={match.id || matchIndex}
-                        className="contents"
-                      >
-                        <div className="truncate">{shortenTeamName(match.homeTeam || "Lag 1")}</div>
+                      <div key={match.id || matchIndex} className="contents">
+                        <div className="truncate">
+                          {shortenTeamName(match.homeTeam || "Lag 1")}
+                        </div>
                         <div className="text-center font-bold">
                           {homeGoals ?? "-"}-{awayGoals ?? "-"}
                         </div>
