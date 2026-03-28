@@ -15,6 +15,67 @@ type ScheduledMatch = {
   awayTeam: string;
 };
 
+const fifaRankings: Record<string, number> = {
+  Spanien: 1,
+  Argentina: 2,
+  Frankrike: 3,
+  England: 4,
+  Brasilien: 5,
+  Portugal: 6,
+  Nederländerna: 7,
+  Marocko: 8,
+  Belgien: 9,
+  Tyskland: 10,
+  Kroatien: 11,
+  Senegal: 12,
+  Italien: 13,
+  Colombia: 14,
+  USA: 15,
+  Mexiko: 16,
+  Uruguay: 17,
+  Schweiz: 18,
+  Japan: 19,
+  Iran: 20,
+  Danmark: 21,
+  Sydkorea: 22,
+  Ecuador: 23,
+  Österrike: 24,
+  Turkiet: 25,
+  Nigeria: 26,
+  Australien: 27,
+  Algeriet: 28,
+  Kanada: 29,
+  Ukraina: 30,
+  Egypten: 31,
+  Norge: 32,
+  Panama: 33,
+  Polen: 34,
+  Wales: 35,
+  Ryssland: 36,
+  Elfenbenskusten: 37,
+  Skottland: 38,
+  Serbien: 39,
+  Paraguay: 40,
+  Ungern: 41,
+  Sverige: 42,
+  Tjeckien: 43,
+  Slovakien: 44,
+  Kamerun: 45,
+  Grekland: 46,
+  Tunisien: 47,
+  "Costa Rica": 51,
+  Uzbekistan: 52,
+  Qatar: 56,
+  Ghana: 72,
+  Jordanien: 64,
+  "Kap Verde": 67,
+  "Nya Zeeland": 85,
+  Curaçao: 81,
+  Haiti: 83,
+  Saudiarabien: 61,
+  Sydafrika: 60,
+};
+
 function createScheduledGroup(
   name: string,
   teams: string[],
@@ -626,28 +687,107 @@ export const initialGroups: GroupData[] = [
   ),
 ];
 
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function weightedRandom<T>(items: Array<{ value: T; weight: number }>): T {
+  const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
+  const random = Math.random() * totalWeight;
+
+  let running = 0;
+
+  for (const item of items) {
+    running += item.weight;
+    if (random <= running) {
+      return item.value;
+    }
+  }
+
+  return items[items.length - 1].value;
+}
+
+function getTeamRank(team: string) {
+  const exactRank = fifaRankings[team];
+  if (typeof exactRank === "number") return exactRank;
+
+  // Tillfälliga placeholders tills riktiga lag är klara
+  if (team.startsWith("Europeiskt playoff")) return 35;
+  if (team.startsWith("FIFA playoff")) return 45;
+
+  // Fallback för okända lag
+  return 60;
+}
+
 export function randomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-export function generateRandomScore() {
-  const home = randomInt(0, 4);
-  const away = randomInt(0, 4);
+export function generateRandomScore(teamA: string, teamB: string) {
+  const rankA = getTeamRank(teamA);
+  const rankB = getTeamRank(teamB);
 
-  return {
-    homeGoals: String(home),
-    awayGoals: String(away),
-  };
+  const rankDiff = rankB - rankA;
+  const absDiff = Math.abs(rankA - rankB);
+
+  // Neutral mark: ingen hemmafördel
+  const teamAWinWeight = clamp(35 + rankDiff * 0.9, 18, 65);
+  const teamBWinWeight = clamp(35 - rankDiff * 0.9, 18, 65);
+
+  // Kryss mindre sannolikt när rankinggapet är stort
+  const drawWeight = clamp(30 - absDiff * 0.25, 12, 30);
+
+  const outcome = weightedRandom([
+    { value: "A", weight: teamAWinWeight },
+    { value: "DRAW", weight: drawWeight },
+    { value: "B", weight: teamBWinWeight },
+  ]);
+
+  if (outcome === "A") {
+    return weightedRandom([
+      { value: { homeGoals: "1", awayGoals: "0" }, weight: 24 },
+      { value: { homeGoals: "2", awayGoals: "0" }, weight: 20 },
+      { value: { homeGoals: "2", awayGoals: "1" }, weight: 24 },
+      { value: { homeGoals: "3", awayGoals: "1" }, weight: 18 },
+      { value: { homeGoals: "3", awayGoals: "0" }, weight: 14 },
+    ]);
+  }
+
+  if (outcome === "B") {
+    return weightedRandom([
+      { value: { homeGoals: "0", awayGoals: "1" }, weight: 24 },
+      { value: { homeGoals: "0", awayGoals: "2" }, weight: 20 },
+      { value: { homeGoals: "1", awayGoals: "2" }, weight: 24 },
+      { value: { homeGoals: "1", awayGoals: "3" }, weight: 18 },
+      { value: { homeGoals: "0", awayGoals: "3" }, weight: 14 },
+    ]);
+  }
+
+  return weightedRandom([
+    { value: { homeGoals: "0", awayGoals: "0" }, weight: 20 },
+    { value: { homeGoals: "1", awayGoals: "1" }, weight: 55 },
+    { value: { homeGoals: "2", awayGoals: "2" }, weight: 25 },
+  ]);
 }
 
-export function pickRandomWinner(home: string, away: string) {
-  if (!home) return away;
-  if (!away) return home;
-  return Math.random() < 0.5 ? home : away;
+export function pickRandomWinner(teamA: string, teamB: string) {
+  if (!teamA) return teamB;
+  if (!teamB) return teamA;
+
+  const rankA = getTeamRank(teamA);
+  const rankB = getTeamRank(teamB);
+
+  const rankDiff = rankB - rankA;
+
+  // 50/50 som grund, större rankinggap ger högre chans
+  // men aldrig 100%
+  const teamAWinChance = clamp(0.5 + rankDiff * 0.01, 0.2, 0.8);
+
+  return Math.random() < teamAWinChance ? teamA : teamB;
 }
 
 export function calculateTable(teams: string[], matches: Match[]): TableRow[] {
-  const rows: TableRow[] = teams.map((team, index) => ({
+  const rows: TableRow[] = teams.map((team) => ({
     team,
     played: 0,
     won: 0,
@@ -658,7 +798,7 @@ export function calculateTable(teams: string[], matches: Match[]): TableRow[] {
     goalDiff: 0,
     points: 0,
     fairPlay: 0,
-    fifaRank: index + 1,
+    fifaRank: getTeamRank(team),
   }));
 
   function getRow(teamName: string) {
@@ -834,7 +974,6 @@ export function getKnockoutSeedData(groups: GroupData[]) {
   console.log("Third teams by slot:", thirdTeamBySlot);
 
   const round32: KnockoutMatch[] = [
-    // Vänster sida uppifrån och ner
     {
       id: "m74",
       label: "Match 74",
@@ -884,7 +1023,6 @@ export function getKnockoutSeedData(groups: GroupData[]) {
       away: thirdTeamBySlot["G"] ?? "",
     },
 
-    // Höger sida uppifrån och ner
     {
       id: "m76",
       label: "Match 76",

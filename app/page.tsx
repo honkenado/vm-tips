@@ -232,7 +232,7 @@ export default function HomePage() {
     const randomGroups: GroupData[] = initialGroups.map((group) => ({
       ...group,
       matches: group.matches.map((match) => {
-        const score = generateRandomScore();
+        const score = generateRandomScore(match.homeTeam, match.awayTeam);
         return { ...match, homeGoals: score.homeGoals, awayGoals: score.awayGoals };
       }),
     }));
