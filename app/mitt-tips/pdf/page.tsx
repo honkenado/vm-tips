@@ -11,7 +11,10 @@ function getDisplayName(profile: {
   username: string | null;
   email?: string | null;
 }) {
-  const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim();
+  const fullName = [profile.first_name, profile.last_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 
   if (fullName) return fullName;
   if (profile.username) return profile.username;
@@ -40,7 +43,7 @@ export default async function PredictionPdfPage() {
       supabase
         .from("predictions")
         .select(
-          "group_stage, knockout, golden_boot, golden_boot_corrected, updated_at, tournament_id",
+          "group_stage, knockout, golden_boot, golden_boot_corrected, updated_at, tournament_id"
         )
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false })
@@ -58,8 +61,8 @@ export default async function PredictionPdfPage() {
 
   if (!prediction) {
     return (
-      <main className="min-h-screen bg-slate-100 px-4 py-8">
-        <div className="mx-auto max-w-4xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <main className="min-h-screen bg-slate-100 px-4 py-6">
+        <div className="mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <PredictionPrintActions />
           <h1 className="text-2xl font-bold text-slate-900">Inget sparat tips hittades</h1>
           <p className="mt-2 text-sm text-slate-600">
@@ -77,15 +80,14 @@ export default async function PredictionPdfPage() {
       ? (prediction.knockout as Record<string, string>)
       : {};
 
-  const goldenBoot =
-    prediction.golden_boot_corrected || prediction.golden_boot || null;
+  const goldenBoot = prediction.golden_boot_corrected || prediction.golden_boot || null;
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-8 print:bg-white print:px-0 print:py-0">
-      <div className="mx-auto max-w-6xl">
+    <main className="min-h-screen bg-slate-100 px-3 py-4 print:bg-white print:px-0 print:py-0">
+      <div className="mx-auto max-w-[1200px]">
         <PredictionPrintActions />
 
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm print:rounded-none print:border-0 print:p-0 print:shadow-none">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm print:rounded-none print:border-0 print:p-0 print:shadow-none">
           <PredictionPrintDocument
             profileName={profileName}
             updatedAt={prediction.updated_at}
