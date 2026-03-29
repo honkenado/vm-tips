@@ -79,78 +79,87 @@ export default function BestThirdsSection({
           </thead>
 
           <tbody>
-            {bestThirds.map((row, index) => {
-              const isQualified = index < qualifiedCount;
+  {bestThirds.map((row, index) => {
+    const isQualified = index < qualifiedCount;
 
-              const group = getString(row, ["group", "groupLetter", "group_name"], "?");
-              const team = getString(row, ["team", "teamName", "country", "name"], "Okänt lag");
+    const group = getString(row, ["group", "groupLetter", "group_name"], "?");
+    const team = getString(row, ["team", "teamName", "country", "name"], "Okänt lag");
 
-              const played = getNumber(row, ["played", "matches", "m"]);
-              const won = getNumber(row, ["won", "wins", "v"]);
-              const drawn = getNumber(row, ["drawn", "draws", "o"]);
-              const lost = getNumber(row, ["lost", "losses", "f"]);
-              const goalsFor = getNumber(row, ["goalsFor", "gf", "gm"]);
-              const goalsAgainst = getNumber(row, ["goalsAgainst", "ga", "im"]);
-              const goalDiff = getNumber(row, ["goalDifference", "gd", "diff"]);
-              const points = getNumber(row, ["points", "p"]);
+    const played = getNumber(row, ["played", "matches", "m"]);
+    const won = getNumber(row, ["won", "wins", "v"]);
+    const drawn = getNumber(row, ["drawn", "draws", "o"]);
+    const lost = getNumber(row, ["lost", "losses", "f"]);
+    const goalsFor = getNumber(row, ["goalsFor", "gf", "gm"]);
+    const goalsAgainst = getNumber(row, ["goalsAgainst", "ga", "im"]);
+    const goalDiff = getNumber(row, ["goalDifference", "gd", "diff"]);
+    const points = getNumber(row, ["points", "p"]);
 
-              return (
-                <tr
-                  key={`${group}-${team}-${index}`}
-                  className={
-                    isQualified
-                      ? "bg-emerald-50/80"
-                      : "bg-white"
-                  }
-                >
-                  <td className="border-b border-slate-200 px-3 py-3 text-slate-500">
-                    {index + 1}
-                  </td>
-                  <td className="border-b border-slate-200 px-3 py-3 font-semibold text-slate-700">
-                    {group}
-                  </td>
-                  <td className="border-b border-slate-200 px-3 py-3 font-semibold text-slate-900">
-                    {team}
-                  </td>
-                  <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
-                    {played}
-                  </td>
-                  <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
-                    {won}
-                  </td>
-                  <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
-                    {drawn}
-                  </td>
-                  <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
-                    {lost}
-                  </td>
-                  <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
-                    {goalsFor}
-                  </td>
-                  <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
-                    {goalsAgainst}
-                  </td>
-                  <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
-                    {goalDiff}
-                  </td>
-                  <td className="border-b border-slate-200 px-3 py-3 text-center font-bold text-slate-900">
-                    {points}
-                  </td>
-                  <td className="border-b border-slate-200 px-3 py-3">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
-                        isQualified
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {isQualified ? "Vidare" : "Ute"}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
+    const isFirstEliminated = index === qualifiedCount;
+
+    return (
+      <tr
+        key={`${group}-${team}-${index}`}
+        className={[
+          isQualified ? "bg-emerald-50/80" : "bg-slate-50/70",
+          isFirstEliminated ? "border-t-4 border-slate-400" : "",
+        ].join(" ")}
+      >
+        <td className="border-b border-slate-200 px-3 py-3 text-slate-500">
+          {index + 1}
+        </td>
+        <td
+          className={`border-b border-slate-200 px-3 py-3 font-semibold ${
+            isQualified ? "text-slate-700" : "text-slate-500"
+          }`}
+        >
+          {group}
+        </td>
+        <td
+          className={`border-b border-slate-200 px-3 py-3 font-semibold ${
+            isQualified ? "text-slate-900" : "text-slate-700"
+          }`}
+        >
+          {team}
+        </td>
+        <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+          {played}
+        </td>
+        <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+          {won}
+        </td>
+        <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+          {drawn}
+        </td>
+        <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+          {lost}
+        </td>
+        <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+          {goalsFor}
+        </td>
+        <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+          {goalsAgainst}
+        </td>
+        <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+          {goalDiff}
+        </td>
+        <td className="border-b border-slate-200 px-3 py-3 text-center font-bold text-slate-900">
+          {points}
+        </td>
+        <td className="border-b border-slate-200 px-3 py-3">
+          <span
+            className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
+              isQualified
+                ? "bg-emerald-100 text-emerald-800"
+                : "bg-slate-200 text-slate-600"
+            }`}
+          >
+            {isQualified ? "Vidare" : "Ute"}
+          </span>
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
         </table>
       </div>
     </SectionCard>
