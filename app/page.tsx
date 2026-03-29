@@ -325,16 +325,24 @@ export default function HomePage() {
 
       if (!res.ok) {
         setSaveMessage(data.error || "Kunde inte spara tipset");
-        return;
+        return false;
       }
 
       setSaveMessage("Tipset är sparat");
+      return true;
     } catch (error) {
       console.error("Fel vid sparning", error);
       setSaveMessage("Något gick fel vid sparning");
+      return false;
     } finally {
       setIsSaving(false);
     }
+  }
+
+  async function saveAndOpenPdf() {
+    const ok = await savePredictionToDatabase();
+    if (!ok) return;
+    window.location.href = "/mitt-tips/pdf";
   }
 
   const visibleGroup =
@@ -412,12 +420,13 @@ export default function HomePage() {
                   Medlemmar
                 </Link>
 
-                <Link
-                  href="/mitt-tips/pdf"
-                  className="inline-flex h-9 items-center rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
+                <button
+                  onClick={saveAndOpenPdf}
+                  disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
+                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20 disabled:opacity-50"
                 >
-                  Skriv ut / PDF
-                </Link>
+                  {isSaving ? "Sparar..." : "Spara & PDF"}
+                </button>
 
                 <button
                   onClick={savePredictionToDatabase}

@@ -228,7 +228,7 @@ function MatchRow({
 }) {
   return (
     <div
-      className={`rounded-md border px-2 py-1 text-center text-[8px] font-extrabold leading-tight ${
+      className={`rounded border px-1.5 py-1 text-center text-[7px] font-extrabold leading-tight ${
         selected
           ? "border-emerald-600 bg-emerald-600 text-white"
           : "border-emerald-200 bg-slate-50 text-slate-900"
@@ -247,14 +247,14 @@ function MatchBox({
   selectedWinner?: string;
 }) {
   return (
-    <div className="border border-emerald-300 bg-white px-2 py-1.5 shadow-sm">
-      <div className="mb-1 text-[7px] font-bold uppercase leading-none text-slate-500">
+    <div className="border border-emerald-300 bg-white px-1.5 py-1.5 shadow-sm">
+      <div className="mb-1 text-[6.5px] font-bold uppercase leading-none text-slate-500">
         {getMatchDisplayLabel(match)}
       </div>
 
       <MatchRow team={match.home || "-"} selected={selectedWinner === match.home} />
 
-      <div className="py-0.5 text-center text-[7px] font-bold uppercase text-slate-400">
+      <div className="py-0.5 text-center text-[6px] font-bold uppercase text-slate-400">
         vs
       </div>
 
@@ -263,27 +263,22 @@ function MatchBox({
   );
 }
 
-function RoundSection({
+function RoundGrid({
   title,
   matches,
   knockout,
-  columns = 4,
+  columns,
 }: {
   title: string;
   matches: KnockoutMatch[];
   knockout: Record<string, string>;
-  columns?: 2 | 3 | 4;
+  columns: 2 | 4;
 }) {
-  const gridCols =
-    columns === 2
-      ? "grid-cols-2"
-      : columns === 3
-      ? "grid-cols-3"
-      : "grid-cols-4";
+  const gridCols = columns === 2 ? "grid-cols-2" : "grid-cols-4";
 
   return (
-    <div className="border border-slate-300 px-3 py-2">
-      <h3 className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-slate-700">
+    <div className="border border-slate-300 px-2 py-2">
+      <h3 className="mb-2 text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
         {title}
       </h3>
 
@@ -413,35 +408,39 @@ export default function PredictionPrintDocument({
         </div>
 
         <div className="space-y-3">
-          <RoundSection
-            title="Sextondelsfinal"
-            matches={round32}
-            knockout={knockout}
-            columns={4}
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <RoundGrid
+              title="Sextondelsfinal"
+              matches={round32}
+              knockout={knockout}
+              columns={4}
+            />
 
-          <RoundSection
-            title="Åttondelsfinal"
-            matches={r16}
-            knockout={knockout}
-            columns={4}
-          />
+            <RoundGrid
+              title="Åttondelsfinal"
+              matches={r16}
+              knockout={knockout}
+              columns={4}
+            />
+          </div>
 
-          <RoundSection
-            title="Kvartsfinal"
-            matches={qf}
-            knockout={knockout}
-            columns={4}
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <RoundGrid
+              title="Kvartsfinal"
+              matches={qf}
+              knockout={knockout}
+              columns={4}
+            />
 
-          <RoundSection
-            title="Semifinal"
-            matches={sf}
-            knockout={knockout}
-            columns={2}
-          />
+            <RoundGrid
+              title="Semifinal"
+              matches={sf}
+              knockout={knockout}
+              columns={2}
+            />
+          </div>
 
-          <RoundSection
+          <RoundGrid
             title="Final och bronsmatch"
             matches={[...finalMatches, ...bronze]}
             knockout={knockout}
