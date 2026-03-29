@@ -42,26 +42,6 @@ type MyLeague = {
   created_at: string;
 };
 
-type PdfExportPayload = {
-  groups: GroupData[];
-  knockout: Record<string, string>;
-  goldenBoot: string;
-  savedAt: string;
-  rounds: {
-    round32: KnockoutMatch[];
-    r16: KnockoutMatch[];
-    qf: KnockoutMatch[];
-    sf: KnockoutMatch[];
-    finalMatches: KnockoutMatch[];
-    bronze: KnockoutMatch[];
-  };
-  medals: {
-    gold: string;
-    silver: string;
-    bronze: string;
-  };
-};
-
 const viewModeItems: { key: AppViewMode; label: string; mobileLabel: string }[] =
   [
     { key: "all", label: "Allt", mobileLabel: "Allt" },
@@ -75,19 +55,19 @@ const viewModeItems: { key: AppViewMode; label: string; mobileLabel: string }[] 
 function normalizeGroups(input: unknown): GroupData[] {
   if (!Array.isArray(input)) return initialGroups;
 
-  return input.map((group, groupIndex) => {
-    const fallbackGroup = initialGroups[groupIndex];
+  return input.map((group, index) => {
+    const fallback = initialGroups[index] ?? initialGroups[0];
 
     if (!group || typeof group !== "object") {
-      return fallbackGroup;
+      return fallback;
     }
 
     const g = group as Partial<GroupData> & { matches?: unknown };
 
     return {
-      ...fallbackGroup,
+      ...fallback,
       ...g,
-      matches: Array.isArray(g.matches) ? g.matches : fallbackGroup.matches,
+      matches: Array.isArray(g.matches) ? g.matches : fallback.matches,
     };
   });
 }
@@ -371,62 +351,6 @@ export default function HomePage() {
     setSaveMessage(null);
   }
 
-  function buildPdfExportPayload(): PdfExportPayload {
-    const currentGroups = normalizeGroups(groupsRef.current);
-    const currentKnockout = knockoutRef.current;
-    const currentGoldenBoot = goldenBootRef.current;
-
-    const { round32 } = getKnockoutSeedData(currentGroups);
-    const r16 = buildNextRound(round32, currentKnockout, "r16", "Åttondelsfinal");
-    const qf = buildNextRound(r16, currentKnockout, "qf", "Kvartsfinal");
-    const sf = buildNextRound(qf, currentKnockout, "sf", "Semifinal");
-    const finalMatches = buildNextRound(sf, currentKnockout, "final", "Final");
-
-    const bronze: KnockoutMatch[] = [
-      {
-        id: "bronze-1",
-        label: "Bronsmatch",
-        home: sf[0] ? getLoser(sf[0], currentKnockout) : "",
-        away: sf[1] ? getLoser(sf[1], currentKnockout) : "",
-      },
-    ];
-
-    const gold = currentKnockout[finalMatches[0]?.id] || "";
-    const silver =
-      finalMatches[0] && gold
-        ? [finalMatches[0].home, finalMatches[0].away].find((team) => team !== gold) || ""
-        : "";
-    const bronzeWinner = currentKnockout["bronze-1"] || "";
-
-    return {
-      groups: currentGroups,
-      knockout: currentKnockout,
-      goldenBoot: currentGoldenBoot,
-      savedAt: new Date().toISOString(),
-      rounds: {
-        round32,
-        r16,
-        qf,
-        sf,
-        finalMatches,
-        bronze,
-      },
-      medals: {
-        gold,
-        silver,
-        bronze: bronzeWinner,
-      },
-    };
-  }
-
-  function saveToPdfStorage() {
-    if (typeof window === "undefined") return;
-
-    const payload = buildPdfExportPayload();
-    localStorage.setItem("prediction_pdf", JSON.stringify(payload));
-    console.log("prediction_pdf saved", payload);
-  }
-
   async function savePredictionToDatabase() {
     if (isDeadlinePassed()) {
       setSaveMessage("Deadline har passerat – tipset är låst");
@@ -469,13 +393,18 @@ export default function HomePage() {
     }
   }
 
-  async function saveAndOpenPdf() {
-    saveToPdfStorage();
+  async function saveAndPrint() {
+    if (deadlinePassed) {
+      window.print();
+      return;
+    }
 
     const ok = await savePredictionToDatabase();
     if (!ok) return;
 
-    window.open("/mitt-tips/pdf", "_blank");
+    setTimeout(() => {
+      window.print();
+    }, 150);
   }
 
   const safeGroups = normalizeGroups(groups);
@@ -491,15 +420,15 @@ export default function HomePage() {
   const deadlinePassed = isDeadlinePassed();
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_#ecfdf5_0%,_#f8fafc_35%,_#f1f5f9_68%,_#e2e8f0_100%)] px-3 py-3 pb-24 sm:px-4 sm:py-4 sm:pb-6 md:px-6 md:py-8 md:pb-8">
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    <main className="vm-print-root min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_#ecfdf5_0%,_#f8fafc_35%,_#f1f5f9_68%,_#e2e8f0_100%)] px-3 py-3 pb-24 sm:px-4 sm:py-4 sm:pb-6 md:px-6 md:py-8 md:pb-8">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden print:hidden">
         <div className="absolute -left-32 -top-24 h-[420px] w-[420px] rounded-full bg-emerald-400/12 blur-3xl" />
         <div className="absolute right-[-120px] top-[140px] h-[420px] w-[420px] rounded-full bg-green-500/10 blur-3xl" />
         <div className="absolute bottom-[-140px] left-[18%] h-[360px] w-[360px] rounded-full bg-slate-400/10 blur-3xl" />
       </div>
 
-      <div className="mx-auto max-w-[1600px]">
-        <header className="relative mb-4 overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-gradient-to-r from-emerald-950 via-green-900 to-slate-950 p-3 text-white shadow-[0_20px_50px_rgba(15,23,42,0.20)] sm:mb-5 sm:p-4 md:mb-6 md:p-5">
+      <div className="mx-auto max-w-[1600px] print:max-w-none">
+        <header className="vm-print-hide relative mb-4 overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-gradient-to-r from-emerald-950 via-green-900 to-slate-950 p-3 text-white shadow-[0_20px_50px_rgba(15,23,42,0.20)] sm:mb-5 sm:p-4 md:mb-6 md:p-5 print:hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.10),_transparent_35%)]" />
           <div className="absolute right-[-80px] top-[-80px] h-40 w-40 rounded-full bg-emerald-300/10 blur-3xl" />
 
@@ -556,11 +485,11 @@ export default function HomePage() {
                 </Link>
 
                 <button
-                  onClick={saveAndOpenPdf}
-                  disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
+                  onClick={saveAndPrint}
+                  disabled={isSaving || !hasLoadedFromDatabase}
                   className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20 disabled:opacity-50"
                 >
-                  {isSaving ? "Sparar..." : "Spara & PDF"}
+                  {isSaving ? "Sparar..." : "Skriv ut / PDF"}
                 </button>
 
                 <button
@@ -637,70 +566,79 @@ export default function HomePage() {
           </div>
         </header>
 
-        <NewsPreview />
+        <div className="mb-3 hidden print:block">
+          <div className="rounded-xl border border-slate-300 bg-white px-4 py-3">
+            <h1 className="text-xl font-extrabold text-slate-900">Addes VM-tips</h1>
+            <p className="text-sm text-slate-600">Utskriftsvy av ditt aktuella tips</p>
+          </div>
+        </div>
 
-        <div className="grid gap-4 sm:gap-6 md:gap-8">
-          {(viewMode === "all" || viewMode === "groups") && visibleGroup && (
-            <SectionCard title="Grupper" subtitle="Välj grupp och fyll i dina matchresultat.">
-              <div className="mb-4 flex flex-wrap gap-2 sm:mb-6">
-                {"ABCDEFGHIJKL".split("").map((letter) => {
-                  const group = safeGroups.find((g) => g.name === `Grupp ${letter}`);
-                  const complete = group ? isGroupComplete(group) : false;
+        <div className="vm-print-scale">
+          <NewsPreview />
 
-                  return (
-                    <button
-                      key={letter}
-                      onClick={() => setActiveGroupLetter(letter)}
-                      className={`min-h-11 rounded-full px-4 py-2 text-sm font-extrabold transition ${
-                        activeGroupLetter === letter
-                          ? "bg-gradient-to-r from-emerald-700 to-green-700 text-white shadow-lg shadow-emerald-500/20"
-                          : complete
-                          ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                          : "border border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
-                      }`}
-                    >
-                      Grupp {letter} {complete ? "✓" : ""}
-                    </button>
-                  );
-                })}
+          <div className="grid gap-4 sm:gap-6 md:gap-8">
+            {(viewMode === "all" || viewMode === "groups") && visibleGroup && (
+              <SectionCard title="Grupper" subtitle="Välj grupp och fyll i dina matchresultat.">
+                <div className="mb-4 flex flex-wrap gap-2 sm:mb-6">
+                  {"ABCDEFGHIJKL".split("").map((letter) => {
+                    const group = safeGroups.find((g) => g.name === `Grupp ${letter}`);
+                    const complete = group ? isGroupComplete(group) : false;
+
+                    return (
+                      <button
+                        key={letter}
+                        onClick={() => setActiveGroupLetter(letter)}
+                        className={`min-h-11 rounded-full px-4 py-2 text-sm font-extrabold transition ${
+                          activeGroupLetter === letter
+                            ? "bg-gradient-to-r from-emerald-700 to-green-700 text-white shadow-lg shadow-emerald-500/20"
+                            : complete
+                            ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            : "border border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
+                        }`}
+                      >
+                        Grupp {letter} {complete ? "✓" : ""}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <GroupSection
+                  group={visibleGroup}
+                  onUpdateMatch={updateMatch}
+                  onResetGroup={resetGroup}
+                />
+              </SectionCard>
+            )}
+
+            {(viewMode === "all" || viewMode === "thirds") && (
+              <div className="grid gap-4 sm:gap-6 md:gap-8">
+                <BestThirdsSection groups={safeGroups} />
+                <QualifiedTeamsSection groups={safeGroups} />
               </div>
+            )}
 
-              <GroupSection
-                group={visibleGroup}
-                onUpdateMatch={updateMatch}
-                onResetGroup={resetGroup}
+            {(viewMode === "all" || viewMode === "knockout") && (
+              <KnockoutFullSection
+                groups={safeGroups}
+                knockoutWinners={knockoutWinners}
+                onSelectWinner={selectWinner}
+                onResetKnockout={resetKnockout}
+                isGroupStageComplete={isGroupStageComplete}
               />
-            </SectionCard>
-          )}
+            )}
 
-          {(viewMode === "all" || viewMode === "thirds") && (
-            <div className="grid gap-4 sm:gap-6 md:gap-8">
-              <BestThirdsSection groups={safeGroups} />
-              <QualifiedTeamsSection groups={safeGroups} />
-            </div>
-          )}
+            {(viewMode === "all" || viewMode === "goldenboot") && (
+              <GoldenBootSection value={goldenBoot} onChange={updateGoldenBoot} />
+            )}
 
-          {(viewMode === "all" || viewMode === "knockout") && (
-            <KnockoutFullSection
-              groups={safeGroups}
-              knockoutWinners={knockoutWinners}
-              onSelectWinner={selectWinner}
-              onResetKnockout={resetKnockout}
-              isGroupStageComplete={isGroupStageComplete}
-            />
-          )}
-
-          {(viewMode === "all" || viewMode === "goldenboot") && (
-            <GoldenBootSection value={goldenBoot} onChange={updateGoldenBoot} />
-          )}
-
-          {(viewMode === "all" || viewMode === "leagues") && (
-            <LeaguesSection myLeagues={myLeagues} />
-          )}
+            {(viewMode === "all" || viewMode === "leagues") && (
+              <LeaguesSection myLeagues={myLeagues} />
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-2 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.10)] backdrop-blur md:hidden">
+      <div className="vm-print-hide fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-2 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.10)] backdrop-blur md:hidden print:hidden">
         <div className="mx-auto grid max-w-4xl grid-cols-6 gap-1">
           {viewModeItems.map((item) => {
             const active = viewMode === item.key;
