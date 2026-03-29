@@ -11,7 +11,7 @@ import LeaguesSection from "@/components/leagues-section";
 import NewsPreview from "@/components/NewsPreview";
 import QualifiedTeamsSection from "@/components/QualifiedTeamsSection";
 import SectionCard from "@/components/SectionCard";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { isDeadlinePassed } from "@/lib/config";
 import {
   clearDependentKnockoutSelections,
@@ -52,28 +52,8 @@ const viewModeItems: { key: AppViewMode; label: string; mobileLabel: string }[] 
     { key: "leagues", label: "Ligor", mobileLabel: "Ligor" },
   ];
 
-function normalizeGroups(input: unknown): GroupData[] {
-  if (!Array.isArray(input)) return initialGroups;
-
-  return input.map((group, index) => {
-    const fallback = initialGroups[index] ?? initialGroups[0];
-
-    if (!group || typeof group !== "object") {
-      return fallback;
-    }
-
-    const g = group as Partial<GroupData> & { matches?: unknown };
-
-    return {
-      ...fallback,
-      ...g,
-      matches: Array.isArray(g.matches) ? g.matches : fallback.matches,
-    };
-  });
-}
-
 export default function HomePage() {
-  const [groups, setGroups] = useState<GroupData[]>(normalizeGroups(initialGroups));
+  const [groups, setGroups] = useState<GroupData[]>(initialGroups);
   const [knockoutWinners, setKnockoutWinners] = useState<Record<string, string>>(
     {}
   );
@@ -85,16 +65,14 @@ export default function HomePage() {
   const [hasLoadedFromDatabase, setHasLoadedFromDatabase] = useState(false);
   const [myLeagues, setMyLeagues] = useState<MyLeague[]>([]);
 
-  const groupsRef = useRef<GroupData[]>(normalizeGroups(initialGroups));
-  const knockoutRef = useRef<Record<string, string>>({});
-  const goldenBootRef = useRef("");
-
   async function loadMyLeagues() {
     try {
       const res = await fetch("/api/leagues/my");
       const data = await res.json();
 
-      if (!res.ok) return;
+      if (!res.ok) {
+        return;
+      }
 
       setMyLeagues((data.leagues ?? []) as MyLeague[]);
     } catch (error) {
@@ -113,19 +91,17 @@ export default function HomePage() {
         }
 
         const data = await res.json();
-        const normalized = normalizeGroups(data.prediction?.group_stage);
 
-        setGroups(normalized);
-        groupsRef.current = normalized;
-
-        if (data.prediction?.knockout && typeof data.prediction.knockout === "object") {
-          setKnockoutWinners(data.prediction.knockout);
-          knockoutRef.current = data.prediction.knockout;
+        if (data.prediction?.group_stage) {
+          setGroups(data.prediction.group_stage);
         }
 
-        if (typeof data.prediction?.golden_boot === "string") {
+        if (data.prediction?.knockout) {
+          setKnockoutWinners(data.prediction.knockout);
+        }
+
+        if (data.prediction?.golden_boot) {
           setGoldenBoot(data.prediction.golden_boot);
-          goldenBootRef.current = data.prediction.golden_boot;
         }
       } catch (error) {
         console.error("Kunde inte läsa från databasen", error);
@@ -206,47 +182,39 @@ export default function HomePage() {
   ) {
     if (value !== "" && !/^\d+$/.test(value)) return;
 
-    setGroups((prev) => {
-      const next = prev.map((group) =>
+    setGroups((prev) =>
+      prev.map((group) =>
         group.name !== groupName
           ? group
           : {
               ...group,
-              matches: (group.matches ?? []).map((match) =>
+              matches: group.matches.map((match) =>
                 match.id === matchId ? { ...match, [field]: value } : match
               ),
             }
-      );
+      )
+    );
 
-      groupsRef.current = next;
-      return next;
-    });
-
-    knockoutRef.current = {};
     setKnockoutWinners({});
     setSaveMessage(null);
   }
 
   function resetGroup(groupName: string) {
-    setGroups((prev) => {
-      const next = prev.map((group) =>
+    setGroups((prev) =>
+      prev.map((group) =>
         group.name !== groupName
           ? group
           : {
               ...group,
-              matches: (group.matches ?? []).map((match) => ({
+              matches: group.matches.map((match) => ({
                 ...match,
                 homeGoals: "",
                 awayGoals: "",
               })),
             }
-      );
+      )
+    );
 
-      groupsRef.current = next;
-      return next;
-    });
-
-    knockoutRef.current = {};
     setKnockoutWinners({});
     setSaveMessage(null);
   }
@@ -254,25 +222,16 @@ export default function HomePage() {
   function selectWinner(matchId: string, team: string) {
     setKnockoutWinners((prev) => {
       const cleaned = clearDependentKnockoutSelections(prev, matchId);
-      const next = { ...cleaned, [matchId]: team };
-
-      knockoutRef.current = next;
-      return next;
+      return { ...cleaned, [matchId]: team };
     });
 
     setSaveMessage(null);
   }
 
-  function updateGoldenBoot(value: string) {
-    goldenBootRef.current = value;
-    setGoldenBoot(value);
-    setSaveMessage(null);
-  }
-
   function runAddeBoy() {
-    const randomGroups: GroupData[] = normalizeGroups(initialGroups).map((group) => ({
+    const randomGroups: GroupData[] = initialGroups.map((group) => ({
       ...group,
-      matches: (group.matches ?? []).map((match) => {
+      matches: group.matches.map((match) => {
         const score = generateRandomScore(match.homeTeam, match.awayTeam);
         return { ...match, homeGoals: score.homeGoals, awayGoals: score.awayGoals };
       }),
@@ -318,10 +277,6 @@ export default function HomePage() {
       winners[m.id] = pickRandomWinner(m.home, m.away);
     });
 
-    groupsRef.current = randomGroups;
-    knockoutRef.current = winners;
-    goldenBootRef.current = "";
-
     setGroups(randomGroups);
     setKnockoutWinners(winners);
     setGoldenBoot("");
@@ -331,19 +286,12 @@ export default function HomePage() {
   }
 
   function resetKnockout() {
-    knockoutRef.current = {};
     setKnockoutWinners({});
     setSaveMessage(null);
   }
 
   function resetAll() {
-    const normalizedInitial = normalizeGroups(initialGroups);
-
-    groupsRef.current = normalizedInitial;
-    knockoutRef.current = {};
-    goldenBootRef.current = "";
-
-    setGroups(normalizedInitial);
+    setGroups(initialGroups);
     setKnockoutWinners({});
     setGoldenBoot("");
     setViewMode("all");
@@ -354,81 +302,61 @@ export default function HomePage() {
   async function savePredictionToDatabase() {
     if (isDeadlinePassed()) {
       setSaveMessage("Deadline har passerat – tipset är låst");
-      return false;
+      return;
     }
 
     try {
       setIsSaving(true);
       setSaveMessage(null);
 
-      const payload = {
-        groups: normalizeGroups(groupsRef.current),
-        knockout: knockoutRef.current,
-        goldenBoot: goldenBootRef.current,
-      };
-
       const res = await fetch("/api/prediction", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          groups,
+          knockout: knockoutWinners,
+          goldenBoot,
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
         setSaveMessage(data.error || "Kunde inte spara tipset");
-        return false;
+        return;
       }
 
       setSaveMessage("Tipset är sparat");
-      return true;
     } catch (error) {
       console.error("Fel vid sparning", error);
       setSaveMessage("Något gick fel vid sparning");
-      return false;
     } finally {
       setIsSaving(false);
     }
   }
 
-  async function saveAndPrint() {
-    if (deadlinePassed) {
-      window.print();
-      return;
-    }
-
-    const ok = await savePredictionToDatabase();
-    if (!ok) return;
-
-    setTimeout(() => {
-      window.print();
-    }, 150);
-  }
-
-  const safeGroups = normalizeGroups(groups);
-
   const visibleGroup =
-    safeGroups.find((g) => g.name === `Grupp ${activeGroupLetter}`) ?? safeGroups[0];
+    groups.find((g) => g.name === `Grupp ${activeGroupLetter}`) ?? groups[0];
 
   const isGroupStageComplete = useMemo(
-    () => isTournamentGroupStageComplete(safeGroups),
-    [safeGroups]
+    () => isTournamentGroupStageComplete(groups),
+    [groups]
   );
 
   const deadlinePassed = isDeadlinePassed();
 
   return (
-    <main className="vm-print-root min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_#ecfdf5_0%,_#f8fafc_35%,_#f1f5f9_68%,_#e2e8f0_100%)] px-3 py-3 pb-24 sm:px-4 sm:py-4 sm:pb-6 md:px-6 md:py-8 md:pb-8">
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden print:hidden">
+    <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_#ecfdf5_0%,_#f8fafc_35%,_#f1f5f9_68%,_#e2e8f0_100%)] px-3 py-3 pb-24 sm:px-4 sm:py-4 sm:pb-6 md:px-6 md:py-8 md:pb-8">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute -left-32 -top-24 h-[420px] w-[420px] rounded-full bg-emerald-400/12 blur-3xl" />
         <div className="absolute right-[-120px] top-[140px] h-[420px] w-[420px] rounded-full bg-green-500/10 blur-3xl" />
         <div className="absolute bottom-[-140px] left-[18%] h-[360px] w-[360px] rounded-full bg-slate-400/10 blur-3xl" />
       </div>
 
-      <div className="mx-auto max-w-[1600px] print:max-w-none">
-        <header className="vm-print-hide relative mb-4 overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-gradient-to-r from-emerald-950 via-green-900 to-slate-950 p-3 text-white shadow-[0_20px_50px_rgba(15,23,42,0.20)] sm:mb-5 sm:p-4 md:mb-6 md:p-5 print:hidden">
+      <div className="mx-auto max-w-[1600px]">
+        <header className="relative mb-4 overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-gradient-to-r from-emerald-950 via-green-900 to-slate-950 p-3 text-white shadow-[0_20px_50px_rgba(15,23,42,0.20)] sm:mb-5 sm:p-4 md:mb-6 md:p-5">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.10),_transparent_35%)]" />
           <div className="absolute right-[-80px] top-[-80px] h-40 w-40 rounded-full bg-emerald-300/10 blur-3xl" />
 
@@ -484,13 +412,12 @@ export default function HomePage() {
                   Medlemmar
                 </Link>
 
-                <button
-                  onClick={saveAndPrint}
-                  disabled={isSaving || !hasLoadedFromDatabase}
-                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20 disabled:opacity-50"
+                <Link
+                  href="/mitt-tips/pdf"
+                  className="inline-flex h-9 items-center rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
                 >
-                  {isSaving ? "Sparar..." : "Skriv ut / PDF"}
-                </button>
+                  Skriv ut / PDF
+                </Link>
 
                 <button
                   onClick={savePredictionToDatabase}
@@ -566,79 +493,70 @@ export default function HomePage() {
           </div>
         </header>
 
-        <div className="mb-3 hidden print:block">
-          <div className="rounded-xl border border-slate-300 bg-white px-4 py-3">
-            <h1 className="text-xl font-extrabold text-slate-900">Addes VM-tips</h1>
-            <p className="text-sm text-slate-600">Utskriftsvy av ditt aktuella tips</p>
-          </div>
-        </div>
+        <NewsPreview />
 
-        <div className="vm-print-scale">
-          <NewsPreview />
+        <div className="grid gap-4 sm:gap-6 md:gap-8">
+          {(viewMode === "all" || viewMode === "groups") && (
+            <SectionCard title="Grupper" subtitle="Välj grupp och fyll i dina matchresultat.">
+              <div className="mb-4 flex flex-wrap gap-2 sm:mb-6">
+                {"ABCDEFGHIJKL".split("").map((letter) => {
+                  const group = groups.find((g) => g.name === `Grupp ${letter}`);
+                  const complete = group ? isGroupComplete(group) : false;
 
-          <div className="grid gap-4 sm:gap-6 md:gap-8">
-            {(viewMode === "all" || viewMode === "groups") && visibleGroup && (
-              <SectionCard title="Grupper" subtitle="Välj grupp och fyll i dina matchresultat.">
-                <div className="mb-4 flex flex-wrap gap-2 sm:mb-6">
-                  {"ABCDEFGHIJKL".split("").map((letter) => {
-                    const group = safeGroups.find((g) => g.name === `Grupp ${letter}`);
-                    const complete = group ? isGroupComplete(group) : false;
-
-                    return (
-                      <button
-                        key={letter}
-                        onClick={() => setActiveGroupLetter(letter)}
-                        className={`min-h-11 rounded-full px-4 py-2 text-sm font-extrabold transition ${
-                          activeGroupLetter === letter
-                            ? "bg-gradient-to-r from-emerald-700 to-green-700 text-white shadow-lg shadow-emerald-500/20"
-                            : complete
-                            ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                            : "border border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
-                        }`}
-                      >
-                        Grupp {letter} {complete ? "✓" : ""}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <GroupSection
-                  group={visibleGroup}
-                  onUpdateMatch={updateMatch}
-                  onResetGroup={resetGroup}
-                />
-              </SectionCard>
-            )}
-
-            {(viewMode === "all" || viewMode === "thirds") && (
-              <div className="grid gap-4 sm:gap-6 md:gap-8">
-                <BestThirdsSection groups={safeGroups} />
-                <QualifiedTeamsSection groups={safeGroups} />
+                  return (
+                    <button
+                      key={letter}
+                      onClick={() => setActiveGroupLetter(letter)}
+                      className={`min-h-11 rounded-full px-4 py-2 text-sm font-extrabold transition ${
+                        activeGroupLetter === letter
+                          ? "bg-gradient-to-r from-emerald-700 to-green-700 text-white shadow-lg shadow-emerald-500/20"
+                          : complete
+                          ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                          : "border border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
+                      }`}
+                    >
+                      Grupp {letter} {complete ? "✓" : ""}
+                    </button>
+                  );
+                })}
               </div>
-            )}
 
-            {(viewMode === "all" || viewMode === "knockout") && (
-              <KnockoutFullSection
-                groups={safeGroups}
-                knockoutWinners={knockoutWinners}
-                onSelectWinner={selectWinner}
-                onResetKnockout={resetKnockout}
-                isGroupStageComplete={isGroupStageComplete}
+              <GroupSection
+                group={visibleGroup}
+                onUpdateMatch={updateMatch}
+                onResetGroup={resetGroup}
               />
-            )}
+            </SectionCard>
+          )}
 
-            {(viewMode === "all" || viewMode === "goldenboot") && (
-              <GoldenBootSection value={goldenBoot} onChange={updateGoldenBoot} />
-            )}
+          {(viewMode === "all" || viewMode === "thirds") && (
+            <div className="grid gap-4 sm:gap-6 md:gap-8">
+              <BestThirdsSection groups={groups} />
+              <QualifiedTeamsSection groups={groups} />
+            </div>
+          )}
 
-            {(viewMode === "all" || viewMode === "leagues") && (
-              <LeaguesSection myLeagues={myLeagues} />
-            )}
-          </div>
+          {(viewMode === "all" || viewMode === "knockout") && (
+            <KnockoutFullSection
+              groups={groups}
+              knockoutWinners={knockoutWinners}
+              onSelectWinner={selectWinner}
+              onResetKnockout={resetKnockout}
+              isGroupStageComplete={isGroupStageComplete}
+            />
+          )}
+
+          {(viewMode === "all" || viewMode === "goldenboot") && (
+            <GoldenBootSection value={goldenBoot} onChange={setGoldenBoot} />
+          )}
+
+          {(viewMode === "all" || viewMode === "leagues") && (
+            <LeaguesSection myLeagues={myLeagues} />
+          )}
         </div>
       </div>
 
-      <div className="vm-print-hide fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-2 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.10)] backdrop-blur md:hidden print:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-2 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.10)] backdrop-blur md:hidden">
         <div className="mx-auto grid max-w-4xl grid-cols-6 gap-1">
           {viewModeItems.map((item) => {
             const active = viewMode === item.key;
