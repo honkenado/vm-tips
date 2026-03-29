@@ -544,12 +544,14 @@ export default function HomePage() {
             </SectionCard>
           )}
 
-          {(viewMode === "all" || viewMode === "thirds") && (
-            <div className="grid gap-4 sm:gap-6 md:gap-8">
-              <BestThirdsSection groups={groups} />
-              <QualifiedTeamsSection groups={groups} />
-            </div>
-          )}
+          {viewMode === "all" && <QualifiedTeamsSection groups={groups} />}
+
+{viewMode === "thirds" && (
+  <div className="grid gap-4 sm:gap-6 md:gap-8">
+    <BestThirdsSection groups={groups} />
+    <QualifiedTeamsSection groups={groups} />
+  </div>
+)}
 
           {(viewMode === "all" || viewMode === "knockout") && (
             <KnockoutFullSection
