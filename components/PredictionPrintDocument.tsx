@@ -215,56 +215,107 @@ function GroupCompactCard({
   );
 }
 
-function getMatchNumber(matchId: string) {
-  const match = matchId.match(/(\d+)/);
-  if (!match) return matchId.toUpperCase();
-  return `MATCH ${match[1]}`;
+function getMatchDisplayLabel(match: KnockoutMatch) {
+  return match.label?.toUpperCase() || String(match.id).toUpperCase();
 }
 
-function MatchCard({
+function MatchRow({
+  team,
+  selected,
+}: {
+  team: string;
+  selected?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-md border px-2 py-1 text-center text-[8px] font-extrabold leading-tight ${
+        selected
+          ? "border-emerald-600 bg-emerald-600 text-white"
+          : "border-emerald-200 bg-slate-50 text-slate-900"
+      }`}
+    >
+      {shortenTeamName(team || "-")}
+    </div>
+  );
+}
+
+function MatchBox({
   match,
   selectedWinner,
-  compact = false,
 }: {
   match: KnockoutMatch;
   selectedWinner?: string;
-  compact?: boolean;
 }) {
-  const homeSelected = selectedWinner && selectedWinner === match.home;
-  const awaySelected = selectedWinner && selectedWinner === match.away;
-
   return (
-    <div
-      className={`border border-emerald-300 bg-white px-2 py-1.5 shadow-sm ${
-        compact ? "w-[150px]" : "w-[170px]"
-      }`}
-    >
-      <div className="mb-1 text-[8px] font-bold uppercase leading-none text-slate-500">
-        {getMatchNumber(match.id)}
+    <div className="border border-emerald-300 bg-white px-2 py-1.5 shadow-sm">
+      <div className="mb-1 text-[7px] font-bold uppercase leading-none text-slate-500">
+        {getMatchDisplayLabel(match)}
       </div>
 
-      <div
-        className={`rounded-md border px-2 py-1 text-center text-[8px] font-extrabold leading-tight ${
-          homeSelected
-            ? "border-emerald-600 bg-emerald-600 text-white"
-            : "border-emerald-200 bg-slate-50 text-slate-900"
-        }`}
-      >
-        {shortenTeamName(match.home || "-")}
-      </div>
+      <MatchRow team={match.home || "-"} selected={selectedWinner === match.home} />
 
-      <div className="py-0.5 text-center text-[8px] font-bold uppercase text-slate-400">
+      <div className="py-0.5 text-center text-[7px] font-bold uppercase text-slate-400">
         vs
       </div>
 
-      <div
-        className={`rounded-md border px-2 py-1 text-center text-[8px] font-extrabold leading-tight ${
-          awaySelected
-            ? "border-emerald-600 bg-emerald-600 text-white"
-            : "border-emerald-200 bg-slate-50 text-slate-900"
-        }`}
-      >
-        {shortenTeamName(match.away || "-")}
+      <MatchRow team={match.away || "-"} selected={selectedWinner === match.away} />
+    </div>
+  );
+}
+
+function RoundSection({
+  title,
+  matches,
+  knockout,
+  columns = 4,
+}: {
+  title: string;
+  matches: KnockoutMatch[];
+  knockout: Record<string, string>;
+  columns?: 2 | 3 | 4;
+}) {
+  const gridCols =
+    columns === 2
+      ? "grid-cols-2"
+      : columns === 3
+      ? "grid-cols-3"
+      : "grid-cols-4";
+
+  return (
+    <div className="border border-slate-300 px-3 py-2">
+      <h3 className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-slate-700">
+        {title}
+      </h3>
+
+      <div className={`grid ${gridCols} gap-2`}>
+        {matches.map((match) => (
+          <MatchBox
+            key={match.id}
+            match={match}
+            selectedWinner={knockout[match.id]}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MedalCard({
+  title,
+  team,
+  className,
+}: {
+  title: string;
+  team: string;
+  className: string;
+}) {
+  return (
+    <div className={`min-w-[110px] border px-3 py-2 text-center ${className}`}>
+      <div className="text-[7px] font-bold uppercase tracking-[0.18em]">
+        {title}
+      </div>
+      <div className="text-[11px] font-extrabold">
+        {shortenTeamName(team || "-")}
       </div>
     </div>
   );
@@ -301,15 +352,6 @@ export default function PredictionPrintDocument({
       : "";
   const bronzeWinner = knockout["bronze-1"] || "";
 
-  const leftRound32 = round32.slice(0, 8);
-  const rightRound32 = round32.slice(8, 16);
-  const leftR16 = r16.slice(0, 4);
-  const rightR16 = r16.slice(4, 8);
-  const leftQF = qf.slice(0, 2);
-  const rightQF = qf.slice(2, 4);
-  const leftSF = sf.slice(0, 1);
-  const rightSF = sf.slice(1, 2);
-
   return (
     <div className="mx-auto max-w-none bg-white text-slate-900 print:text-[8px]">
       <section>
@@ -340,7 +382,7 @@ export default function PredictionPrintDocument({
           </div>
         </header>
 
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-4 gap-3">
           {groups.map((group, index) => (
             <GroupCompactCard
               key={`${getGroupName(group, index)}-${index}`}
@@ -353,180 +395,58 @@ export default function PredictionPrintDocument({
 
       <section className="print-page-break">
         <div className="mb-4 flex items-center justify-center gap-4">
-          <div className="min-w-[120px] border border-yellow-400 bg-yellow-50 px-3 py-2 text-center">
-            <div className="text-[7px] font-bold uppercase tracking-[0.18em] text-yellow-700">
-              Guld
-            </div>
-            <div className="text-[11px] font-extrabold">
-              {shortenTeamName(gold || "-")}
-            </div>
-          </div>
-
-          <div className="min-w-[120px] border border-slate-400 bg-slate-100 px-3 py-2 text-center">
-            <div className="text-[7px] font-bold uppercase tracking-[0.18em] text-slate-600">
-              Silver
-            </div>
-            <div className="text-[11px] font-extrabold">
-              {shortenTeamName(silver || "-")}
-            </div>
-          </div>
-
-          <div className="min-w-[120px] border border-orange-400 bg-orange-50 px-3 py-2 text-center">
-            <div className="text-[7px] font-bold uppercase tracking-[0.18em] text-orange-700">
-              Brons
-            </div>
-            <div className="text-[11px] font-extrabold">
-              {shortenTeamName(bronzeWinner || "-")}
-            </div>
-          </div>
+          <MedalCard
+            title="Guld"
+            team={gold}
+            className="border-yellow-400 bg-yellow-50 text-yellow-900"
+          />
+          <MedalCard
+            title="Silver"
+            team={silver}
+            className="border-slate-400 bg-slate-100 text-slate-900"
+          />
+          <MedalCard
+            title="Brons"
+            team={bronzeWinner}
+            className="border-orange-400 bg-orange-50 text-orange-900"
+          />
         </div>
 
-        <div className="grid grid-cols-[170px_170px_170px_170px_190px_170px_170px_170px_170px] gap-4 overflow-hidden">
-          <div>
-            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
-              R32
-            </div>
-            <div className="space-y-2">
-              {leftRound32.map((match) => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  selectedWinner={knockout[match.id]}
-                  compact
-                />
-              ))}
-            </div>
-          </div>
+        <div className="space-y-3">
+          <RoundSection
+            title="Sextondelsfinal"
+            matches={round32}
+            knockout={knockout}
+            columns={4}
+          />
 
-          <div className="pt-11">
-            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
-              R16
-            </div>
-            <div className="space-y-8">
-              {leftR16.map((match) => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  selectedWinner={knockout[match.id]}
-                />
-              ))}
-            </div>
-          </div>
+          <RoundSection
+            title="Åttondelsfinal"
+            matches={r16}
+            knockout={knockout}
+            columns={4}
+          />
 
-          <div className="pt-24">
-            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
-              Kvartsfinal
-            </div>
-            <div className="space-y-16">
-              {leftQF.map((match) => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  selectedWinner={knockout[match.id]}
-                />
-              ))}
-            </div>
-          </div>
+          <RoundSection
+            title="Kvartsfinal"
+            matches={qf}
+            knockout={knockout}
+            columns={4}
+          />
 
-          <div className="pt-40">
-            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
-              Semifinal
-            </div>
-            <div className="space-y-24">
-              {leftSF.map((match) => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  selectedWinner={knockout[match.id]}
-                />
-              ))}
-            </div>
-          </div>
+          <RoundSection
+            title="Semifinal"
+            matches={sf}
+            knockout={knockout}
+            columns={2}
+          />
 
-          <div className="pt-32">
-            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
-              Final / Brons
-            </div>
-
-            <div className="space-y-10">
-              {finalMatches.map((match) => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  selectedWinner={knockout[match.id]}
-                />
-              ))}
-
-              {bronze.map((match) => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  selectedWinner={knockout[match.id]}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="pt-40">
-            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
-              Semifinal
-            </div>
-            <div className="space-y-24">
-              {rightSF.map((match) => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  selectedWinner={knockout[match.id]}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="pt-24">
-            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
-              Kvartsfinal
-            </div>
-            <div className="space-y-16">
-              {rightQF.map((match) => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  selectedWinner={knockout[match.id]}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="pt-11">
-            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
-              R16
-            </div>
-            <div className="space-y-8">
-              {rightR16.map((match) => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  selectedWinner={knockout[match.id]}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
-              R32
-            </div>
-            <div className="space-y-2">
-              {rightRound32.map((match) => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  selectedWinner={knockout[match.id]}
-                  compact
-                />
-              ))}
-            </div>
-          </div>
+          <RoundSection
+            title="Final och bronsmatch"
+            matches={[...finalMatches, ...bronze]}
+            knockout={knockout}
+            columns={2}
+          />
         </div>
 
         <footer className="mt-4 border-t border-slate-300 pt-1 text-[8px] text-slate-500">
