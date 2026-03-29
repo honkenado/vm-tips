@@ -53,6 +53,13 @@ function toNumber(value: string | number | null | undefined): number | null {
   return Number.isFinite(num) ? num : null;
 }
 
+function shortenTeamName(team: string) {
+  return team
+    .replace("Europeiskt playoff", "EU playoff")
+    .replace("FIFA playoff", "FIFA playoff")
+    .trim();
+}
+
 function buildStandings(group: RawGroup): TableRow[] {
   const matches = group.matches ?? [];
   const teamNames = new Set<string>();
@@ -141,7 +148,7 @@ function getRoundLabel(matchKey: string) {
     key.includes("r32") ||
     key.includes("last32") ||
     key.includes("sextondel") ||
-    /^m7\d|^m8\d/.test(key)
+    /^m7\d/.test(key)
   ) {
     return "Sextondelsfinal";
   }
@@ -150,24 +157,25 @@ function getRoundLabel(matchKey: string) {
     key.includes("round16") ||
     key.includes("r16") ||
     key.includes("last16") ||
-    key.includes("attondel")
+    key.includes("attondel") ||
+    /^m8\d/.test(key)
   ) {
     return "Åttondelsfinal";
   }
 
-  if (key.includes("quarter") || key.includes("kvart") || key.includes("qf")) {
+  if (key.includes("quarter") || key.includes("kvart") || key.includes("qf") || /^m9[1-4]$/.test(key)) {
     return "Kvartsfinal";
   }
 
-  if (key.includes("semi") || key.includes("sf")) {
+  if (key.includes("semi") || key.includes("sf") || /^m9[5-6]$/.test(key)) {
     return "Semifinal";
   }
 
-  if (key.includes("bronze") || key.includes("brons")) {
+  if (key.includes("bronze") || key.includes("brons") || /^m9[7]$/.test(key)) {
     return "Bronsmatch";
   }
 
-  if (key.includes("final")) {
+  if (key.includes("final") || /^m9[89]$/.test(key) || /^m10\d/.test(key)) {
     return "Final";
   }
 
@@ -202,11 +210,72 @@ function compactMatchKey(matchKey: string) {
     .toUpperCase();
 }
 
-function shortenTeamName(team: string) {
-  return team
-    .replace("Europeiskt playoff", "EU playoff")
-    .replace("FIFA playoff", "FIFA playoff")
-    .trim();
+function GroupCompactCard({
+  group,
+  index,
+}: {
+  group: RawGroup;
+  index: number;
+}) {
+  const standings = buildStandings(group);
+
+  return (
+    <div className="print-avoid-break border border-slate-300 px-2 py-1.5">
+      <h3 className="mb-1 text-[11px] font-extrabold leading-none text-slate-900">
+        {getGroupName(group, index)}
+      </h3>
+
+      <div className="space-y-[1px] text-[8.5px] leading-tight">
+        {(group.matches || []).map((match, matchIndex) => {
+          const homeGoals = match.homeGoals ?? match.homeScore ?? "-";
+          const awayGoals = match.awayGoals ?? match.awayScore ?? "-";
+
+          return (
+            <div
+              key={match.id || matchIndex}
+              className="grid grid-cols-[1fr_auto_1fr] gap-x-1"
+            >
+              <div className="truncate">{shortenTeamName(match.homeTeam || "Lag 1")}</div>
+              <div className="font-bold">
+                {homeGoals}-{awayGoals}
+              </div>
+              <div className="truncate text-right">
+                {shortenTeamName(match.awayTeam || "Lag 2")}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-1 overflow-hidden border border-slate-200">
+        <table className="min-w-full text-[8px] leading-tight">
+          <thead className="bg-slate-50">
+            <tr>
+              <th className="px-1 py-[2px] text-left font-bold">#</th>
+              <th className="px-1 py-[2px] text-left font-bold">Lag</th>
+              <th className="px-1 py-[2px] text-center font-bold">M</th>
+              <th className="px-1 py-[2px] text-center font-bold">MS</th>
+              <th className="px-1 py-[2px] text-center font-bold">P</th>
+            </tr>
+          </thead>
+          <tbody>
+            {standings.map((team, standingIndex) => (
+              <tr
+                key={`${team.team}-${standingIndex}`}
+                className="border-t border-slate-100"
+              >
+                <td className="px-1 py-[1px]">{standingIndex + 1}</td>
+                <td className="px-1 py-[1px] truncate">{shortenTeamName(team.team)}</td>
+                <td className="px-1 py-[1px] text-center">{team.played}</td>
+                <td className="px-1 py-[1px] text-center">{team.goalDifference}</td>
+                <td className="px-1 py-[1px] text-center font-bold">{team.points}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
 export default function PredictionPrintDocument({
@@ -229,24 +298,24 @@ export default function PredictionPrintDocument({
     ([roundA], [roundB]) => roundSortOrder(roundA) - roundSortOrder(roundB)
   );
 
-  const firstPageGroups = groups.slice(0, 6);
-  const secondPageGroups = groups.slice(6, 12);
+  const firstPageGroups = groups.slice(0, 8);
+  const secondPageGroups = groups.slice(8, 12);
 
   return (
-    <div className="mx-auto max-w-none bg-white text-slate-900 print:text-[10px]">
-      <section className="print-avoid-break">
-        <header className="mb-3 rounded-xl border border-slate-300 px-4 py-3">
+    <div className="mx-auto max-w-none bg-white text-slate-900 print:text-[9px]">
+      <section>
+        <header className="mb-2 border border-slate-300 px-3 py-2">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-500">
                 Addes VM-tips
               </p>
-              <h1 className="text-2xl font-extrabold leading-tight">
+              <h1 className="text-lg font-extrabold leading-tight">
                 Ditt sparade tips
               </h1>
             </div>
 
-            <div className="grid min-w-[260px] gap-1 text-xs">
+            <div className="grid gap-[2px] text-[9px] leading-tight">
               <div>
                 <span className="font-bold">Namn:</span> {profileName}
               </div>
@@ -262,160 +331,52 @@ export default function PredictionPrintDocument({
           </div>
         </header>
 
-        <h2 className="mb-2 text-lg font-extrabold">Gruppspel och slutställning</h2>
+        <h2 className="mb-1 text-sm font-extrabold">Gruppspel och slutställning</h2>
 
-        <div className="grid grid-cols-2 gap-3">
-          {firstPageGroups.map((group, groupIndex) => {
-            const standings = buildStandings(group);
-
-            return (
-              <div
-                key={`${getGroupName(group, groupIndex)}-${groupIndex}`}
-                className="print-avoid-break rounded-xl border border-slate-300 px-3 py-2"
-              >
-                <h3 className="mb-2 text-sm font-extrabold">
-                  {getGroupName(group, groupIndex)}
-                </h3>
-
-                <div className="grid grid-cols-[1.3fr_0.5fr_1.3fr] gap-x-2 gap-y-1 text-[10px] leading-tight">
-                  {(group.matches || []).map((match, matchIndex) => {
-                    const homeGoals = match.homeGoals ?? match.homeScore;
-                    const awayGoals = match.awayGoals ?? match.awayScore;
-
-                    return (
-                      <div key={match.id || matchIndex} className="contents">
-                        <div className="truncate">
-                          {shortenTeamName(match.homeTeam || "Lag 1")}
-                        </div>
-                        <div className="text-center font-bold">
-                          {homeGoals ?? "-"}-{awayGoals ?? "-"}
-                        </div>
-                        <div className="truncate text-right">
-                          {shortenTeamName(match.awayTeam || "Lag 2")}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-2 overflow-hidden rounded-md border border-slate-200">
-                  <table className="min-w-full text-[10px] leading-tight">
-                    <thead className="bg-slate-50">
-                      <tr>
-                        <th className="px-2 py-1 text-left font-bold">#</th>
-                        <th className="px-2 py-1 text-left font-bold">Lag</th>
-                        <th className="px-2 py-1 text-center font-bold">M</th>
-                        <th className="px-2 py-1 text-center font-bold">MS</th>
-                        <th className="px-2 py-1 text-center font-bold">P</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {standings.map((team, index) => (
-                        <tr key={`${team.team}-${index}`} className="border-t border-slate-100">
-                          <td className="px-2 py-0.5">{index + 1}</td>
-                          <td className="px-2 py-0.5 truncate">
-                            {shortenTeamName(team.team)}
-                          </td>
-                          <td className="px-2 py-0.5 text-center">{team.played}</td>
-                          <td className="px-2 py-0.5 text-center">{team.goalDifference}</td>
-                          <td className="px-2 py-0.5 text-center font-bold">{team.points}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            );
-          })}
+        <div className="grid grid-cols-4 gap-2">
+          {firstPageGroups.map((group, index) => (
+            <GroupCompactCard
+              key={`${getGroupName(group, index)}-${index}`}
+              group={group}
+              index={index}
+            />
+          ))}
         </div>
       </section>
 
       <section className="print-page-break">
-        <h2 className="mb-2 text-lg font-extrabold">Gruppspel och slutställning forts.</h2>
+        <h2 className="mb-1 text-sm font-extrabold">Gruppspel och slutställning forts.</h2>
 
-        <div className="mb-4 grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-4 gap-2">
           {secondPageGroups.map((group, localIndex) => {
-            const groupIndex = localIndex + 6;
-            const standings = buildStandings(group);
+            const index = localIndex + 8;
 
             return (
-              <div
-                key={`${getGroupName(group, groupIndex)}-${groupIndex}`}
-                className="print-avoid-break rounded-xl border border-slate-300 px-3 py-2"
-              >
-                <h3 className="mb-2 text-sm font-extrabold">
-                  {getGroupName(group, groupIndex)}
-                </h3>
-
-                <div className="grid grid-cols-[1.3fr_0.5fr_1.3fr] gap-x-2 gap-y-1 text-[10px] leading-tight">
-                  {(group.matches || []).map((match, matchIndex) => {
-                    const homeGoals = match.homeGoals ?? match.homeScore;
-                    const awayGoals = match.awayGoals ?? match.awayScore;
-
-                    return (
-                      <div key={match.id || matchIndex} className="contents">
-                        <div className="truncate">
-                          {shortenTeamName(match.homeTeam || "Lag 1")}
-                        </div>
-                        <div className="text-center font-bold">
-                          {homeGoals ?? "-"}-{awayGoals ?? "-"}
-                        </div>
-                        <div className="truncate text-right">
-                          {shortenTeamName(match.awayTeam || "Lag 2")}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-2 overflow-hidden rounded-md border border-slate-200">
-                  <table className="min-w-full text-[10px] leading-tight">
-                    <thead className="bg-slate-50">
-                      <tr>
-                        <th className="px-2 py-1 text-left font-bold">#</th>
-                        <th className="px-2 py-1 text-left font-bold">Lag</th>
-                        <th className="px-2 py-1 text-center font-bold">M</th>
-                        <th className="px-2 py-1 text-center font-bold">MS</th>
-                        <th className="px-2 py-1 text-center font-bold">P</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {standings.map((team, index) => (
-                        <tr key={`${team.team}-${index}`} className="border-t border-slate-100">
-                          <td className="px-2 py-0.5">{index + 1}</td>
-                          <td className="px-2 py-0.5 truncate">
-                            {shortenTeamName(team.team)}
-                          </td>
-                          <td className="px-2 py-0.5 text-center">{team.played}</td>
-                          <td className="px-2 py-0.5 text-center">{team.goalDifference}</td>
-                          <td className="px-2 py-0.5 text-center font-bold">{team.points}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <GroupCompactCard
+                key={`${getGroupName(group, index)}-${index}`}
+                group={group}
+                index={index}
+              />
             );
           })}
         </div>
 
-        <section className="print-avoid-break">
-          <h2 className="mb-2 text-lg font-extrabold">Slutspelstips</h2>
+        <div className="mt-3">
+          <h2 className="mb-1 text-sm font-extrabold">Slutspelstips</h2>
 
           {orderedKnockoutRounds.length === 0 ? (
-            <div className="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-600">
+            <div className="border border-slate-300 px-2 py-2 text-[9px] text-slate-600">
               Inga slutspelsval hittades.
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1">
               {orderedKnockoutRounds.map(([round, matches]) => (
-                <div
-                  key={round}
-                  className="rounded-xl border border-slate-300 px-3 py-2"
-                >
-                  <h3 className="mb-1 text-sm font-extrabold">{round}</h3>
+                <div key={round} className="border border-slate-300 px-2 py-1.5">
+                  <h3 className="mb-1 text-[10px] font-extrabold leading-none">
+                    {round}
+                  </h3>
 
-                  <div className="grid grid-cols-4 gap-x-3 gap-y-1 text-[10px] leading-tight">
+                  <div className="grid grid-cols-4 gap-x-2 gap-y-1 text-[8.5px] leading-tight">
                     {matches.map((match) => (
                       <div key={match.key} className="flex gap-1">
                         <span className="font-bold text-slate-500">
@@ -431,9 +392,9 @@ export default function PredictionPrintDocument({
               ))}
             </div>
           )}
-        </section>
+        </div>
 
-        <footer className="mt-3 border-t border-slate-300 pt-2 text-[10px] text-slate-500">
+        <footer className="mt-2 border-t border-slate-300 pt-1 text-[8px] text-slate-500">
           Exporterad från Addes VM-tips • {formatDate(updatedAt)}
         </footer>
       </section>
