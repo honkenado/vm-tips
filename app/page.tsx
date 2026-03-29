@@ -1,517 +1,726 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import AuthStatus from "@/components/auth-status";
+import BestThirdsSection from "@/components/BestThirdsSection";
+import GoldenBootSection from "@/components/GoldenBootSection";
+import GroupSection from "@/components/GroupSection";
+import KnockoutFullSection from "@/components/KnockoutFullSection";
+import LeaguesSection from "@/components/leagues-section";
+import NewsPreview from "@/components/NewsPreview";
+import QualifiedTeamsSection from "@/components/QualifiedTeamsSection";
+import SectionCard from "@/components/SectionCard";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { isDeadlinePassed } from "@/lib/config";
 import {
+  clearDependentKnockoutSelections,
   buildNextRound,
+  generateRandomScore,
   getKnockoutSeedData,
   getLoser,
+  initialGroups,
+  isGroupComplete,
+  isTournamentGroupStageComplete,
+  pickRandomWinner,
 } from "@/lib/tournament";
 import type { GroupData, KnockoutMatch } from "@/types/tournament";
 
-type RawMatch = {
-  id?: string | number;
-  homeTeam?: string;
-  awayTeam?: string;
-  homeGoals?: string | number | null;
-  awayGoals?: string | number | null;
-  homeScore?: string | number | null;
-  awayScore?: string | number | null;
+type AppViewMode =
+  | "all"
+  | "groups"
+  | "thirds"
+  | "knockout"
+  | "goldenboot"
+  | "leagues";
+
+type MyLeague = {
+  id: string;
+  name: string;
+  join_code: string;
+  created_by: string;
+  created_at: string;
 };
 
-type RawGroup = {
-  name?: string;
-  groupName?: string;
-  teams?: string[];
-  matches?: RawMatch[];
-};
-
-type PrintablePrediction = {
-  profileName: string;
-  updatedAt: string | null;
-  goldenBoot: string | null;
-  groups: RawGroup[];
+type PdfExportPayload = {
+  groups: GroupData[];
   knockout: Record<string, string>;
+  goldenBoot: string;
+  savedAt: string;
+  rounds: {
+    round32: KnockoutMatch[];
+    r16: KnockoutMatch[];
+    qf: KnockoutMatch[];
+    sf: KnockoutMatch[];
+    finalMatches: KnockoutMatch[];
+    bronze: KnockoutMatch[];
+  };
+  medals: {
+    gold: string;
+    silver: string;
+    bronze: string;
+  };
 };
 
-type TableRow = {
-  team: string;
-  played: number;
-  goalsFor: number;
-  goalsAgainst: number;
-  goalDifference: number;
-  points: number;
-};
-
-function formatDate(dateString: string | null) {
-  if (!dateString) return "Okänt";
-
-  const date = new Date(dateString);
-
-  return new Intl.DateTimeFormat("sv-SE", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
-}
-
-function getGroupName(group: RawGroup, index: number) {
-  return group.name || group.groupName || `Grupp ${index + 1}`;
-}
-
-function toNumber(value: string | number | null | undefined): number | null {
-  if (value === "" || value === null || value === undefined) return null;
-  const num = Number(value);
-  return Number.isFinite(num) ? num : null;
-}
-
-function shortenTeamName(team: string) {
-  return team
-    .replace("Europeiskt playoff", "EU playoff")
-    .replace("FIFA playoff", "FIFA playoff")
-    .trim();
-}
-
-function buildStandings(group: RawGroup): TableRow[] {
-  const matches = group.matches ?? [];
-  const teamNames = new Set<string>();
-
-  if (Array.isArray(group.teams)) {
-    group.teams.forEach((team) => {
-      if (team) teamNames.add(team);
-    });
-  }
-
-  matches.forEach((match) => {
-    if (match.homeTeam) teamNames.add(match.homeTeam);
-    if (match.awayTeam) teamNames.add(match.awayTeam);
-  });
-
-  const table = new Map<string, TableRow>();
-
-  for (const team of teamNames) {
-    table.set(team, {
-      team,
-      played: 0,
-      goalsFor: 0,
-      goalsAgainst: 0,
-      goalDifference: 0,
-      points: 0,
-    });
-  }
-
-  for (const match of matches) {
-    const homeTeam = match.homeTeam;
-    const awayTeam = match.awayTeam;
-
-    if (!homeTeam || !awayTeam) continue;
-
-    const homeGoals = toNumber(match.homeGoals ?? match.homeScore);
-    const awayGoals = toNumber(match.awayGoals ?? match.awayScore);
-
-    if (homeGoals === null || awayGoals === null) continue;
-
-    const home = table.get(homeTeam);
-    const away = table.get(awayTeam);
-
-    if (!home || !away) continue;
-
-    home.played += 1;
-    away.played += 1;
-
-    home.goalsFor += homeGoals;
-    home.goalsAgainst += awayGoals;
-
-    away.goalsFor += awayGoals;
-    away.goalsAgainst += homeGoals;
-
-    if (homeGoals > awayGoals) {
-      home.points += 3;
-    } else if (homeGoals < awayGoals) {
-      away.points += 3;
-    } else {
-      home.points += 1;
-      away.points += 1;
-    }
-  }
-
-  const rows = Array.from(table.values()).map((row) => ({
-    ...row,
-    goalDifference: row.goalsFor - row.goalsAgainst,
-  }));
-
-  rows.sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    if (b.goalDifference !== a.goalDifference) {
-      return b.goalDifference - a.goalDifference;
-    }
-    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-    return a.team.localeCompare(b.team, "sv");
-  });
-
-  return rows;
-}
-
-function GroupCompactCard({
-  group,
-  index,
-}: {
-  group: RawGroup;
-  index: number;
-}) {
-  const standings = buildStandings(group);
-
-  return (
-    <div className="border border-slate-300 px-2 py-1.5">
-      <h3 className="mb-1 text-[11px] font-extrabold leading-none text-slate-900">
-        {getGroupName(group, index)}
-      </h3>
-
-      <div className="space-y-[1px] text-[8px] leading-tight">
-        {(group.matches || []).map((match, matchIndex) => {
-          const homeGoals = match.homeGoals ?? match.homeScore ?? "-";
-          const awayGoals = match.awayGoals ?? match.awayScore ?? "-";
-
-          return (
-            <div
-              key={match.id || matchIndex}
-              className="grid grid-cols-[1fr_auto_1fr] gap-x-1"
-            >
-              <div className="truncate">{shortenTeamName(match.homeTeam || "Lag 1")}</div>
-              <div className="font-bold">
-                {homeGoals}-{awayGoals}
-              </div>
-              <div className="truncate text-right">
-                {shortenTeamName(match.awayTeam || "Lag 2")}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-1 overflow-hidden border border-slate-200">
-        <table className="min-w-full text-[7.5px] leading-tight">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="px-1 py-[1px] text-left font-bold">#</th>
-              <th className="px-1 py-[1px] text-left font-bold">Lag</th>
-              <th className="px-1 py-[1px] text-center font-bold">M</th>
-              <th className="px-1 py-[1px] text-center font-bold">MS</th>
-              <th className="px-1 py-[1px] text-center font-bold">P</th>
-            </tr>
-          </thead>
-          <tbody>
-            {standings.map((team, standingIndex) => (
-              <tr
-                key={`${team.team}-${standingIndex}`}
-                className="border-t border-slate-100"
-              >
-                <td className="px-1 py-0">{standingIndex + 1}</td>
-                <td className="px-1 py-0 truncate">{shortenTeamName(team.team)}</td>
-                <td className="px-1 py-0 text-center">{team.played}</td>
-                <td className="px-1 py-0 text-center">{team.goalDifference}</td>
-                <td className="px-1 py-0 text-center font-bold">{team.points}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function getMatchDisplayLabel(match: KnockoutMatch) {
-  return match.label?.toUpperCase() || String(match.id).toUpperCase();
-}
-
-function MatchRow({
-  team,
-  selected,
-}: {
-  team: string;
-  selected?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded border px-1.5 py-1 text-center text-[7px] font-extrabold leading-tight ${
-        selected
-          ? "border-emerald-600 bg-emerald-600 text-white"
-          : "border-emerald-200 bg-slate-50 text-slate-900"
-      }`}
-    >
-      {shortenTeamName(team || "-")}
-    </div>
-  );
-}
-
-function MatchBox({
-  match,
-  selectedWinner,
-}: {
-  match: KnockoutMatch;
-  selectedWinner?: string;
-}) {
-  return (
-    <div className="border border-emerald-300 bg-white px-1.5 py-1.5 shadow-sm">
-      <div className="mb-1 text-[6.5px] font-bold uppercase leading-none text-slate-500">
-        {getMatchDisplayLabel(match)}
-      </div>
-
-      <MatchRow team={match.home || "-"} selected={selectedWinner === match.home} />
-
-      <div className="py-0.5 text-center text-[6px] font-bold uppercase text-slate-400">
-        vs
-      </div>
-
-      <MatchRow team={match.away || "-"} selected={selectedWinner === match.away} />
-    </div>
-  );
-}
-
-function RoundGrid({
-  title,
-  matches,
-  knockout,
-  columns,
-}: {
-  title: string;
-  matches: KnockoutMatch[];
-  knockout: Record<string, string>;
-  columns: 2 | 4;
-}) {
-  const gridCols = columns === 2 ? "grid-cols-2" : "grid-cols-4";
-
-  return (
-    <div className="border border-slate-300 px-2 py-2">
-      <h3 className="mb-2 text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
-        {title}
-      </h3>
-
-      <div className={`grid ${gridCols} gap-2`}>
-        {matches.map((match) => (
-          <MatchBox
-            key={match.id}
-            match={match}
-            selectedWinner={knockout[match.id]}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MedalCard({
-  title,
-  team,
-  className,
-}: {
-  title: string;
-  team: string;
-  className: string;
-}) {
-  return (
-    <div className={`min-w-[110px] border px-3 py-2 text-center ${className}`}>
-      <div className="text-[7px] font-bold uppercase tracking-[0.18em]">
-        {title}
-      </div>
-      <div className="text-[11px] font-extrabold">
-        {shortenTeamName(team || "-")}
-      </div>
-    </div>
-  );
-}
-
-function getMatchNumberFromKnockoutMatch(match: KnockoutMatch): number | null {
-  const raw = `${match.label ?? ""} ${match.id ?? ""}`;
-  const found = raw.match(/(\d{2,3})/);
-  if (!found) return null;
-
-  const value = Number(found[1]);
-  return Number.isFinite(value) ? value : null;
-}
-
-const R32_BRACKET_ORDER = [
-  74, 77, 73, 75, 83, 84, 81, 82,
-  76, 78, 79, 80, 86, 88, 85, 87,
-];
-
-function orderRound32ForBracket(matches: KnockoutMatch[]) {
-  const byNumber = new Map<number, KnockoutMatch>();
-
-  for (const match of matches) {
-    const matchNo = getMatchNumberFromKnockoutMatch(match);
-    if (matchNo !== null) {
-      byNumber.set(matchNo, match);
-    }
-  }
-
-  return R32_BRACKET_ORDER.map((matchNo) => byNumber.get(matchNo)).filter(
-    (match): match is KnockoutMatch => Boolean(match)
-  );
-}
-
-function safeBuildNextRound(
-  matches: KnockoutMatch[],
-  winners: Record<string, string>,
-  prefix: string,
-  label: string
-) {
-  const built = buildNextRound(matches, winners, prefix, label);
-
-  if (built.length > 0) {
-    return built;
-  }
-
-  const fallback: KnockoutMatch[] = [];
-
-  for (let i = 0; i < matches.length; i += 2) {
-    const left = matches[i];
-    const right = matches[i + 1];
-
-    fallback.push({
-      id: `${prefix}-${fallback.length + 1}`,
-      label: `${label} ${fallback.length + 1}`,
-      home: left ? winners[left.id] || "" : "",
-      away: right ? winners[right.id] || "" : "",
-    });
-  }
-
-  return fallback;
-}
-
-export default function PredictionPrintDocument({
-  profileName,
-  updatedAt,
-  goldenBoot,
-  groups,
-  knockout,
-}: PrintablePrediction) {
-  const typedGroups = groups as GroupData[];
-
-  const { round32: rawRound32 } = getKnockoutSeedData(typedGroups);
-  const round32 = orderRound32ForBracket(rawRound32);
-
-  const r16 = safeBuildNextRound(round32, knockout, "r16", "Åttondelsfinal");
-  const qf = safeBuildNextRound(r16, knockout, "qf", "Kvartsfinal");
-  const sf = safeBuildNextRound(qf, knockout, "sf", "Semifinal");
-  const finalMatches = safeBuildNextRound(sf, knockout, "final", "Final");
-
-  const bronze: KnockoutMatch[] = [
-    {
-      id: "bronze-1",
-      label: "Bronsmatch",
-      home: sf[0] ? getLoser(sf[0], knockout) : "",
-      away: sf[1] ? getLoser(sf[1], knockout) : "",
-    },
+const viewModeItems: { key: AppViewMode; label: string; mobileLabel: string }[] =
+  [
+    { key: "all", label: "Allt", mobileLabel: "Allt" },
+    { key: "groups", label: "Grupper", mobileLabel: "Grupper" },
+    { key: "thirds", label: "Bästa treor", mobileLabel: "Treor" },
+    { key: "knockout", label: "Slutspel", mobileLabel: "Slutspel" },
+    { key: "goldenboot", label: "Skyttekung", mobileLabel: "Skytt" },
+    { key: "leagues", label: "Ligor", mobileLabel: "Ligor" },
   ];
 
-  const gold = knockout[finalMatches[0]?.id] || "";
-  const silver =
-    finalMatches[0] && gold
-      ? [finalMatches[0].home, finalMatches[0].away].find((team) => team !== gold) || ""
-      : "";
-  const bronzeWinner = knockout["bronze-1"] || "";
+function normalizeGroups(input: unknown): GroupData[] {
+  if (!Array.isArray(input)) return initialGroups;
+
+  return input.map((group, groupIndex) => {
+    const fallbackGroup = initialGroups[groupIndex];
+
+    if (!group || typeof group !== "object") {
+      return fallbackGroup;
+    }
+
+    const g = group as Partial<GroupData> & { matches?: unknown };
+
+    return {
+      ...fallbackGroup,
+      ...g,
+      matches: Array.isArray(g.matches) ? g.matches : fallbackGroup.matches,
+    };
+  });
+}
+
+export default function HomePage() {
+  const [groups, setGroups] = useState<GroupData[]>(normalizeGroups(initialGroups));
+  const [knockoutWinners, setKnockoutWinners] = useState<Record<string, string>>(
+    {}
+  );
+  const [goldenBoot, setGoldenBoot] = useState("");
+  const [viewMode, setViewMode] = useState<AppViewMode>("all");
+  const [activeGroupLetter, setActiveGroupLetter] = useState("A");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [hasLoadedFromDatabase, setHasLoadedFromDatabase] = useState(false);
+  const [myLeagues, setMyLeagues] = useState<MyLeague[]>([]);
+
+  const groupsRef = useRef<GroupData[]>(normalizeGroups(initialGroups));
+  const knockoutRef = useRef<Record<string, string>>({});
+  const goldenBootRef = useRef("");
+
+  async function loadMyLeagues() {
+    try {
+      const res = await fetch("/api/leagues/my");
+      const data = await res.json();
+
+      if (!res.ok) return;
+
+      setMyLeagues((data.leagues ?? []) as MyLeague[]);
+    } catch (error) {
+      console.error("Kunde inte hämta ligor", error);
+    }
+  }
+
+  useEffect(() => {
+    async function loadPredictionFromDatabase() {
+      try {
+        const res = await fetch("/api/prediction");
+
+        if (!res.ok) {
+          setHasLoadedFromDatabase(true);
+          return;
+        }
+
+        const data = await res.json();
+        const normalized = normalizeGroups(data.prediction?.group_stage);
+
+        setGroups(normalized);
+        groupsRef.current = normalized;
+
+        if (data.prediction?.knockout && typeof data.prediction.knockout === "object") {
+          setKnockoutWinners(data.prediction.knockout);
+          knockoutRef.current = data.prediction.knockout;
+        }
+
+        if (typeof data.prediction?.golden_boot === "string") {
+          setGoldenBoot(data.prediction.golden_boot);
+          goldenBootRef.current = data.prediction.golden_boot;
+        }
+      } catch (error) {
+        console.error("Kunde inte läsa från databasen", error);
+      } finally {
+        setHasLoadedFromDatabase(true);
+      }
+    }
+
+    loadPredictionFromDatabase();
+    loadMyLeagues();
+  }, []);
+
+  async function createLeague() {
+    const name = prompt("Vad ska ligan heta?");
+    if (!name) return;
+
+    try {
+      const res = await fetch("/api/leagues/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Kunde inte skapa liga");
+        return;
+      }
+
+      await loadMyLeagues();
+
+      alert(
+        `Liga skapad!\n\nKod: ${data.league.join_code}\n\nDela koden med dina vänner.`
+      );
+    } catch (error) {
+      console.error("Fel vid skapande av liga", error);
+      alert("Något gick fel när ligan skulle skapas");
+    }
+  }
+
+  async function joinLeague() {
+    const joinCode = prompt("Ange ligakod");
+    if (!joinCode) return;
+
+    try {
+      const res = await fetch("/api/leagues/join", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ joinCode }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Kunde inte gå med i ligan");
+        return;
+      }
+
+      await loadMyLeagues();
+
+      alert(`Du gick med i ligan: ${data.league.name}`);
+    } catch (error) {
+      console.error("Fel vid join league", error);
+      alert("Något gick fel när du skulle gå med i ligan");
+    }
+  }
+
+  function updateMatch(
+    groupName: string,
+    matchId: number,
+    field: "homeGoals" | "awayGoals",
+    value: string
+  ) {
+    if (value !== "" && !/^\d+$/.test(value)) return;
+
+    setGroups((prev) => {
+      const next = prev.map((group) =>
+        group.name !== groupName
+          ? group
+          : {
+              ...group,
+              matches: (group.matches ?? []).map((match) =>
+                match.id === matchId ? { ...match, [field]: value } : match
+              ),
+            }
+      );
+
+      groupsRef.current = next;
+      return next;
+    });
+
+    knockoutRef.current = {};
+    setKnockoutWinners({});
+    setSaveMessage(null);
+  }
+
+  function resetGroup(groupName: string) {
+    setGroups((prev) => {
+      const next = prev.map((group) =>
+        group.name !== groupName
+          ? group
+          : {
+              ...group,
+              matches: (group.matches ?? []).map((match) => ({
+                ...match,
+                homeGoals: "",
+                awayGoals: "",
+              })),
+            }
+      );
+
+      groupsRef.current = next;
+      return next;
+    });
+
+    knockoutRef.current = {};
+    setKnockoutWinners({});
+    setSaveMessage(null);
+  }
+
+  function selectWinner(matchId: string, team: string) {
+    setKnockoutWinners((prev) => {
+      const cleaned = clearDependentKnockoutSelections(prev, matchId);
+      const next = { ...cleaned, [matchId]: team };
+
+      knockoutRef.current = next;
+      return next;
+    });
+
+    setSaveMessage(null);
+  }
+
+  function updateGoldenBoot(value: string) {
+    goldenBootRef.current = value;
+    setGoldenBoot(value);
+    setSaveMessage(null);
+  }
+
+  function runAddeBoy() {
+    const randomGroups: GroupData[] = normalizeGroups(initialGroups).map((group) => ({
+      ...group,
+      matches: (group.matches ?? []).map((match) => {
+        const score = generateRandomScore(match.homeTeam, match.awayTeam);
+        return { ...match, homeGoals: score.homeGoals, awayGoals: score.awayGoals };
+      }),
+    }));
+
+    const { round32 } = getKnockoutSeedData(randomGroups);
+    const winners: Record<string, string> = {};
+
+    round32.forEach((m) => {
+      winners[m.id] = pickRandomWinner(m.home, m.away);
+    });
+
+    const r16 = buildNextRound(round32, winners, "r16", "Åttondelsfinal");
+    r16.forEach((m) => {
+      winners[m.id] = pickRandomWinner(m.home, m.away);
+    });
+
+    const qf = buildNextRound(r16, winners, "qf", "Kvartsfinal");
+    qf.forEach((m) => {
+      winners[m.id] = pickRandomWinner(m.home, m.away);
+    });
+
+    const sf = buildNextRound(qf, winners, "sf", "Semifinal");
+    sf.forEach((m) => {
+      winners[m.id] = pickRandomWinner(m.home, m.away);
+    });
+
+    const finalMatch = buildNextRound(sf, winners, "final", "Final");
+    finalMatch.forEach((m) => {
+      winners[m.id] = pickRandomWinner(m.home, m.away);
+    });
+
+    const bronze: KnockoutMatch[] = [
+      {
+        id: "bronze-1",
+        label: "Bronsmatch",
+        home: sf[0] ? getLoser(sf[0], winners) : "",
+        away: sf[1] ? getLoser(sf[1], winners) : "",
+      },
+    ];
+
+    bronze.forEach((m) => {
+      winners[m.id] = pickRandomWinner(m.home, m.away);
+    });
+
+    groupsRef.current = randomGroups;
+    knockoutRef.current = winners;
+    goldenBootRef.current = "";
+
+    setGroups(randomGroups);
+    setKnockoutWinners(winners);
+    setGoldenBoot("");
+    setViewMode("all");
+    setActiveGroupLetter("A");
+    setSaveMessage(null);
+  }
+
+  function resetKnockout() {
+    knockoutRef.current = {};
+    setKnockoutWinners({});
+    setSaveMessage(null);
+  }
+
+  function resetAll() {
+    const normalizedInitial = normalizeGroups(initialGroups);
+
+    groupsRef.current = normalizedInitial;
+    knockoutRef.current = {};
+    goldenBootRef.current = "";
+
+    setGroups(normalizedInitial);
+    setKnockoutWinners({});
+    setGoldenBoot("");
+    setViewMode("all");
+    setActiveGroupLetter("A");
+    setSaveMessage(null);
+  }
+
+  function buildPdfExportPayload(): PdfExportPayload {
+    const currentGroups = normalizeGroups(groupsRef.current);
+    const currentKnockout = knockoutRef.current;
+    const currentGoldenBoot = goldenBootRef.current;
+
+    const { round32 } = getKnockoutSeedData(currentGroups);
+    const r16 = buildNextRound(round32, currentKnockout, "r16", "Åttondelsfinal");
+    const qf = buildNextRound(r16, currentKnockout, "qf", "Kvartsfinal");
+    const sf = buildNextRound(qf, currentKnockout, "sf", "Semifinal");
+    const finalMatches = buildNextRound(sf, currentKnockout, "final", "Final");
+
+    const bronze: KnockoutMatch[] = [
+      {
+        id: "bronze-1",
+        label: "Bronsmatch",
+        home: sf[0] ? getLoser(sf[0], currentKnockout) : "",
+        away: sf[1] ? getLoser(sf[1], currentKnockout) : "",
+      },
+    ];
+
+    const gold = currentKnockout[finalMatches[0]?.id] || "";
+    const silver =
+      finalMatches[0] && gold
+        ? [finalMatches[0].home, finalMatches[0].away].find((team) => team !== gold) || ""
+        : "";
+    const bronzeWinner = currentKnockout["bronze-1"] || "";
+
+    return {
+      groups: currentGroups,
+      knockout: currentKnockout,
+      goldenBoot: currentGoldenBoot,
+      savedAt: new Date().toISOString(),
+      rounds: {
+        round32,
+        r16,
+        qf,
+        sf,
+        finalMatches,
+        bronze,
+      },
+      medals: {
+        gold,
+        silver,
+        bronze: bronzeWinner,
+      },
+    };
+  }
+
+  function saveToPdfStorage() {
+    if (typeof window === "undefined") return;
+
+    const payload = buildPdfExportPayload();
+    localStorage.setItem("prediction_pdf", JSON.stringify(payload));
+    console.log("prediction_pdf saved", payload);
+  }
+
+  async function savePredictionToDatabase() {
+    if (isDeadlinePassed()) {
+      setSaveMessage("Deadline har passerat – tipset är låst");
+      return false;
+    }
+
+    try {
+      setIsSaving(true);
+      setSaveMessage(null);
+
+      const payload = {
+        groups: normalizeGroups(groupsRef.current),
+        knockout: knockoutRef.current,
+        goldenBoot: goldenBootRef.current,
+      };
+
+      const res = await fetch("/api/prediction", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setSaveMessage(data.error || "Kunde inte spara tipset");
+        return false;
+      }
+
+      setSaveMessage("Tipset är sparat");
+      return true;
+    } catch (error) {
+      console.error("Fel vid sparning", error);
+      setSaveMessage("Något gick fel vid sparning");
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function saveAndOpenPdf() {
+    saveToPdfStorage();
+
+    const ok = await savePredictionToDatabase();
+    if (!ok) return;
+
+    window.open("/mitt-tips/pdf", "_blank");
+  }
+
+  const safeGroups = normalizeGroups(groups);
+
+  const visibleGroup =
+    safeGroups.find((g) => g.name === `Grupp ${activeGroupLetter}`) ?? safeGroups[0];
+
+  const isGroupStageComplete = useMemo(
+    () => isTournamentGroupStageComplete(safeGroups),
+    [safeGroups]
+  );
+
+  const deadlinePassed = isDeadlinePassed();
 
   return (
-    <div className="mx-auto max-w-none bg-white text-slate-900 print:text-[8px]">
-      <section>
-        <header className="mb-2 border border-slate-300 px-3 py-2">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[8px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                Addes VM-tips
-              </p>
-              <h1 className="text-sm font-extrabold leading-tight">
-                Ditt sparade tips
-              </h1>
+    <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_#ecfdf5_0%,_#f8fafc_35%,_#f1f5f9_68%,_#e2e8f0_100%)] px-3 py-3 pb-24 sm:px-4 sm:py-4 sm:pb-6 md:px-6 md:py-8 md:pb-8">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-32 -top-24 h-[420px] w-[420px] rounded-full bg-emerald-400/12 blur-3xl" />
+        <div className="absolute right-[-120px] top-[140px] h-[420px] w-[420px] rounded-full bg-green-500/10 blur-3xl" />
+        <div className="absolute bottom-[-140px] left-[18%] h-[360px] w-[360px] rounded-full bg-slate-400/10 blur-3xl" />
+      </div>
+
+      <div className="mx-auto max-w-[1600px]">
+        <header className="relative mb-4 overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-gradient-to-r from-emerald-950 via-green-900 to-slate-950 p-3 text-white shadow-[0_20px_50px_rgba(15,23,42,0.20)] sm:mb-5 sm:p-4 md:mb-6 md:p-5">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.10),_transparent_35%)]" />
+          <div className="absolute right-[-80px] top-[-80px] h-40 w-40 rounded-full bg-emerald-300/10 blur-3xl" />
+
+          <div className="relative">
+            <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0 flex flex-col gap-3">
+                <div className="mb-1 inline-flex w-fit rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-100 sm:text-[11px]">
+                  FIFA World Cup 2026
+                </div>
+
+                <div className="flex items-center justify-center md:justify-start">
+                  <Image
+                    src="/logo.png"
+                    alt="Addes VM tips"
+                    width={220}
+                    height={220}
+                    priority
+                    className="h-auto w-[140px] sm:w-[170px] md:w-[210px] drop-shadow-[0_8px_20px_rgba(0,0,0,0.35)]"
+                  />
+                </div>
+
+                <p className="max-w-2xl text-sm leading-5 text-slate-200 md:text-sm">
+                  Tippa grupper, följ de bästa treorna och spela hela slutspelet fram till
+                  världsmästaren.
+                </p>
+              </div>
+
+              <div className="flex justify-start lg:justify-end">
+                <AuthStatus />
+              </div>
             </div>
 
-            <div className="grid gap-[1px] text-[8px] leading-tight">
-              <div>
-                <span className="font-bold">Namn:</span> {profileName}
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href="/rules"
+                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
+                >
+                  Regler
+                </Link>
+
+                <Link
+                  href="/help"
+                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
+                >
+                  Hjälp
+                </Link>
+
+                <Link
+                  href="/medlemmar"
+                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
+                >
+                  Medlemmar
+                </Link>
+
+                <button
+                  onClick={saveAndOpenPdf}
+                  disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
+                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20 disabled:opacity-50"
+                >
+                  {isSaving ? "Sparar..." : "Spara & PDF"}
+                </button>
+
+                <button
+                  onClick={savePredictionToDatabase}
+                  disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
+                  className="h-9 rounded-full bg-white px-3 py-1.5 text-[13px] font-extrabold text-slate-900 shadow-md transition hover:bg-slate-100 disabled:opacity-50"
+                >
+                  {deadlinePassed
+                    ? "Deadline passerad"
+                    : isSaving
+                    ? "Sparar..."
+                    : "Spara tips"}
+                </button>
+
+                <button
+                  onClick={createLeague}
+                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
+                >
+                  Skapa liga
+                </button>
+
+                <button
+                  onClick={joinLeague}
+                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
+                >
+                  Gå med i liga
+                </button>
+
+                <button
+                  onClick={runAddeBoy}
+                  className="h-9 rounded-full border border-emerald-300/20 bg-emerald-500 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-emerald-400"
+                >
+                  Adde Boy
+                </button>
+
+                <button
+                  onClick={resetAll}
+                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
+                >
+                  Nollställ
+                </button>
               </div>
-              <div>
-                <span className="font-bold">Senast sparat:</span>{" "}
-                {formatDate(updatedAt)}
-              </div>
-              <div>
-                <span className="font-bold">Skyttekung:</span>{" "}
-                {goldenBoot || "Ej ifyllt"}
+
+              <div className="hidden flex-wrap gap-2 md:flex">
+                {viewModeItems.map((item) => (
+                  <button
+                    key={item.key}
+                    onClick={() => setViewMode(item.key)}
+                    className={`h-9 rounded-full px-3 py-1.5 text-[13px] font-bold transition ${
+                      viewMode === item.key
+                        ? "bg-white text-slate-900 shadow-md"
+                        : "border border-white/10 bg-white/10 text-white hover:bg-white/20"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
               </div>
             </div>
+
+            {(deadlinePassed || saveMessage) && (
+              <div className="mt-3 flex flex-col gap-2">
+                {deadlinePassed && (
+                  <p className="text-sm font-semibold text-amber-300">
+                    Deadline har passerat. Tipset är nu låst.
+                  </p>
+                )}
+
+                {saveMessage && (
+                  <p className="text-sm text-white/80">{saveMessage}</p>
+                )}
+              </div>
+            )}
           </div>
         </header>
 
-        <div className="grid grid-cols-4 gap-3">
-          {groups.map((group, index) => (
-            <GroupCompactCard
-              key={`${getGroupName(group, index)}-${index}`}
-              group={group}
-              index={index}
+        <NewsPreview />
+
+        <div className="grid gap-4 sm:gap-6 md:gap-8">
+          {(viewMode === "all" || viewMode === "groups") && visibleGroup && (
+            <SectionCard title="Grupper" subtitle="Välj grupp och fyll i dina matchresultat.">
+              <div className="mb-4 flex flex-wrap gap-2 sm:mb-6">
+                {"ABCDEFGHIJKL".split("").map((letter) => {
+                  const group = safeGroups.find((g) => g.name === `Grupp ${letter}`);
+                  const complete = group ? isGroupComplete(group) : false;
+
+                  return (
+                    <button
+                      key={letter}
+                      onClick={() => setActiveGroupLetter(letter)}
+                      className={`min-h-11 rounded-full px-4 py-2 text-sm font-extrabold transition ${
+                        activeGroupLetter === letter
+                          ? "bg-gradient-to-r from-emerald-700 to-green-700 text-white shadow-lg shadow-emerald-500/20"
+                          : complete
+                          ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                          : "border border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
+                      }`}
+                    >
+                      Grupp {letter} {complete ? "✓" : ""}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <GroupSection
+                group={visibleGroup}
+                onUpdateMatch={updateMatch}
+                onResetGroup={resetGroup}
+              />
+            </SectionCard>
+          )}
+
+          {(viewMode === "all" || viewMode === "thirds") && (
+            <div className="grid gap-4 sm:gap-6 md:gap-8">
+              <BestThirdsSection groups={safeGroups} />
+              <QualifiedTeamsSection groups={safeGroups} />
+            </div>
+          )}
+
+          {(viewMode === "all" || viewMode === "knockout") && (
+            <KnockoutFullSection
+              groups={safeGroups}
+              knockoutWinners={knockoutWinners}
+              onSelectWinner={selectWinner}
+              onResetKnockout={resetKnockout}
+              isGroupStageComplete={isGroupStageComplete}
             />
-          ))}
+          )}
+
+          {(viewMode === "all" || viewMode === "goldenboot") && (
+            <GoldenBootSection value={goldenBoot} onChange={updateGoldenBoot} />
+          )}
+
+          {(viewMode === "all" || viewMode === "leagues") && (
+            <LeaguesSection myLeagues={myLeagues} />
+          )}
         </div>
-      </section>
+      </div>
 
-      <section className="print-page-break">
-        <div className="mb-4 flex items-center justify-center gap-4">
-          <MedalCard
-            title="Guld"
-            team={gold}
-            className="border-yellow-400 bg-yellow-50 text-yellow-900"
-          />
-          <MedalCard
-            title="Silver"
-            team={silver}
-            className="border-slate-400 bg-slate-100 text-slate-900"
-          />
-          <MedalCard
-            title="Brons"
-            team={bronzeWinner}
-            className="border-orange-400 bg-orange-50 text-orange-900"
-          />
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-2 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.10)] backdrop-blur md:hidden">
+        <div className="mx-auto grid max-w-4xl grid-cols-6 gap-1">
+          {viewModeItems.map((item) => {
+            const active = viewMode === item.key;
+
+            return (
+              <button
+                key={item.key}
+                onClick={() => setViewMode(item.key)}
+                className={`min-h-12 rounded-2xl px-2 py-2 text-center text-[11px] font-extrabold leading-tight transition ${
+                  active
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-700"
+                }`}
+              >
+                {item.mobileLabel}
+              </button>
+            );
+          })}
         </div>
-
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <RoundGrid
-              title="Sextondelsfinal"
-              matches={round32}
-              knockout={knockout}
-              columns={4}
-            />
-
-            <RoundGrid
-              title="Åttondelsfinal"
-              matches={r16}
-              knockout={knockout}
-              columns={4}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <RoundGrid
-              title="Kvartsfinal"
-              matches={qf}
-              knockout={knockout}
-              columns={4}
-            />
-
-            <RoundGrid
-              title="Semifinal"
-              matches={sf}
-              knockout={knockout}
-              columns={2}
-            />
-          </div>
-
-          <RoundGrid
-            title="Final och bronsmatch"
-            matches={[...finalMatches, ...bronze]}
-            knockout={knockout}
-            columns={2}
-          />
-        </div>
-
-        <footer className="mt-4 border-t border-slate-300 pt-1 text-[8px] text-slate-500">
-          Exporterad från Addes VM-tips • {formatDate(updatedAt)}
-        </footer>
-      </section>
-    </div>
+      </div>
+    </main>
   );
 }
