@@ -345,6 +345,35 @@ function orderRound32ForBracket(matches: KnockoutMatch[]) {
   );
 }
 
+function safeBuildNextRound(
+  matches: KnockoutMatch[],
+  winners: Record<string, string>,
+  prefix: string,
+  label: string
+) {
+  const built = buildNextRound(matches, winners, prefix, label);
+
+  if (built.length > 0) {
+    return built;
+  }
+
+  const fallback: KnockoutMatch[] = [];
+
+  for (let i = 0; i < matches.length; i += 2) {
+    const left = matches[i];
+    const right = matches[i + 1];
+
+    fallback.push({
+      id: `${prefix}-${fallback.length + 1}`,
+      label: `${label} ${fallback.length + 1}`,
+      home: left ? winners[left.id] || "" : "",
+      away: right ? winners[right.id] || "" : "",
+    });
+  }
+
+  return fallback;
+}
+
 export default function PredictionPrintDocument({
   profileName,
   updatedAt,
@@ -357,10 +386,10 @@ export default function PredictionPrintDocument({
   const { round32: rawRound32 } = getKnockoutSeedData(typedGroups);
   const round32 = orderRound32ForBracket(rawRound32);
 
-  const r16 = buildNextRound(round32, knockout, "r16", "Åttondelsfinal");
-  const qf = buildNextRound(r16, knockout, "qf", "Kvartsfinal");
-  const sf = buildNextRound(qf, knockout, "sf", "Semifinal");
-  const finalMatches = buildNextRound(sf, knockout, "final", "Final");
+  const r16 = safeBuildNextRound(round32, knockout, "r16", "Åttondelsfinal");
+  const qf = safeBuildNextRound(r16, knockout, "qf", "Kvartsfinal");
+  const sf = safeBuildNextRound(qf, knockout, "sf", "Semifinal");
+  const finalMatches = safeBuildNextRound(sf, knockout, "final", "Final");
 
   const bronze: KnockoutMatch[] = [
     {
