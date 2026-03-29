@@ -299,10 +299,24 @@ export default function HomePage() {
     setSaveMessage(null);
   }
 
+  function saveToSessionStorage() {
+    if (typeof window === "undefined") return;
+
+    sessionStorage.setItem(
+      "prediction_pdf",
+      JSON.stringify({
+        groups,
+        knockout: knockoutWinners,
+        goldenBoot,
+        savedAt: new Date().toISOString(),
+      })
+    );
+  }
+
   async function savePredictionToDatabase() {
     if (isDeadlinePassed()) {
       setSaveMessage("Deadline har passerat – tipset är låst");
-      return;
+      return false;
     }
 
     try {
@@ -340,9 +354,12 @@ export default function HomePage() {
   }
 
   async function saveAndOpenPdf() {
+    saveToSessionStorage();
+
     const ok = await savePredictionToDatabase();
     if (!ok) return;
-    window.location.href = "/mitt-tips/pdf";
+
+    window.open("/mitt-tips/pdf", "_blank");
   }
 
   const visibleGroup =
