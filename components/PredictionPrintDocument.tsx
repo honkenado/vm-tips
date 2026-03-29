@@ -1,3 +1,10 @@
+import {
+  buildNextRound,
+  getKnockoutSeedData,
+  getLoser,
+} from "@/lib/tournament";
+import type { GroupData, KnockoutMatch } from "@/types/tournament";
+
 type RawMatch = {
   id?: string | number;
   homeTeam?: string;
@@ -30,13 +37,6 @@ type TableRow = {
   goalsAgainst: number;
   goalDifference: number;
   points: number;
-};
-
-type BracketMatch = {
-  key: string;
-  label: string;
-  winner: string;
-  matchNo: number | null;
 };
 
 function formatDate(dateString: string | null) {
@@ -147,172 +147,6 @@ function buildStandings(group: RawGroup): TableRow[] {
   return rows;
 }
 
-function extractMatchNumber(matchKey: string): number | null {
-  const match = matchKey.match(/(\d{2,3})/);
-  if (!match) return null;
-  const value = Number(match[1]);
-  return Number.isFinite(value) ? value : null;
-}
-
-function getBracketLabel(matchKey: string) {
-  const matchNo = extractMatchNumber(matchKey);
-  if (matchNo !== null) return `MATCH ${matchNo}`;
-
-  return matchKey
-    .replace(/_/g, " ")
-    .replace(/-/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toUpperCase();
-}
-
-function classifyRound(matchKey: string, matchNo: number | null) {
-  const key = matchKey.toLowerCase();
-
-  if (
-    key.includes("round32") ||
-    key.includes("r32") ||
-    key.includes("last32") ||
-    key.includes("sextondel") ||
-    (matchNo !== null && matchNo >= 73 && matchNo <= 88)
-  ) {
-    return "r32";
-  }
-
-  if (
-    key.includes("round16") ||
-    key.includes("r16") ||
-    key.includes("last16") ||
-    key.includes("attondel") ||
-    (matchNo !== null && matchNo >= 89 && matchNo <= 96)
-  ) {
-    return "r16";
-  }
-
-  if (
-    key.includes("quarter") ||
-    key.includes("kvart") ||
-    key.includes("qf") ||
-    (matchNo !== null && matchNo >= 97 && matchNo <= 100)
-  ) {
-    return "qf";
-  }
-
-  if (
-    key.includes("semi") ||
-    key.includes("sf") ||
-    (matchNo !== null && matchNo >= 101 && matchNo <= 102)
-  ) {
-    return "sf";
-  }
-
-  if (
-    key.includes("bronze") ||
-    key.includes("brons") ||
-    matchNo === 103
-  ) {
-    return "bronze";
-  }
-
-  if (
-    key.includes("final") ||
-    matchNo === 104
-  ) {
-    return "final";
-  }
-
-  return "other";
-}
-
-function buildBracket(knockout: Record<string, string>) {
-  const matches: BracketMatch[] = Object.entries(knockout || {}).map(([key, winner]) => {
-    const matchNo = extractMatchNumber(key);
-
-    return {
-      key,
-      label: getBracketLabel(key),
-      winner,
-      matchNo,
-    };
-  });
-
-  const r32 = matches
-    .filter((m) => classifyRound(m.key, m.matchNo) === "r32")
-    .sort((a, b) => (a.matchNo ?? 999) - (b.matchNo ?? 999));
-
-  const r16 = matches
-    .filter((m) => classifyRound(m.key, m.matchNo) === "r16")
-    .sort((a, b) => (a.matchNo ?? 999) - (b.matchNo ?? 999));
-
-  const qf = matches
-    .filter((m) => classifyRound(m.key, m.matchNo) === "qf")
-    .sort((a, b) => (a.matchNo ?? 999) - (b.matchNo ?? 999));
-
-  const sf = matches
-    .filter((m) => classifyRound(m.key, m.matchNo) === "sf")
-    .sort((a, b) => (a.matchNo ?? 999) - (b.matchNo ?? 999));
-
-  const bronze = matches
-    .filter((m) => classifyRound(m.key, m.matchNo) === "bronze")
-    .sort((a, b) => (a.matchNo ?? 999) - (b.matchNo ?? 999));
-
-  const final = matches
-    .filter((m) => classifyRound(m.key, m.matchNo) === "final")
-    .sort((a, b) => (a.matchNo ?? 999) - (b.matchNo ?? 999));
-
-  return {
-    leftR32: r32.slice(0, 8),
-    rightR32: r32.slice(8, 16),
-    leftR16: r16.slice(0, 4),
-    rightR16: r16.slice(4, 8),
-    leftQF: qf.slice(0, 2),
-    rightQF: qf.slice(2, 4),
-    leftSF: sf.slice(0, 1),
-    rightSF: sf.slice(1, 2),
-    bronze: bronze.slice(0, 1),
-    final: final.slice(0, 1),
-  };
-}
-
-function getMedals(bracket: ReturnType<typeof buildBracket>) {
-  const gold = bracket.final[0]?.winner ?? "";
-  const silver = bracket.final[0]
-    ? [bracket.leftSF[0]?.winner, bracket.rightSF[0]?.winner]
-        .filter(Boolean)
-        .find((team) => team !== gold) ?? ""
-    : "";
-  const bronze = bracket.bronze[0]?.winner ?? "";
-
-  return { gold, silver, bronze };
-}
-
-function MatchPill({
-  winner,
-  label,
-  strong = false,
-}: {
-  winner: string;
-  label: string;
-  strong?: boolean;
-}) {
-  return (
-    <div
-      className={`border px-1.5 py-1 ${
-        strong
-          ? "border-emerald-400 bg-emerald-600 text-white"
-          : "border-slate-300 bg-white text-slate-900"
-      }`}
-    >
-      <div className={`text-[7px] font-bold uppercase ${strong ? "text-emerald-50" : "text-slate-500"}`}>
-        {label}
-      </div>
-      <div className="truncate text-[8px] font-extrabold leading-tight">
-        {shortenTeamName(winner || "-")}
-      </div>
-    </div>
-  );
-}
-
 function GroupCompactCard({
   group,
   index,
@@ -323,12 +157,12 @@ function GroupCompactCard({
   const standings = buildStandings(group);
 
   return (
-    <div className="border border-slate-300 px-1.5 py-1">
-      <h3 className="mb-0.5 text-[10px] font-extrabold leading-none text-slate-900">
+    <div className="border border-slate-300 px-2 py-1.5">
+      <h3 className="mb-1 text-[11px] font-extrabold leading-none text-slate-900">
         {getGroupName(group, index)}
       </h3>
 
-      <div className="space-y-[1px] text-[7.5px] leading-tight">
+      <div className="space-y-[1px] text-[8px] leading-tight">
         {(group.matches || []).map((match, matchIndex) => {
           const homeGoals = match.homeGoals ?? match.homeScore ?? "-";
           const awayGoals = match.awayGoals ?? match.awayScore ?? "-";
@@ -350,8 +184,8 @@ function GroupCompactCard({
         })}
       </div>
 
-      <div className="mt-0.5 overflow-hidden border border-slate-200">
-        <table className="min-w-full text-[7px] leading-tight">
+      <div className="mt-1 overflow-hidden border border-slate-200">
+        <table className="min-w-full text-[7.5px] leading-tight">
           <thead className="bg-slate-50">
             <tr>
               <th className="px-1 py-[1px] text-left font-bold">#</th>
@@ -381,6 +215,61 @@ function GroupCompactCard({
   );
 }
 
+function getMatchNumber(matchId: string) {
+  const match = matchId.match(/(\d+)/);
+  if (!match) return matchId.toUpperCase();
+  return `MATCH ${match[1]}`;
+}
+
+function MatchCard({
+  match,
+  selectedWinner,
+  compact = false,
+}: {
+  match: KnockoutMatch;
+  selectedWinner?: string;
+  compact?: boolean;
+}) {
+  const homeSelected = selectedWinner && selectedWinner === match.home;
+  const awaySelected = selectedWinner && selectedWinner === match.away;
+
+  return (
+    <div
+      className={`border border-emerald-300 bg-white px-2 py-1.5 shadow-sm ${
+        compact ? "w-[150px]" : "w-[170px]"
+      }`}
+    >
+      <div className="mb-1 text-[8px] font-bold uppercase leading-none text-slate-500">
+        {getMatchNumber(match.id)}
+      </div>
+
+      <div
+        className={`rounded-md border px-2 py-1 text-center text-[8px] font-extrabold leading-tight ${
+          homeSelected
+            ? "border-emerald-600 bg-emerald-600 text-white"
+            : "border-emerald-200 bg-slate-50 text-slate-900"
+        }`}
+      >
+        {shortenTeamName(match.home || "-")}
+      </div>
+
+      <div className="py-0.5 text-center text-[8px] font-bold uppercase text-slate-400">
+        vs
+      </div>
+
+      <div
+        className={`rounded-md border px-2 py-1 text-center text-[8px] font-extrabold leading-tight ${
+          awaySelected
+            ? "border-emerald-600 bg-emerald-600 text-white"
+            : "border-emerald-200 bg-slate-50 text-slate-900"
+        }`}
+      >
+        {shortenTeamName(match.away || "-")}
+      </div>
+    </div>
+  );
+}
+
 export default function PredictionPrintDocument({
   profileName,
   updatedAt,
@@ -388,16 +277,46 @@ export default function PredictionPrintDocument({
   groups,
   knockout,
 }: PrintablePrediction) {
-  const bracket = buildBracket(knockout);
-  const medals = getMedals(bracket);
+  const typedGroups = groups as GroupData[];
+
+  const { round32 } = getKnockoutSeedData(typedGroups);
+  const r16 = buildNextRound(round32, knockout, "r16", "Åttondelsfinal");
+  const qf = buildNextRound(r16, knockout, "qf", "Kvartsfinal");
+  const sf = buildNextRound(qf, knockout, "sf", "Semifinal");
+  const finalMatches = buildNextRound(sf, knockout, "final", "Final");
+
+  const bronze: KnockoutMatch[] = [
+    {
+      id: "bronze-1",
+      label: "Bronsmatch",
+      home: sf[0] ? getLoser(sf[0], knockout) : "",
+      away: sf[1] ? getLoser(sf[1], knockout) : "",
+    },
+  ];
+
+  const gold = knockout[finalMatches[0]?.id] || "";
+  const silver =
+    finalMatches[0] && gold
+      ? [finalMatches[0].home, finalMatches[0].away].find((team) => team !== gold) || ""
+      : "";
+  const bronzeWinner = knockout["bronze-1"] || "";
+
+  const leftRound32 = round32.slice(0, 8);
+  const rightRound32 = round32.slice(8, 16);
+  const leftR16 = r16.slice(0, 4);
+  const rightR16 = r16.slice(4, 8);
+  const leftQF = qf.slice(0, 2);
+  const rightQF = qf.slice(2, 4);
+  const leftSF = sf.slice(0, 1);
+  const rightSF = sf.slice(1, 2);
 
   return (
     <div className="mx-auto max-w-none bg-white text-slate-900 print:text-[8px]">
       <section>
-        <header className="mb-1 border border-slate-300 px-2 py-1.5">
-          <div className="flex items-start justify-between gap-3">
+        <header className="mb-2 border border-slate-300 px-3 py-2">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[8px] font-bold uppercase tracking-[0.14em] text-slate-500">
+              <p className="text-[8px] font-bold uppercase tracking-[0.16em] text-slate-500">
                 Addes VM-tips
               </p>
               <h1 className="text-sm font-extrabold leading-tight">
@@ -421,7 +340,7 @@ export default function PredictionPrintDocument({
           </div>
         </header>
 
-        <div className="grid grid-cols-4 gap-1.5">
+        <div className="grid grid-cols-4 gap-2">
           {groups.map((group, index) => (
             <GroupCompactCard
               key={`${getGroupName(group, index)}-${index}`}
@@ -433,13 +352,13 @@ export default function PredictionPrintDocument({
       </section>
 
       <section className="print-page-break">
-        <div className="mb-2 flex items-center justify-center gap-3">
+        <div className="mb-4 flex items-center justify-center gap-4">
           <div className="min-w-[120px] border border-yellow-400 bg-yellow-50 px-3 py-2 text-center">
             <div className="text-[7px] font-bold uppercase tracking-[0.18em] text-yellow-700">
               Guld
             </div>
             <div className="text-[11px] font-extrabold">
-              {shortenTeamName(medals.gold || "-")}
+              {shortenTeamName(gold || "-")}
             </div>
           </div>
 
@@ -448,7 +367,7 @@ export default function PredictionPrintDocument({
               Silver
             </div>
             <div className="text-[11px] font-extrabold">
-              {shortenTeamName(medals.silver || "-")}
+              {shortenTeamName(silver || "-")}
             </div>
           </div>
 
@@ -457,163 +376,160 @@ export default function PredictionPrintDocument({
               Brons
             </div>
             <div className="text-[11px] font-extrabold">
-              {shortenTeamName(medals.bronze || "-")}
+              {shortenTeamName(bronzeWinner || "-")}
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-[1.15fr_0.95fr_0.85fr_0.8fr_1fr_0.8fr_0.85fr_0.95fr_1.15fr] gap-2">
-          <div className="space-y-2">
-            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+        <div className="grid grid-cols-[170px_170px_170px_170px_190px_170px_170px_170px_170px] gap-4 overflow-hidden">
+          <div>
+            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
               R32
             </div>
-            <div className="space-y-1">
-              {bracket.leftR32.map((match) => (
-                <MatchPill
-                  key={match.key}
-                  label={match.label}
-                  winner={match.winner}
-                  strong
+            <div className="space-y-2">
+              {leftRound32.map((match) => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  selectedWinner={knockout[match.id]}
+                  compact
                 />
               ))}
             </div>
           </div>
 
-          <div className="space-y-4 pt-6">
-            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+          <div className="pt-11">
+            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
               R16
             </div>
-            <div className="space-y-6">
-              {bracket.leftR16.map((match) => (
-                <MatchPill
-                  key={match.key}
-                  label={match.label}
-                  winner={match.winner}
-                  strong
+            <div className="space-y-8">
+              {leftR16.map((match) => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  selectedWinner={knockout[match.id]}
                 />
               ))}
             </div>
           </div>
 
-          <div className="space-y-8 pt-12">
-            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
-              Kvarts
-            </div>
-            <div className="space-y-10">
-              {bracket.leftQF.map((match) => (
-                <MatchPill
-                  key={match.key}
-                  label={match.label}
-                  winner={match.winner}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-16 pt-20">
-            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
-              Semi
+          <div className="pt-24">
+            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+              Kvartsfinal
             </div>
             <div className="space-y-16">
-              {bracket.leftSF.map((match) => (
-                <MatchPill
-                  key={match.key}
-                  label={match.label}
-                  winner={match.winner}
+              {leftQF.map((match) => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  selectedWinner={knockout[match.id]}
                 />
               ))}
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+          <div className="pt-40">
+            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+              Semifinal
+            </div>
+            <div className="space-y-24">
+              {leftSF.map((match) => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  selectedWinner={knockout[match.id]}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-32">
+            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
               Final / Brons
             </div>
 
-            <div className="space-y-8 pt-16">
-              {bracket.final.map((match) => (
-                <MatchPill
-                  key={match.key}
-                  label={match.label}
-                  winner={match.winner}
-                  strong
+            <div className="space-y-10">
+              {finalMatches.map((match) => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  selectedWinner={knockout[match.id]}
                 />
               ))}
 
-              {bracket.bronze.map((match) => (
-                <MatchPill
-                  key={match.key}
-                  label={match.label}
-                  winner={match.winner}
+              {bronze.map((match) => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  selectedWinner={knockout[match.id]}
                 />
               ))}
             </div>
           </div>
 
-          <div className="space-y-16 pt-20">
-            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
-              Semi
+          <div className="pt-40">
+            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+              Semifinal
+            </div>
+            <div className="space-y-24">
+              {rightSF.map((match) => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  selectedWinner={knockout[match.id]}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-24">
+            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+              Kvartsfinal
             </div>
             <div className="space-y-16">
-              {bracket.rightSF.map((match) => (
-                <MatchPill
-                  key={match.key}
-                  label={match.label}
-                  winner={match.winner}
+              {rightQF.map((match) => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  selectedWinner={knockout[match.id]}
                 />
               ))}
             </div>
           </div>
 
-          <div className="space-y-8 pt-12">
-            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
-              Kvarts
-            </div>
-            <div className="space-y-10">
-              {bracket.rightQF.map((match) => (
-                <MatchPill
-                  key={match.key}
-                  label={match.label}
-                  winner={match.winner}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-4 pt-6">
-            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+          <div className="pt-11">
+            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
               R16
             </div>
-            <div className="space-y-6">
-              {bracket.rightR16.map((match) => (
-                <MatchPill
-                  key={match.key}
-                  label={match.label}
-                  winner={match.winner}
-                  strong
+            <div className="space-y-8">
+              {rightR16.map((match) => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  selectedWinner={knockout[match.id]}
                 />
               ))}
             </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+          <div>
+            <div className="mb-2 text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
               R32
             </div>
-            <div className="space-y-1">
-              {bracket.rightR32.map((match) => (
-                <MatchPill
-                  key={match.key}
-                  label={match.label}
-                  winner={match.winner}
-                  strong
+            <div className="space-y-2">
+              {rightRound32.map((match) => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  selectedWinner={knockout[match.id]}
+                  compact
                 />
               ))}
             </div>
           </div>
         </div>
 
-        <footer className="mt-3 border-t border-slate-300 pt-1 text-[8px] text-slate-500">
+        <footer className="mt-4 border-t border-slate-300 pt-1 text-[8px] text-slate-500">
           Exporterad från Addes VM-tips • {formatDate(updatedAt)}
         </footer>
       </section>
