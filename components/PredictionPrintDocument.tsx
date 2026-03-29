@@ -316,6 +316,35 @@ function MedalCard({
   );
 }
 
+function getMatchNumberFromKnockoutMatch(match: KnockoutMatch): number | null {
+  const raw = `${match.label ?? ""} ${match.id ?? ""}`;
+  const found = raw.match(/(\d{2,3})/);
+  if (!found) return null;
+
+  const value = Number(found[1]);
+  return Number.isFinite(value) ? value : null;
+}
+
+const R32_BRACKET_ORDER = [
+  74, 77, 73, 75, 83, 84, 81, 82,
+  76, 78, 79, 80, 86, 88, 85, 87,
+];
+
+function orderRound32ForBracket(matches: KnockoutMatch[]) {
+  const byNumber = new Map<number, KnockoutMatch>();
+
+  for (const match of matches) {
+    const matchNo = getMatchNumberFromKnockoutMatch(match);
+    if (matchNo !== null) {
+      byNumber.set(matchNo, match);
+    }
+  }
+
+  return R32_BRACKET_ORDER.map((matchNo) => byNumber.get(matchNo)).filter(
+    (match): match is KnockoutMatch => Boolean(match)
+  );
+}
+
 export default function PredictionPrintDocument({
   profileName,
   updatedAt,
@@ -325,7 +354,9 @@ export default function PredictionPrintDocument({
 }: PrintablePrediction) {
   const typedGroups = groups as GroupData[];
 
-  const { round32 } = getKnockoutSeedData(typedGroups);
+  const { round32: rawRound32 } = getKnockoutSeedData(typedGroups);
+  const round32 = orderRound32ForBracket(rawRound32);
+
   const r16 = buildNextRound(round32, knockout, "r16", "Åttondelsfinal");
   const qf = buildNextRound(r16, knockout, "qf", "Kvartsfinal");
   const sf = buildNextRound(qf, knockout, "sf", "Semifinal");
