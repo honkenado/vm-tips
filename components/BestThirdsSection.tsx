@@ -7,34 +7,20 @@ import type { GroupData } from "@/types/tournament";
 
 type SafeThirdRow = Record<string, unknown>;
 
-function getGroupLabel(row: SafeThirdRow) {
-  if (typeof row.group === "string") return row.group;
-  if (typeof row.groupLetter === "string") return row.groupLetter;
-  if (typeof row.group_name === "string") return row.group_name;
-  if (typeof row.name === "string" && row.name.length === 1) return row.name;
-  return "?";
+function getString(row: SafeThirdRow, keys: string[], fallback = "") {
+  for (const key of keys) {
+    const value = row[key];
+    if (typeof value === "string") return value;
+  }
+  return fallback;
 }
 
-function getTeamName(row: SafeThirdRow) {
-  if (typeof row.team === "string") return row.team;
-  if (typeof row.teamName === "string") return row.teamName;
-  if (typeof row.country === "string") return row.country;
-  if (typeof row.name === "string") return row.name;
-  return "Okänt lag";
-}
-
-function getPoints(row: SafeThirdRow) {
-  if (typeof row.points === "number") return row.points;
-  if (typeof row.p === "number") return row.p;
-  return null;
-}
-
-function getGoalDiff(row: SafeThirdRow) {
-  if (typeof row.goalDifference === "number") return row.goalDifference;
-  if (typeof row.diff === "number") return row.diff;
-  if (typeof row["+/−"] === "number") return row["+/−"];
-  if (typeof row.plusMinus === "number") return row.plusMinus;
-  return null;
+function getNumber(row: SafeThirdRow, keys: string[], fallback = 0) {
+  for (const key of keys) {
+    const value = row[key];
+    if (typeof value === "number") return value;
+  }
+  return fallback;
 }
 
 export default function BestThirdsSection({
@@ -43,77 +29,129 @@ export default function BestThirdsSection({
   groups: GroupData[];
 }) {
   const bestThirds = useMemo(
-    () => getBestThirds(groups) as unknown as SafeThirdRow[],
+    () => (getBestThirds(groups) as unknown as SafeThirdRow[]) ?? [],
     [groups]
   );
+
+  const qualifiedCount = 8;
+  const qualifiedRows = bestThirds.slice(0, qualifiedCount);
+  const combinationKey = qualifiedRows
+    .map((row) => getString(row, ["group", "groupLetter", "group_name"], "?"))
+    .join("");
 
   return (
     <SectionCard
       title="Bästa treor"
       subtitle="De åtta bästa treorna går vidare till slutspelet."
     >
-      <div className="space-y-3">
-        {bestThirds.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-medium text-slate-600">
-            Inga grupptreor att visa ännu.
-          </div>
-        ) : (
-          bestThirds.map((row, index) => {
-            const isQualified = index < 8;
-            const groupLabel = getGroupLabel(row);
-            const teamName = getTeamName(row);
-            const points = getPoints(row);
-            const goalDiff = getGoalDiff(row);
+      <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+        <p className="text-sm text-slate-700">
+          <span className="font-bold text-slate-900">Grupper:</span>{" "}
+          {qualifiedRows
+            .map((row) =>
+              getString(row, ["group", "groupLetter", "group_name"], "?")
+            )
+            .join(", ")}
+        </p>
+        <p className="mt-1 text-sm text-slate-700">
+          <span className="font-bold text-slate-900">Kombinationsnyckel:</span>{" "}
+          <span className="font-semibold text-slate-900">{combinationKey}</span>
+        </p>
+      </div>
 
-            return (
-              <div
-                key={`${groupLabel}-${teamName}-${index}`}
-                className={`rounded-2xl border px-4 py-3 ${
-                  isQualified
-                    ? "border-emerald-300 bg-emerald-50"
-                    : "border-slate-200 bg-slate-50"
-                }`}
-              >
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="text-base font-semibold text-slate-900">
-                    <span
-                      className={
-                        isQualified
-                          ? "font-extrabold text-emerald-700"
-                          : "font-extrabold text-slate-600"
-                      }
-                    >
-                      {groupLabel}:
-                    </span>{" "}
-                    {teamName}
-                  </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full border-separate border-spacing-0 text-sm">
+          <thead>
+            <tr className="text-left text-slate-600">
+              <th className="border-b border-slate-200 px-3 py-3 font-bold">#</th>
+              <th className="border-b border-slate-200 px-3 py-3 font-bold">Grupp</th>
+              <th className="border-b border-slate-200 px-3 py-3 font-bold">Lag</th>
+              <th className="border-b border-slate-200 px-3 py-3 text-center font-bold">M</th>
+              <th className="border-b border-slate-200 px-3 py-3 text-center font-bold">V</th>
+              <th className="border-b border-slate-200 px-3 py-3 text-center font-bold">O</th>
+              <th className="border-b border-slate-200 px-3 py-3 text-center font-bold">F</th>
+              <th className="border-b border-slate-200 px-3 py-3 text-center font-bold">GM</th>
+              <th className="border-b border-slate-200 px-3 py-3 text-center font-bold">IM</th>
+              <th className="border-b border-slate-200 px-3 py-3 text-center font-bold">+/-</th>
+              <th className="border-b border-slate-200 px-3 py-3 text-center font-bold">P</th>
+              <th className="border-b border-slate-200 px-3 py-3 font-bold">Status</th>
+            </tr>
+          </thead>
 
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
-                    {points !== null && (
-                      <span className="rounded-full bg-white/80 px-2.5 py-1 font-semibold">
-                        {points} p
-                      </span>
-                    )}
-                    {goalDiff !== null && (
-                      <span className="rounded-full bg-white/80 px-2.5 py-1 font-semibold">
-                        +/- {goalDiff}
-                      </span>
-                    )}
+          <tbody>
+            {bestThirds.map((row, index) => {
+              const isQualified = index < qualifiedCount;
+
+              const group = getString(row, ["group", "groupLetter", "group_name"], "?");
+              const team = getString(row, ["team", "teamName", "country", "name"], "Okänt lag");
+
+              const played = getNumber(row, ["played", "matches", "m"]);
+              const won = getNumber(row, ["won", "wins", "v"]);
+              const drawn = getNumber(row, ["drawn", "draws", "o"]);
+              const lost = getNumber(row, ["lost", "losses", "f"]);
+              const goalsFor = getNumber(row, ["goalsFor", "gf", "gm"]);
+              const goalsAgainst = getNumber(row, ["goalsAgainst", "ga", "im"]);
+              const goalDiff = getNumber(row, ["goalDifference", "gd", "diff"]);
+              const points = getNumber(row, ["points", "p"]);
+
+              return (
+                <tr
+                  key={`${group}-${team}-${index}`}
+                  className={
+                    isQualified
+                      ? "bg-emerald-50/80"
+                      : "bg-white"
+                  }
+                >
+                  <td className="border-b border-slate-200 px-3 py-3 text-slate-500">
+                    {index + 1}
+                  </td>
+                  <td className="border-b border-slate-200 px-3 py-3 font-semibold text-slate-700">
+                    {group}
+                  </td>
+                  <td className="border-b border-slate-200 px-3 py-3 font-semibold text-slate-900">
+                    {team}
+                  </td>
+                  <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+                    {played}
+                  </td>
+                  <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+                    {won}
+                  </td>
+                  <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+                    {drawn}
+                  </td>
+                  <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+                    {lost}
+                  </td>
+                  <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+                    {goalsFor}
+                  </td>
+                  <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+                    {goalsAgainst}
+                  </td>
+                  <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+                    {goalDiff}
+                  </td>
+                  <td className="border-b border-slate-200 px-3 py-3 text-center font-bold text-slate-900">
+                    {points}
+                  </td>
+                  <td className="border-b border-slate-200 px-3 py-3">
                     <span
-                      className={`rounded-full px-2.5 py-1 font-bold ${
+                      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
                         isQualified
                           ? "bg-emerald-100 text-emerald-800"
-                          : "bg-slate-200 text-slate-700"
+                          : "bg-slate-100 text-slate-600"
                       }`}
                     >
                       {isQualified ? "Vidare" : "Ute"}
                     </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </SectionCard>
   );
