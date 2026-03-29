@@ -54,7 +54,7 @@ export default function PredictionPdfPage() {
         setError(null);
 
         if (typeof window !== "undefined") {
-          const raw = sessionStorage.getItem("prediction_pdf");
+          const raw = localStorage.getItem("prediction_pdf");
 
           if (raw) {
             const stored = JSON.parse(raw) as StoredPrediction;
@@ -67,6 +67,8 @@ export default function PredictionPdfPage() {
             );
             setGoldenBoot(stored.goldenBoot ?? null);
             setUpdatedAt(stored.savedAt ?? new Date().toISOString());
+
+            localStorage.removeItem("prediction_pdf");
             setLoading(false);
             return;
           }

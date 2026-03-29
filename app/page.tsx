@@ -300,18 +300,18 @@ export default function HomePage() {
   }
 
   function saveToPdfStorage() {
-  if (typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
 
-  localStorage.setItem(
-    "prediction_pdf",
-    JSON.stringify({
-      groups,
-      knockout: knockoutWinners,
-      goldenBoot,
-      savedAt: new Date().toISOString(),
-    })
-  );
-}
+    localStorage.setItem(
+      "prediction_pdf",
+      JSON.stringify({
+        groups,
+        knockout: knockoutWinners,
+        goldenBoot,
+        savedAt: new Date().toISOString(),
+      })
+    );
+  }
 
   async function savePredictionToDatabase() {
     if (isDeadlinePassed()) {
