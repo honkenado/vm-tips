@@ -32,6 +32,13 @@ type TableRow = {
   points: number;
 };
 
+type BracketMatch = {
+  key: string;
+  label: string;
+  winner: string;
+  matchNo: number | null;
+};
+
 function formatDate(dateString: string | null) {
   if (!dateString) return "Okänt";
 
@@ -140,7 +147,26 @@ function buildStandings(group: RawGroup): TableRow[] {
   return rows;
 }
 
-function getRoundLabel(matchKey: string) {
+function extractMatchNumber(matchKey: string): number | null {
+  const match = matchKey.match(/(\d{2,3})/);
+  if (!match) return null;
+  const value = Number(match[1]);
+  return Number.isFinite(value) ? value : null;
+}
+
+function getBracketLabel(matchKey: string) {
+  const matchNo = extractMatchNumber(matchKey);
+  if (matchNo !== null) return `MATCH ${matchNo}`;
+
+  return matchKey
+    .replace(/_/g, " ")
+    .replace(/-/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+function classifyRound(matchKey: string, matchNo: number | null) {
   const key = matchKey.toLowerCase();
 
   if (
@@ -148,9 +174,9 @@ function getRoundLabel(matchKey: string) {
     key.includes("r32") ||
     key.includes("last32") ||
     key.includes("sextondel") ||
-    /^m7\d/.test(key)
+    (matchNo !== null && matchNo >= 73 && matchNo <= 88)
   ) {
-    return "Sextondelsfinal";
+    return "r32";
   }
 
   if (
@@ -158,56 +184,133 @@ function getRoundLabel(matchKey: string) {
     key.includes("r16") ||
     key.includes("last16") ||
     key.includes("attondel") ||
-    /^m8\d/.test(key)
+    (matchNo !== null && matchNo >= 89 && matchNo <= 96)
   ) {
-    return "Åttondelsfinal";
+    return "r16";
   }
 
-  if (key.includes("quarter") || key.includes("kvart") || key.includes("qf") || /^m9[1-4]$/.test(key)) {
-    return "Kvartsfinal";
+  if (
+    key.includes("quarter") ||
+    key.includes("kvart") ||
+    key.includes("qf") ||
+    (matchNo !== null && matchNo >= 97 && matchNo <= 100)
+  ) {
+    return "qf";
   }
 
-  if (key.includes("semi") || key.includes("sf") || /^m9[5-6]$/.test(key)) {
-    return "Semifinal";
+  if (
+    key.includes("semi") ||
+    key.includes("sf") ||
+    (matchNo !== null && matchNo >= 101 && matchNo <= 102)
+  ) {
+    return "sf";
   }
 
-  if (key.includes("bronze") || key.includes("brons") || /^m9[7]$/.test(key)) {
-    return "Bronsmatch";
+  if (
+    key.includes("bronze") ||
+    key.includes("brons") ||
+    matchNo === 103
+  ) {
+    return "bronze";
   }
 
-  if (key.includes("final") || /^m9[89]$/.test(key) || /^m10\d/.test(key)) {
-    return "Final";
+  if (
+    key.includes("final") ||
+    matchNo === 104
+  ) {
+    return "final";
   }
 
-  return "Övrigt";
+  return "other";
 }
 
-function roundSortOrder(round: string) {
-  switch (round) {
-    case "Sextondelsfinal":
-      return 1;
-    case "Åttondelsfinal":
-      return 2;
-    case "Kvartsfinal":
-      return 3;
-    case "Semifinal":
-      return 4;
-    case "Bronsmatch":
-      return 5;
-    case "Final":
-      return 6;
-    default:
-      return 99;
-  }
+function buildBracket(knockout: Record<string, string>) {
+  const matches: BracketMatch[] = Object.entries(knockout || {}).map(([key, winner]) => {
+    const matchNo = extractMatchNumber(key);
+
+    return {
+      key,
+      label: getBracketLabel(key),
+      winner,
+      matchNo,
+    };
+  });
+
+  const r32 = matches
+    .filter((m) => classifyRound(m.key, m.matchNo) === "r32")
+    .sort((a, b) => (a.matchNo ?? 999) - (b.matchNo ?? 999));
+
+  const r16 = matches
+    .filter((m) => classifyRound(m.key, m.matchNo) === "r16")
+    .sort((a, b) => (a.matchNo ?? 999) - (b.matchNo ?? 999));
+
+  const qf = matches
+    .filter((m) => classifyRound(m.key, m.matchNo) === "qf")
+    .sort((a, b) => (a.matchNo ?? 999) - (b.matchNo ?? 999));
+
+  const sf = matches
+    .filter((m) => classifyRound(m.key, m.matchNo) === "sf")
+    .sort((a, b) => (a.matchNo ?? 999) - (b.matchNo ?? 999));
+
+  const bronze = matches
+    .filter((m) => classifyRound(m.key, m.matchNo) === "bronze")
+    .sort((a, b) => (a.matchNo ?? 999) - (b.matchNo ?? 999));
+
+  const final = matches
+    .filter((m) => classifyRound(m.key, m.matchNo) === "final")
+    .sort((a, b) => (a.matchNo ?? 999) - (b.matchNo ?? 999));
+
+  return {
+    leftR32: r32.slice(0, 8),
+    rightR32: r32.slice(8, 16),
+    leftR16: r16.slice(0, 4),
+    rightR16: r16.slice(4, 8),
+    leftQF: qf.slice(0, 2),
+    rightQF: qf.slice(2, 4),
+    leftSF: sf.slice(0, 1),
+    rightSF: sf.slice(1, 2),
+    bronze: bronze.slice(0, 1),
+    final: final.slice(0, 1),
+  };
 }
 
-function compactMatchKey(matchKey: string) {
-  return matchKey
-    .replace(/_/g, " ")
-    .replace(/-/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toUpperCase();
+function getMedals(bracket: ReturnType<typeof buildBracket>) {
+  const gold = bracket.final[0]?.winner ?? "";
+  const silver = bracket.final[0]
+    ? [bracket.leftSF[0]?.winner, bracket.rightSF[0]?.winner]
+        .filter(Boolean)
+        .find((team) => team !== gold) ?? ""
+    : "";
+  const bronze = bracket.bronze[0]?.winner ?? "";
+
+  return { gold, silver, bronze };
+}
+
+function MatchPill({
+  winner,
+  label,
+  strong = false,
+}: {
+  winner: string;
+  label: string;
+  strong?: boolean;
+}) {
+  return (
+    <div
+      className={`border px-1.5 py-1 ${
+        strong
+          ? "border-emerald-400 bg-emerald-600 text-white"
+          : "border-slate-300 bg-white text-slate-900"
+      }`}
+    >
+      <div className={`text-[7px] font-bold uppercase ${strong ? "text-emerald-50" : "text-slate-500"}`}>
+        {label}
+      </div>
+      <div className="truncate text-[8px] font-extrabold leading-tight">
+        {shortenTeamName(winner || "-")}
+      </div>
+    </div>
+  );
 }
 
 function GroupCompactCard({
@@ -220,12 +323,12 @@ function GroupCompactCard({
   const standings = buildStandings(group);
 
   return (
-    <div className="print-avoid-break border border-slate-300 px-2 py-1.5">
-      <h3 className="mb-1 text-[11px] font-extrabold leading-none text-slate-900">
+    <div className="border border-slate-300 px-1.5 py-1">
+      <h3 className="mb-0.5 text-[10px] font-extrabold leading-none text-slate-900">
         {getGroupName(group, index)}
       </h3>
 
-      <div className="space-y-[1px] text-[8.5px] leading-tight">
+      <div className="space-y-[1px] text-[7.5px] leading-tight">
         {(group.matches || []).map((match, matchIndex) => {
           const homeGoals = match.homeGoals ?? match.homeScore ?? "-";
           const awayGoals = match.awayGoals ?? match.awayScore ?? "-";
@@ -247,15 +350,15 @@ function GroupCompactCard({
         })}
       </div>
 
-      <div className="mt-1 overflow-hidden border border-slate-200">
-        <table className="min-w-full text-[8px] leading-tight">
+      <div className="mt-0.5 overflow-hidden border border-slate-200">
+        <table className="min-w-full text-[7px] leading-tight">
           <thead className="bg-slate-50">
             <tr>
-              <th className="px-1 py-[2px] text-left font-bold">#</th>
-              <th className="px-1 py-[2px] text-left font-bold">Lag</th>
-              <th className="px-1 py-[2px] text-center font-bold">M</th>
-              <th className="px-1 py-[2px] text-center font-bold">MS</th>
-              <th className="px-1 py-[2px] text-center font-bold">P</th>
+              <th className="px-1 py-[1px] text-left font-bold">#</th>
+              <th className="px-1 py-[1px] text-left font-bold">Lag</th>
+              <th className="px-1 py-[1px] text-center font-bold">M</th>
+              <th className="px-1 py-[1px] text-center font-bold">MS</th>
+              <th className="px-1 py-[1px] text-center font-bold">P</th>
             </tr>
           </thead>
           <tbody>
@@ -264,11 +367,11 @@ function GroupCompactCard({
                 key={`${team.team}-${standingIndex}`}
                 className="border-t border-slate-100"
               >
-                <td className="px-1 py-[1px]">{standingIndex + 1}</td>
-                <td className="px-1 py-[1px] truncate">{shortenTeamName(team.team)}</td>
-                <td className="px-1 py-[1px] text-center">{team.played}</td>
-                <td className="px-1 py-[1px] text-center">{team.goalDifference}</td>
-                <td className="px-1 py-[1px] text-center font-bold">{team.points}</td>
+                <td className="px-1 py-0">{standingIndex + 1}</td>
+                <td className="px-1 py-0 truncate">{shortenTeamName(team.team)}</td>
+                <td className="px-1 py-0 text-center">{team.played}</td>
+                <td className="px-1 py-0 text-center">{team.goalDifference}</td>
+                <td className="px-1 py-0 text-center font-bold">{team.points}</td>
               </tr>
             ))}
           </tbody>
@@ -285,37 +388,24 @@ export default function PredictionPrintDocument({
   groups,
   knockout,
 }: PrintablePrediction) {
-  const groupedKnockout = Object.entries(knockout || {}).reduce<
-    Record<string, Array<{ key: string; winner: string }>>
-  >((acc, [key, winner]) => {
-    const round = getRoundLabel(key);
-    if (!acc[round]) acc[round] = [];
-    acc[round].push({ key, winner });
-    return acc;
-  }, {});
-
-  const orderedKnockoutRounds = Object.entries(groupedKnockout).sort(
-    ([roundA], [roundB]) => roundSortOrder(roundA) - roundSortOrder(roundB)
-  );
-
-  const firstPageGroups = groups.slice(0, 8);
-  const secondPageGroups = groups.slice(8, 12);
+  const bracket = buildBracket(knockout);
+  const medals = getMedals(bracket);
 
   return (
-    <div className="mx-auto max-w-none bg-white text-slate-900 print:text-[9px]">
+    <div className="mx-auto max-w-none bg-white text-slate-900 print:text-[8px]">
       <section>
-        <header className="mb-2 border border-slate-300 px-3 py-2">
-          <div className="flex items-start justify-between gap-4">
+        <header className="mb-1 border border-slate-300 px-2 py-1.5">
+          <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-500">
+              <p className="text-[8px] font-bold uppercase tracking-[0.14em] text-slate-500">
                 Addes VM-tips
               </p>
-              <h1 className="text-lg font-extrabold leading-tight">
+              <h1 className="text-sm font-extrabold leading-tight">
                 Ditt sparade tips
               </h1>
             </div>
 
-            <div className="grid gap-[2px] text-[9px] leading-tight">
+            <div className="grid gap-[1px] text-[8px] leading-tight">
               <div>
                 <span className="font-bold">Namn:</span> {profileName}
               </div>
@@ -331,10 +421,8 @@ export default function PredictionPrintDocument({
           </div>
         </header>
 
-        <h2 className="mb-1 text-sm font-extrabold">Gruppspel och slutställning</h2>
-
-        <div className="grid grid-cols-4 gap-2">
-          {firstPageGroups.map((group, index) => (
+        <div className="grid grid-cols-4 gap-1.5">
+          {groups.map((group, index) => (
             <GroupCompactCard
               key={`${getGroupName(group, index)}-${index}`}
               group={group}
@@ -345,56 +433,187 @@ export default function PredictionPrintDocument({
       </section>
 
       <section className="print-page-break">
-        <h2 className="mb-1 text-sm font-extrabold">Gruppspel och slutställning forts.</h2>
+        <div className="mb-2 flex items-center justify-center gap-3">
+          <div className="min-w-[120px] border border-yellow-400 bg-yellow-50 px-3 py-2 text-center">
+            <div className="text-[7px] font-bold uppercase tracking-[0.18em] text-yellow-700">
+              Guld
+            </div>
+            <div className="text-[11px] font-extrabold">
+              {shortenTeamName(medals.gold || "-")}
+            </div>
+          </div>
 
-        <div className="grid grid-cols-4 gap-2">
-          {secondPageGroups.map((group, localIndex) => {
-            const index = localIndex + 8;
+          <div className="min-w-[120px] border border-slate-400 bg-slate-100 px-3 py-2 text-center">
+            <div className="text-[7px] font-bold uppercase tracking-[0.18em] text-slate-600">
+              Silver
+            </div>
+            <div className="text-[11px] font-extrabold">
+              {shortenTeamName(medals.silver || "-")}
+            </div>
+          </div>
 
-            return (
-              <GroupCompactCard
-                key={`${getGroupName(group, index)}-${index}`}
-                group={group}
-                index={index}
-              />
-            );
-          })}
+          <div className="min-w-[120px] border border-orange-400 bg-orange-50 px-3 py-2 text-center">
+            <div className="text-[7px] font-bold uppercase tracking-[0.18em] text-orange-700">
+              Brons
+            </div>
+            <div className="text-[11px] font-extrabold">
+              {shortenTeamName(medals.bronze || "-")}
+            </div>
+          </div>
         </div>
 
-        <div className="mt-3">
-          <h2 className="mb-1 text-sm font-extrabold">Slutspelstips</h2>
-
-          {orderedKnockoutRounds.length === 0 ? (
-            <div className="border border-slate-300 px-2 py-2 text-[9px] text-slate-600">
-              Inga slutspelsval hittades.
+        <div className="grid grid-cols-[1.15fr_0.95fr_0.85fr_0.8fr_1fr_0.8fr_0.85fr_0.95fr_1.15fr] gap-2">
+          <div className="space-y-2">
+            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+              R32
             </div>
-          ) : (
             <div className="space-y-1">
-              {orderedKnockoutRounds.map(([round, matches]) => (
-                <div key={round} className="border border-slate-300 px-2 py-1.5">
-                  <h3 className="mb-1 text-[10px] font-extrabold leading-none">
-                    {round}
-                  </h3>
-
-                  <div className="grid grid-cols-4 gap-x-2 gap-y-1 text-[8.5px] leading-tight">
-                    {matches.map((match) => (
-                      <div key={match.key} className="flex gap-1">
-                        <span className="font-bold text-slate-500">
-                          {compactMatchKey(match.key)}:
-                        </span>
-                        <span className="truncate font-semibold">
-                          {shortenTeamName(match.winner)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              {bracket.leftR32.map((match) => (
+                <MatchPill
+                  key={match.key}
+                  label={match.label}
+                  winner={match.winner}
+                  strong
+                />
               ))}
             </div>
-          )}
+          </div>
+
+          <div className="space-y-4 pt-6">
+            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+              R16
+            </div>
+            <div className="space-y-6">
+              {bracket.leftR16.map((match) => (
+                <MatchPill
+                  key={match.key}
+                  label={match.label}
+                  winner={match.winner}
+                  strong
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-8 pt-12">
+            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+              Kvarts
+            </div>
+            <div className="space-y-10">
+              {bracket.leftQF.map((match) => (
+                <MatchPill
+                  key={match.key}
+                  label={match.label}
+                  winner={match.winner}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-16 pt-20">
+            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+              Semi
+            </div>
+            <div className="space-y-16">
+              {bracket.leftSF.map((match) => (
+                <MatchPill
+                  key={match.key}
+                  label={match.label}
+                  winner={match.winner}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+              Final / Brons
+            </div>
+
+            <div className="space-y-8 pt-16">
+              {bracket.final.map((match) => (
+                <MatchPill
+                  key={match.key}
+                  label={match.label}
+                  winner={match.winner}
+                  strong
+                />
+              ))}
+
+              {bracket.bronze.map((match) => (
+                <MatchPill
+                  key={match.key}
+                  label={match.label}
+                  winner={match.winner}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-16 pt-20">
+            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+              Semi
+            </div>
+            <div className="space-y-16">
+              {bracket.rightSF.map((match) => (
+                <MatchPill
+                  key={match.key}
+                  label={match.label}
+                  winner={match.winner}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-8 pt-12">
+            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+              Kvarts
+            </div>
+            <div className="space-y-10">
+              {bracket.rightQF.map((match) => (
+                <MatchPill
+                  key={match.key}
+                  label={match.label}
+                  winner={match.winner}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-6">
+            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+              R16
+            </div>
+            <div className="space-y-6">
+              {bracket.rightR16.map((match) => (
+                <MatchPill
+                  key={match.key}
+                  label={match.label}
+                  winner={match.winner}
+                  strong
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-center text-[9px] font-extrabold uppercase tracking-wide text-slate-700">
+              R32
+            </div>
+            <div className="space-y-1">
+              {bracket.rightR32.map((match) => (
+                <MatchPill
+                  key={match.key}
+                  label={match.label}
+                  winner={match.winner}
+                  strong
+                />
+              ))}
+            </div>
+          </div>
         </div>
 
-        <footer className="mt-2 border-t border-slate-300 pt-1 text-[8px] text-slate-500">
+        <footer className="mt-3 border-t border-slate-300 pt-1 text-[8px] text-slate-500">
           Exporterad från Addes VM-tips • {formatDate(updatedAt)}
         </footer>
       </section>
