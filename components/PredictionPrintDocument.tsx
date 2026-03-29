@@ -22,12 +22,29 @@ type RawGroup = {
   matches?: RawMatch[];
 };
 
+type StoredRounds = {
+  round32: KnockoutMatch[];
+  r16: KnockoutMatch[];
+  qf: KnockoutMatch[];
+  sf: KnockoutMatch[];
+  finalMatches: KnockoutMatch[];
+  bronze: KnockoutMatch[];
+};
+
+type StoredMedals = {
+  gold: string;
+  silver: string;
+  bronze: string;
+};
+
 type PrintablePrediction = {
   profileName: string;
   updatedAt: string | null;
   goldenBoot: string | null;
   groups: RawGroup[];
   knockout: Record<string, string>;
+  storedRounds?: StoredRounds;
+  storedMedals?: StoredMedals;
 };
 
 type TableRow = {
@@ -316,80 +333,17 @@ function MedalCard({
   );
 }
 
-function getMatchNumberFromKnockoutMatch(match: KnockoutMatch): number | null {
-  const raw = `${match.label ?? ""} ${match.id ?? ""}`;
-  const found = raw.match(/(\d{2,3})/);
-  if (!found) return null;
-
-  const value = Number(found[1]);
-  return Number.isFinite(value) ? value : null;
-}
-
-const R32_BRACKET_ORDER = [
-  74, 77, 73, 75, 83, 84, 81, 82,
-  76, 78, 79, 80, 86, 88, 85, 87,
-];
-
-function orderRound32ForBracket(matches: KnockoutMatch[]) {
-  const byNumber = new Map<number, KnockoutMatch>();
-
-  for (const match of matches) {
-    const matchNo = getMatchNumberFromKnockoutMatch(match);
-    if (matchNo !== null) {
-      byNumber.set(matchNo, match);
-    }
-  }
-
-  return R32_BRACKET_ORDER.map((matchNo) => byNumber.get(matchNo)).filter(
-    (match): match is KnockoutMatch => Boolean(match)
-  );
-}
-
-function safeBuildNextRound(
-  matches: KnockoutMatch[],
-  winners: Record<string, string>,
-  prefix: string,
-  label: string
+function getFallbackComputedData(
+  groups: RawGroup[],
+  knockout: Record<string, string>
 ) {
-  const built = buildNextRound(matches, winners, prefix, label);
-
-  if (built.length > 0) {
-    return built;
-  }
-
-  const fallback: KnockoutMatch[] = [];
-
-  for (let i = 0; i < matches.length; i += 2) {
-    const left = matches[i];
-    const right = matches[i + 1];
-
-    fallback.push({
-      id: `${prefix}-${fallback.length + 1}`,
-      label: `${label} ${fallback.length + 1}`,
-      home: left ? winners[left.id] || "" : "",
-      away: right ? winners[right.id] || "" : "",
-    });
-  }
-
-  return fallback;
-}
-
-export default function PredictionPrintDocument({
-  profileName,
-  updatedAt,
-  goldenBoot,
-  groups,
-  knockout,
-}: PrintablePrediction) {
   const typedGroups = groups as GroupData[];
 
-  const { round32: rawRound32 } = getKnockoutSeedData(typedGroups);
-  const round32 = orderRound32ForBracket(rawRound32);
-
-  const r16 = safeBuildNextRound(round32, knockout, "r16", "Åttondelsfinal");
-  const qf = safeBuildNextRound(r16, knockout, "qf", "Kvartsfinal");
-  const sf = safeBuildNextRound(qf, knockout, "sf", "Semifinal");
-  const finalMatches = safeBuildNextRound(sf, knockout, "final", "Final");
+  const { round32 } = getKnockoutSeedData(typedGroups);
+  const r16 = buildNextRound(round32, knockout, "r16", "Åttondelsfinal");
+  const qf = buildNextRound(r16, knockout, "qf", "Kvartsfinal");
+  const sf = buildNextRound(qf, knockout, "sf", "Semifinal");
+  const finalMatches = buildNextRound(sf, knockout, "final", "Final");
 
   const bronze: KnockoutMatch[] = [
     {
@@ -406,6 +360,37 @@ export default function PredictionPrintDocument({
       ? [finalMatches[0].home, finalMatches[0].away].find((team) => team !== gold) || ""
       : "";
   const bronzeWinner = knockout["bronze-1"] || "";
+
+  return {
+    rounds: {
+      round32,
+      r16,
+      qf,
+      sf,
+      finalMatches,
+      bronze,
+    },
+    medals: {
+      gold,
+      silver,
+      bronze: bronzeWinner,
+    },
+  };
+}
+
+export default function PredictionPrintDocument({
+  profileName,
+  updatedAt,
+  goldenBoot,
+  groups,
+  knockout,
+  storedRounds,
+  storedMedals,
+}: PrintablePrediction) {
+  const fallback = getFallbackComputedData(groups, knockout);
+
+  const rounds = storedRounds ?? fallback.rounds;
+  const medals = storedMedals ?? fallback.medals;
 
   return (
     <div className="mx-auto max-w-none bg-white text-slate-900 print:text-[8px]">
@@ -452,17 +437,17 @@ export default function PredictionPrintDocument({
         <div className="mb-4 flex items-center justify-center gap-4">
           <MedalCard
             title="Guld"
-            team={gold}
+            team={medals.gold}
             className="border-yellow-400 bg-yellow-50 text-yellow-900"
           />
           <MedalCard
             title="Silver"
-            team={silver}
+            team={medals.silver}
             className="border-slate-400 bg-slate-100 text-slate-900"
           />
           <MedalCard
             title="Brons"
-            team={bronzeWinner}
+            team={medals.bronze}
             className="border-orange-400 bg-orange-50 text-orange-900"
           />
         </div>
@@ -471,14 +456,14 @@ export default function PredictionPrintDocument({
           <div className="grid grid-cols-2 gap-3">
             <RoundGrid
               title="Sextondelsfinal"
-              matches={round32}
+              matches={rounds.round32}
               knockout={knockout}
               columns={4}
             />
 
             <RoundGrid
               title="Åttondelsfinal"
-              matches={r16}
+              matches={rounds.r16}
               knockout={knockout}
               columns={4}
             />
@@ -487,14 +472,14 @@ export default function PredictionPrintDocument({
           <div className="grid grid-cols-2 gap-3">
             <RoundGrid
               title="Kvartsfinal"
-              matches={qf}
+              matches={rounds.qf}
               knockout={knockout}
               columns={4}
             />
 
             <RoundGrid
               title="Semifinal"
-              matches={sf}
+              matches={rounds.sf}
               knockout={knockout}
               columns={2}
             />
@@ -502,7 +487,7 @@ export default function PredictionPrintDocument({
 
           <RoundGrid
             title="Final och bronsmatch"
-            matches={[...finalMatches, ...bronze]}
+            matches={[...rounds.finalMatches, ...rounds.bronze]}
             knockout={knockout}
             columns={2}
           />

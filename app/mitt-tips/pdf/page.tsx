@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import PredictionPrintActions from "@/components/PredictionPrintActions";
 import PredictionPrintDocument from "@/components/PredictionPrintDocument";
+import type { KnockoutMatch } from "@/types/tournament";
 
 type RawMatch = {
   id?: string | number;
@@ -26,6 +27,19 @@ type StoredPrediction = {
   knockout: Record<string, string>;
   goldenBoot: string | null;
   savedAt?: string;
+  rounds?: {
+    round32: KnockoutMatch[];
+    r16: KnockoutMatch[];
+    qf: KnockoutMatch[];
+    sf: KnockoutMatch[];
+    finalMatches: KnockoutMatch[];
+    bronze: KnockoutMatch[];
+  };
+  medals?: {
+    gold: string;
+    silver: string;
+    bronze: string;
+  };
 };
 
 type ApiPredictionResponse = {
@@ -46,6 +60,8 @@ export default function PredictionPdfPage() {
   const [knockout, setKnockout] = useState<Record<string, string>>({});
   const [goldenBoot, setGoldenBoot] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [storedRounds, setStoredRounds] = useState<StoredPrediction["rounds"]>();
+  const [storedMedals, setStoredMedals] = useState<StoredPrediction["medals"]>();
 
   useEffect(() => {
     async function loadPrediction() {
@@ -67,6 +83,8 @@ export default function PredictionPdfPage() {
             );
             setGoldenBoot(stored.goldenBoot ?? null);
             setUpdatedAt(stored.savedAt ?? new Date().toISOString());
+            setStoredRounds(stored.rounds);
+            setStoredMedals(stored.medals);
 
             localStorage.removeItem("prediction_pdf");
             setLoading(false);
@@ -172,6 +190,8 @@ export default function PredictionPdfPage() {
             goldenBoot={goldenBoot}
             groups={groups}
             knockout={knockout}
+            storedRounds={storedRounds}
+            storedMedals={storedMedals}
           />
         </div>
       </div>
