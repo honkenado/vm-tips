@@ -52,6 +52,22 @@ const viewModeItems: { key: AppViewMode; label: string; mobileLabel: string }[] 
     { key: "leagues", label: "Ligor", mobileLabel: "Ligor" },
   ];
 
+function headerLinkClassName() {
+  return "inline-flex h-10 items-center justify-center rounded-full border border-white/15 bg-white/10 px-4 text-[13px] font-semibold text-white transition hover:bg-white/20";
+}
+
+function headerSecondaryButtonClassName() {
+  return "inline-flex h-10 items-center justify-center rounded-full border border-white/15 bg-white/10 px-4 text-[13px] font-semibold text-white transition hover:bg-white/20";
+}
+
+function headerPrimaryButtonClassName() {
+  return "inline-flex h-10 items-center justify-center rounded-full bg-white px-4 text-[13px] font-extrabold text-slate-900 shadow-md transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50";
+}
+
+function headerAccentButtonClassName() {
+  return "inline-flex h-10 items-center justify-center rounded-full border border-emerald-300/20 bg-emerald-500 px-4 text-[13px] font-semibold text-white transition hover:bg-emerald-400";
+}
+
 export default function HomePage() {
   const [groups, setGroups] = useState<GroupData[]>(initialGroups);
   const [knockoutWinners, setKnockoutWinners] = useState<Record<string, string>>(
@@ -233,7 +249,11 @@ export default function HomePage() {
       ...group,
       matches: group.matches.map((match) => {
         const score = generateRandomScore(match.homeTeam, match.awayTeam);
-        return { ...match, homeGoals: score.homeGoals, awayGoals: score.awayGoals };
+        return {
+          ...match,
+          homeGoals: score.homeGoals,
+          awayGoals: score.awayGoals,
+        };
       }),
     }));
 
@@ -361,7 +381,7 @@ export default function HomePage() {
           <div className="absolute right-[-80px] top-[-80px] h-40 w-40 rounded-full bg-emerald-300/10 blur-3xl" />
 
           <div className="relative">
-            <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0 flex flex-col gap-3">
                 <div className="mb-1 inline-flex w-fit rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-100 sm:text-[11px]">
                   FIFA World Cup 2026
@@ -379,8 +399,8 @@ export default function HomePage() {
                 </div>
 
                 <p className="max-w-2xl text-sm leading-5 text-slate-200 md:text-sm">
-                  Tippa grupper, följ de bästa treorna och spela hela slutspelet fram till
-                  världsmästaren.
+                  Tippa grupper, följ de bästa treorna och spela hela slutspelet
+                  fram till världsmästaren.
                 </p>
               </div>
 
@@ -389,102 +409,111 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  href="/rules"
-                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
-                >
-                  Regler
-                </Link>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/70">
+                      Navigation
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Link href="/rules" className={headerLinkClassName()}>
+                        Regler
+                      </Link>
 
-                <Link
-                  href="/help"
-                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
-                >
-                  Hjälp
-                </Link>
+                      <Link href="/help" className={headerLinkClassName()}>
+                        Hjälp
+                      </Link>
 
-                <Link
-                  href="/medlemmar"
-                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
-                >
-                  Medlemmar
-                </Link>
+                      <Link href="/medlemmar" className={headerLinkClassName()}>
+                        Medlemmar
+                      </Link>
 
-                
+                      <Link href="/mitt-resultat" className={headerLinkClassName()}>
+                        Mitt resultat
+                      </Link>
+                    </div>
+                  </div>
 
-                <button
-                  onClick={savePredictionToDatabase}
-                  disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
-                  className="h-9 rounded-full bg-white px-3 py-1.5 text-[13px] font-extrabold text-slate-900 shadow-md transition hover:bg-slate-100 disabled:opacity-50"
-                >
-                  {deadlinePassed
-                    ? "Deadline passerad"
-                    : isSaving
-                    ? "Sparar..."
-                    : "Spara tips"}
-                </button>
+                  <div>
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/70">
+                      Åtgärder
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={savePredictionToDatabase}
+                        disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
+                        className={headerPrimaryButtonClassName()}
+                      >
+                        {deadlinePassed
+                          ? "Deadline passerad"
+                          : isSaving
+                          ? "Sparar..."
+                          : "Spara tips"}
+                      </button>
 
-                <button
-                  onClick={createLeague}
-                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
-                >
-                  Skapa liga
-                </button>
+                      <button
+                        onClick={createLeague}
+                        className={headerSecondaryButtonClassName()}
+                      >
+                        Skapa liga
+                      </button>
 
-                <button
-                  onClick={joinLeague}
-                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
-                >
-                  Gå med i liga
-                </button>
+                      <button
+                        onClick={joinLeague}
+                        className={headerSecondaryButtonClassName()}
+                      >
+                        Gå med i liga
+                      </button>
 
-                <button
-                  onClick={runAddeBoy}
-                  className="h-9 rounded-full border border-emerald-300/20 bg-emerald-500 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-emerald-400"
-                >
-                  Adde Boy
-                </button>
+                      <button
+                        onClick={runAddeBoy}
+                        className={headerAccentButtonClassName()}
+                      >
+                        Adde Boy
+                      </button>
 
-                <button
-                  onClick={resetAll}
-                  className="h-9 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-white/20"
-                >
-                  Nollställ
-                </button>
+                      <button
+                        onClick={resetAll}
+                        className={headerSecondaryButtonClassName()}
+                      >
+                        Nollställ
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hidden flex-wrap gap-2 md:flex xl:max-w-[420px] xl:justify-end">
+                  {viewModeItems.map((item) => (
+                    <button
+                      key={item.key}
+                      onClick={() => setViewMode(item.key)}
+                      className={`h-9 rounded-full px-3 py-1.5 text-[13px] font-bold transition ${
+                        viewMode === item.key
+                          ? "bg-white text-slate-900 shadow-md"
+                          : "border border-white/10 bg-white/10 text-white hover:bg-white/20"
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="hidden flex-wrap gap-2 md:flex">
-                {viewModeItems.map((item) => (
-                  <button
-                    key={item.key}
-                    onClick={() => setViewMode(item.key)}
-                    className={`h-9 rounded-full px-3 py-1.5 text-[13px] font-bold transition ${
-                      viewMode === item.key
-                        ? "bg-white text-slate-900 shadow-md"
-                        : "border border-white/10 bg-white/10 text-white hover:bg-white/20"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+              {(deadlinePassed || saveMessage) && (
+                <div className="flex flex-col gap-2">
+                  {deadlinePassed && (
+                    <p className="text-sm font-semibold text-amber-300">
+                      Deadline har passerat. Tipset är nu låst.
+                    </p>
+                  )}
+
+                  {saveMessage && (
+                    <p className="text-sm text-white/80">{saveMessage}</p>
+                  )}
+                </div>
+              )}
             </div>
-
-            {(deadlinePassed || saveMessage) && (
-              <div className="mt-3 flex flex-col gap-2">
-                {deadlinePassed && (
-                  <p className="text-sm font-semibold text-amber-300">
-                    Deadline har passerat. Tipset är nu låst.
-                  </p>
-                )}
-
-                {saveMessage && (
-                  <p className="text-sm text-white/80">{saveMessage}</p>
-                )}
-              </div>
-            )}
           </div>
         </header>
 
@@ -492,7 +521,10 @@ export default function HomePage() {
 
         <div className="grid gap-4 sm:gap-6 md:gap-8">
           {(viewMode === "all" || viewMode === "groups") && (
-            <SectionCard title="Grupper" subtitle="Välj grupp och fyll i dina matchresultat.">
+            <SectionCard
+              title="Grupper"
+              subtitle="Välj grupp och fyll i dina matchresultat."
+            >
               <div className="mb-4 flex flex-wrap gap-2 sm:mb-6">
                 {"ABCDEFGHIJKL".split("").map((letter) => {
                   const group = groups.find((g) => g.name === `Grupp ${letter}`);
