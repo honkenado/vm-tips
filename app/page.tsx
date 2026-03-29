@@ -64,9 +64,10 @@ export default function HomePage() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [hasLoadedFromDatabase, setHasLoadedFromDatabase] = useState(false);
   const [myLeagues, setMyLeagues] = useState<MyLeague[]>([]);
+
   const groupsRef = useRef<GroupData[]>(initialGroups);
-const knockoutRef = useRef<Record<string, string>>({});
-const goldenBootRef = useRef("");
+  const knockoutRef = useRef<Record<string, string>>({});
+  const goldenBootRef = useRef("");
 
   async function loadMyLeagues() {
     try {
@@ -97,14 +98,17 @@ const goldenBootRef = useRef("");
 
         if (data.prediction?.group_stage) {
           setGroups(data.prediction.group_stage);
+          groupsRef.current = data.prediction.group_stage;
         }
 
         if (data.prediction?.knockout) {
           setKnockoutWinners(data.prediction.knockout);
+          knockoutRef.current = data.prediction.knockout;
         }
 
         if (data.prediction?.golden_boot) {
           setGoldenBoot(data.prediction.golden_boot);
+          goldenBootRef.current = data.prediction.golden_boot;
         }
       } catch (error) {
         console.error("Kunde inte läsa från databasen", error);
@@ -185,8 +189,8 @@ const goldenBootRef = useRef("");
   ) {
     if (value !== "" && !/^\d+$/.test(value)) return;
 
-    setGroups((prev) =>
-      prev.map((group) =>
+    setGroups((prev) => {
+      const next = prev.map((group) =>
         group.name !== groupName
           ? group
           : {
@@ -195,16 +199,20 @@ const goldenBootRef = useRef("");
                 match.id === matchId ? { ...match, [field]: value } : match
               ),
             }
-      )
-    );
+      );
 
+      groupsRef.current = next;
+      return next;
+    });
+
+    knockoutRef.current = {};
     setKnockoutWinners({});
     setSaveMessage(null);
   }
 
   function resetGroup(groupName: string) {
-    setGroups((prev) =>
-      prev.map((group) =>
+    setGroups((prev) => {
+      const next = prev.map((group) =>
         group.name !== groupName
           ? group
           : {
@@ -215,9 +223,13 @@ const goldenBootRef = useRef("");
                 awayGoals: "",
               })),
             }
-      )
-    );
+      );
 
+      groupsRef.current = next;
+      return next;
+    });
+
+    knockoutRef.current = {};
     setKnockoutWinners({});
     setSaveMessage(null);
   }
@@ -225,9 +237,18 @@ const goldenBootRef = useRef("");
   function selectWinner(matchId: string, team: string) {
     setKnockoutWinners((prev) => {
       const cleaned = clearDependentKnockoutSelections(prev, matchId);
-      return { ...cleaned, [matchId]: team };
+      const next = { ...cleaned, [matchId]: team };
+
+      knockoutRef.current = next;
+      return next;
     });
 
+    setSaveMessage(null);
+  }
+
+  function updateGoldenBoot(value: string) {
+    goldenBootRef.current = value;
+    setGoldenBoot(value);
     setSaveMessage(null);
   }
 
@@ -280,6 +301,10 @@ const goldenBootRef = useRef("");
       winners[m.id] = pickRandomWinner(m.home, m.away);
     });
 
+    groupsRef.current = randomGroups;
+    knockoutRef.current = winners;
+    goldenBootRef.current = "";
+
     setGroups(randomGroups);
     setKnockoutWinners(winners);
     setGoldenBoot("");
@@ -289,11 +314,16 @@ const goldenBootRef = useRef("");
   }
 
   function resetKnockout() {
+    knockoutRef.current = {};
     setKnockoutWinners({});
     setSaveMessage(null);
   }
 
   function resetAll() {
+    groupsRef.current = initialGroups;
+    knockoutRef.current = {};
+    goldenBootRef.current = "";
+
     setGroups(initialGroups);
     setKnockoutWinners({});
     setGoldenBoot("");
@@ -305,15 +335,15 @@ const goldenBootRef = useRef("");
   function saveToPdfStorage() {
     if (typeof window === "undefined") return;
 
-    localStorage.setItem(
-      "prediction_pdf",
-      JSON.stringify({
-        groups,
-        knockout: knockoutWinners,
-        goldenBoot,
-        savedAt: new Date().toISOString(),
-      })
-    );
+    const payload = {
+      groups: groupsRef.current,
+      knockout: knockoutRef.current,
+      goldenBoot: goldenBootRef.current,
+      savedAt: new Date().toISOString(),
+    };
+
+    localStorage.setItem("prediction_pdf", JSON.stringify(payload));
+    console.log("prediction_pdf saved", payload);
   }
 
   async function savePredictionToDatabase() {
@@ -326,16 +356,18 @@ const goldenBootRef = useRef("");
       setIsSaving(true);
       setSaveMessage(null);
 
+      const payload = {
+        groups: groupsRef.current,
+        knockout: knockoutRef.current,
+        goldenBoot: goldenBootRef.current,
+      };
+
       const res = await fetch("/api/prediction", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          groups,
-          knockout: knockoutWinners,
-          goldenBoot,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -576,7 +608,7 @@ const goldenBootRef = useRef("");
           )}
 
           {(viewMode === "all" || viewMode === "goldenboot") && (
-            <GoldenBootSection value={goldenBoot} onChange={setGoldenBoot} />
+            <GoldenBootSection value={goldenBoot} onChange={updateGoldenBoot} />
           )}
 
           {(viewMode === "all" || viewMode === "leagues") && (
