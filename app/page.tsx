@@ -85,9 +85,7 @@ export default function HomePage() {
       const res = await fetch("/api/leagues/my");
       const data = await res.json();
 
-      if (!res.ok) {
-        return;
-      }
+      if (!res.ok) return;
 
       setMyLeagues((data.leagues ?? []) as MyLeague[]);
     } catch (error) {
@@ -561,7 +559,7 @@ export default function HomePage() {
             <GoldenBootSection value={goldenBoot} onChange={setGoldenBoot} />
           )}
 
-          {(viewMode === "all" || viewMode === "leagues") && (
+          {viewMode === "leagues" && (
             <LeaguesSection
               myLeagues={myLeagues}
               onCreateLeague={createLeague}
