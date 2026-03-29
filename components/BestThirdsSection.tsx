@@ -97,66 +97,73 @@ export default function BestThirdsSection({
     const isFirstEliminated = index === qualifiedCount;
 
     return (
-      <tr
-        key={`${group}-${team}-${index}`}
-        className={[
-          isQualified ? "bg-emerald-50/80" : "bg-slate-50/70",
-          isFirstEliminated ? "border-t-4 border-slate-400" : "",
-        ].join(" ")}
-      >
-        <td className="border-b border-slate-200 px-3 py-3 text-slate-500">
-          {index + 1}
-        </td>
-        <td
-          className={`border-b border-slate-200 px-3 py-3 font-semibold ${
-            isQualified ? "text-slate-700" : "text-slate-500"
-          }`}
+      <>
+        {isFirstEliminated && (
+          <tr>
+            <td colSpan={12} className="px-0 py-0">
+              <div className="my-1 h-1 rounded-full bg-slate-400" />
+            </td>
+          </tr>
+        )}
+
+        <tr
+          key={`${group}-${team}-${index}`}
+          className={isQualified ? "bg-emerald-50/80" : "bg-slate-50/70"}
         >
-          {group}
-        </td>
-        <td
-          className={`border-b border-slate-200 px-3 py-3 font-semibold ${
-            isQualified ? "text-slate-900" : "text-slate-700"
-          }`}
-        >
-          {team}
-        </td>
-        <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
-          {played}
-        </td>
-        <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
-          {won}
-        </td>
-        <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
-          {drawn}
-        </td>
-        <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
-          {lost}
-        </td>
-        <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
-          {goalsFor}
-        </td>
-        <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
-          {goalsAgainst}
-        </td>
-        <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
-          {goalDiff}
-        </td>
-        <td className="border-b border-slate-200 px-3 py-3 text-center font-bold text-slate-900">
-          {points}
-        </td>
-        <td className="border-b border-slate-200 px-3 py-3">
-          <span
-            className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
-              isQualified
-                ? "bg-emerald-100 text-emerald-800"
-                : "bg-slate-200 text-slate-600"
+          <td className="border-b border-slate-200 px-3 py-3 text-slate-500">
+            {index + 1}
+          </td>
+          <td
+            className={`border-b border-slate-200 px-3 py-3 font-semibold ${
+              isQualified ? "text-slate-700" : "text-slate-500"
             }`}
           >
-            {isQualified ? "Vidare" : "Ute"}
-          </span>
-        </td>
-      </tr>
+            {group}
+          </td>
+          <td
+            className={`border-b border-slate-200 px-3 py-3 font-semibold ${
+              isQualified ? "text-slate-900" : "text-slate-700"
+            }`}
+          >
+            {team}
+          </td>
+          <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+            {played}
+          </td>
+          <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+            {won}
+          </td>
+          <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+            {drawn}
+          </td>
+          <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+            {lost}
+          </td>
+          <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+            {goalsFor}
+          </td>
+          <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+            {goalsAgainst}
+          </td>
+          <td className="border-b border-slate-200 px-3 py-3 text-center text-slate-600">
+            {goalDiff}
+          </td>
+          <td className="border-b border-slate-200 px-3 py-3 text-center font-bold text-slate-900">
+            {points}
+          </td>
+          <td className="border-b border-slate-200 px-3 py-3">
+            <span
+              className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
+                isQualified
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-slate-200 text-slate-600"
+              }`}
+            >
+              {isQualified ? "Vidare" : "Ute"}
+            </span>
+          </td>
+        </tr>
+      </>
     );
   })}
 </tbody>
