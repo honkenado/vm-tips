@@ -11,7 +11,7 @@ import LeaguesSection from "@/components/leagues-section";
 import NewsPreview from "@/components/NewsPreview";
 import QualifiedTeamsSection from "@/components/QualifiedTeamsSection";
 import SectionCard from "@/components/SectionCard";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { isDeadlinePassed } from "@/lib/config";
 import {
   clearDependentKnockoutSelections,
@@ -64,6 +64,9 @@ export default function HomePage() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [hasLoadedFromDatabase, setHasLoadedFromDatabase] = useState(false);
   const [myLeagues, setMyLeagues] = useState<MyLeague[]>([]);
+  const groupsRef = useRef<GroupData[]>(initialGroups);
+const knockoutRef = useRef<Record<string, string>>({});
+const goldenBootRef = useRef("");
 
   async function loadMyLeagues() {
     try {
