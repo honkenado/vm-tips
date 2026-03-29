@@ -52,19 +52,19 @@ const viewModeItems: { key: AppViewMode; label: string; mobileLabel: string }[] 
     { key: "leagues", label: "Ligor", mobileLabel: "Ligor" },
   ];
 
-function headerLinkClassName() {
+function navLinkClassName() {
   return "inline-flex h-10 items-center justify-center rounded-full border border-white/15 bg-white/10 px-4 text-[13px] font-semibold text-white transition hover:bg-white/20";
 }
 
-function headerSecondaryButtonClassName() {
+function secondaryButtonClassName() {
   return "inline-flex h-10 items-center justify-center rounded-full border border-white/15 bg-white/10 px-4 text-[13px] font-semibold text-white transition hover:bg-white/20";
 }
 
-function headerPrimaryButtonClassName() {
+function primaryButtonClassName() {
   return "inline-flex h-10 items-center justify-center rounded-full bg-white px-4 text-[13px] font-extrabold text-slate-900 shadow-md transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50";
 }
 
-function headerAccentButtonClassName() {
+function accentButtonClassName() {
   return "inline-flex h-10 items-center justify-center rounded-full border border-emerald-300/20 bg-emerald-500 px-4 text-[13px] font-semibold text-white transition hover:bg-emerald-400";
 }
 
@@ -410,26 +410,23 @@ export default function HomePage() {
             </div>
 
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                <div className="flex flex-col gap-4">
                   <div>
                     <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/70">
                       Navigation
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      <Link href="/rules" className={headerLinkClassName()}>
+                      <Link href="/rules" className={navLinkClassName()}>
                         Regler
                       </Link>
-
-                      <Link href="/help" className={headerLinkClassName()}>
+                      <Link href="/help" className={navLinkClassName()}>
                         Hjälp
                       </Link>
-
-                      <Link href="/medlemmar" className={headerLinkClassName()}>
+                      <Link href="/medlemmar" className={navLinkClassName()}>
                         Medlemmar
                       </Link>
-
-                      <Link href="/mitt-resultat" className={headerLinkClassName()}>
+                      <Link href="/mitt-resultat" className={navLinkClassName()}>
                         Mitt resultat
                       </Link>
                     </div>
@@ -443,7 +440,7 @@ export default function HomePage() {
                       <button
                         onClick={savePredictionToDatabase}
                         disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
-                        className={headerPrimaryButtonClassName()}
+                        className={primaryButtonClassName()}
                       >
                         {deadlinePassed
                           ? "Deadline passerad"
@@ -453,29 +450,15 @@ export default function HomePage() {
                       </button>
 
                       <button
-                        onClick={createLeague}
-                        className={headerSecondaryButtonClassName()}
-                      >
-                        Skapa liga
-                      </button>
-
-                      <button
-                        onClick={joinLeague}
-                        className={headerSecondaryButtonClassName()}
-                      >
-                        Gå med i liga
-                      </button>
-
-                      <button
                         onClick={runAddeBoy}
-                        className={headerAccentButtonClassName()}
+                        className={accentButtonClassName()}
                       >
                         Adde Boy
                       </button>
 
                       <button
                         onClick={resetAll}
-                        className={headerSecondaryButtonClassName()}
+                        className={secondaryButtonClassName()}
                       >
                         Nollställ
                       </button>
@@ -483,20 +466,25 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <div className="hidden flex-wrap gap-2 md:flex xl:max-w-[420px] xl:justify-end">
-                  {viewModeItems.map((item) => (
-                    <button
-                      key={item.key}
-                      onClick={() => setViewMode(item.key)}
-                      className={`h-9 rounded-full px-3 py-1.5 text-[13px] font-bold transition ${
-                        viewMode === item.key
-                          ? "bg-white text-slate-900 shadow-md"
-                          : "border border-white/10 bg-white/10 text-white hover:bg-white/20"
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
+                <div className="hidden md:block xl:max-w-[420px]">
+                  <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/70 xl:text-right">
+                    Visa del av tipset
+                  </p>
+                  <div className="flex flex-wrap gap-2 xl:justify-end">
+                    {viewModeItems.map((item) => (
+                      <button
+                        key={item.key}
+                        onClick={() => setViewMode(item.key)}
+                        className={`h-9 rounded-full px-3 py-1.5 text-[13px] font-bold transition ${
+                          viewMode === item.key
+                            ? "bg-white text-slate-900 shadow-md"
+                            : "border border-white/10 bg-white/10 text-white hover:bg-white/20"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -578,7 +566,11 @@ export default function HomePage() {
           )}
 
           {(viewMode === "all" || viewMode === "leagues") && (
-            <LeaguesSection myLeagues={myLeagues} />
+            <LeaguesSection
+              myLeagues={myLeagues}
+              onCreateLeague={createLeague}
+              onJoinLeague={joinLeague}
+            />
           )}
         </div>
       </div>
