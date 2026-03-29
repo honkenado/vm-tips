@@ -9,7 +9,6 @@ import GroupSection from "@/components/GroupSection";
 import KnockoutFullSection from "@/components/KnockoutFullSection";
 import LeaguesSection from "@/components/leagues-section";
 import NewsPreview from "@/components/NewsPreview";
-import QualifiedTeamsSection from "@/components/QualifiedTeamsSection";
 import SectionCard from "@/components/SectionCard";
 import { useEffect, useMemo, useState } from "react";
 import { isDeadlinePassed } from "@/lib/config";
@@ -544,14 +543,9 @@ export default function HomePage() {
             </SectionCard>
           )}
 
-          {viewMode === "all" && <QualifiedTeamsSection groups={groups} />}
-
-{viewMode === "thirds" && (
-  <div className="grid gap-4 sm:gap-6 md:gap-8">
-    <BestThirdsSection groups={groups} />
-    <QualifiedTeamsSection groups={groups} />
-  </div>
-)}
+          {(viewMode === "all" || viewMode === "thirds") && (
+            <BestThirdsSection groups={groups} />
+          )}
 
           {(viewMode === "all" || viewMode === "knockout") && (
             <KnockoutFullSection
