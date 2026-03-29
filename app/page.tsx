@@ -299,19 +299,19 @@ export default function HomePage() {
     setSaveMessage(null);
   }
 
-  function saveToSessionStorage() {
-    if (typeof window === "undefined") return;
+  function saveToPdfStorage() {
+  if (typeof window === "undefined") return;
 
-    sessionStorage.setItem(
-      "prediction_pdf",
-      JSON.stringify({
-        groups,
-        knockout: knockoutWinners,
-        goldenBoot,
-        savedAt: new Date().toISOString(),
-      })
-    );
-  }
+  localStorage.setItem(
+    "prediction_pdf",
+    JSON.stringify({
+      groups,
+      knockout: knockoutWinners,
+      goldenBoot,
+      savedAt: new Date().toISOString(),
+    })
+  );
+}
 
   async function savePredictionToDatabase() {
     if (isDeadlinePassed()) {
@@ -354,7 +354,7 @@ export default function HomePage() {
   }
 
   async function saveAndOpenPdf() {
-    saveToSessionStorage();
+    saveToPdfStorage();
 
     const ok = await savePredictionToDatabase();
     if (!ok) return;
