@@ -96,6 +96,14 @@ export default function AdminResultsPage() {
     setMessage(null);
   }
 
+  function resetAllResults() {
+    setGroups(initialGroups);
+    setKnockoutWinners({});
+    setActiveGroupLetter("A");
+    setViewMode("all");
+    setMessage("Facit återställt lokalt. Klicka på 'Spara facit' för att spara.");
+  }
+
   function selectWinner(matchId: string, team: string) {
     setKnockoutWinners((prev) => {
       const cleaned = clearDependentKnockoutSelections(prev, matchId);
@@ -160,7 +168,8 @@ export default function AdminResultsPage() {
               </h1>
 
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 md:text-base">
-                Fyll i de verkliga resultaten i grupperna och välj rätt vinnare i slutspelet.
+                Fyll i de verkliga resultaten i grupperna och välj rätt vinnare i
+                slutspelet.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -170,6 +179,14 @@ export default function AdminResultsPage() {
                   className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-extrabold text-white transition hover:bg-slate-800 disabled:opacity-50"
                 >
                   {isSaving ? "Sparar..." : "Spara facit"}
+                </button>
+
+                <button
+                  onClick={resetAllResults}
+                  disabled={!hasLoaded || isSaving}
+                  className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-extrabold text-slate-800 transition hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Nollställ facit
                 </button>
               </div>
 
@@ -202,7 +219,10 @@ export default function AdminResultsPage() {
 
         <div className="grid gap-8">
           {(viewMode === "all" || viewMode === "groups") && (
-            <SectionCard title="Grupper" subtitle="Fyll i officiella matchresultat.">
+            <SectionCard
+              title="Grupper"
+              subtitle="Fyll i officiella matchresultat."
+            >
               <div className="mb-6 flex flex-wrap gap-2">
                 {"ABCDEFGHIJKL".split("").map((letter) => (
                   <button
@@ -232,7 +252,10 @@ export default function AdminResultsPage() {
               groups={groups}
               knockoutWinners={knockoutWinners}
               onSelectWinner={selectWinner}
-              onResetKnockout={() => setKnockoutWinners({})}
+              onResetKnockout={() => {
+                setKnockoutWinners({});
+                setMessage(null);
+              }}
               isGroupStageComplete={isGroupStageComplete}
             />
           )}
