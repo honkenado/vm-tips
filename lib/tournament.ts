@@ -37,10 +37,10 @@ const fifaRankings: Record<string, number> = {
   Japan: 19,
   Iran: 20,
   Danmark: 21,
-  Sydkorea: 22,
+  Turkiet: 22,
+  Sydkorea: 25,
   Ecuador: 23,
   Österrike: 24,
-  Turkiet: 25,
   Nigeria: 26,
   Australien: 27,
   Algeriet: 28,
@@ -53,11 +53,11 @@ const fifaRankings: Record<string, number> = {
   Wales: 35,
   Ryssland: 36,
   Elfenbenskusten: 37,
-  Skottland: 38,
+  Skottland: 43,
   Serbien: 39,
   Paraguay: 40,
   Ungern: 41,
-  Sverige: 42,
+  Sverige: 38,
   Tjeckien: 43,
   Slovakien: 44,
   Kamerun: 45,
@@ -74,6 +74,7 @@ const fifaRankings: Record<string, number> = {
   Haiti: 83,
   Saudiarabien: 61,
   Sydafrika: 60,
+  "Bosnien och Hercegovina": 66,
 };
 
 function createScheduledGroup(
@@ -100,7 +101,7 @@ function createScheduledGroup(
 export const initialGroups: GroupData[] = [
   createScheduledGroup(
     "Grupp A",
-    ["Mexiko", "Sydafrika", "Sydkorea", "Europeiskt playoff D"],
+    ["Mexiko", "Sydafrika", "Sydkorea", "Tjeckien"],
     [
       {
         matchNumber: 1,
@@ -114,13 +115,13 @@ export const initialGroups: GroupData[] = [
         date: "12 juni 2026",
         time: "04:00",
         homeTeam: "Sydkorea",
-        awayTeam: "Europeiskt playoff D",
+        awayTeam: "Tjeckien",
       },
       {
         matchNumber: 25,
         date: "18 juni 2026",
         time: "18:00",
-        homeTeam: "Europeiskt playoff D",
+        homeTeam: "Tjeckien",
         awayTeam: "Sydafrika",
       },
       {
@@ -141,7 +142,7 @@ export const initialGroups: GroupData[] = [
         matchNumber: 54,
         date: "25 juni 2026",
         time: "03:00",
-        homeTeam: "Europeiskt playoff D",
+        homeTeam: "Tjeckien",
         awayTeam: "Mexiko",
       },
     ]
@@ -149,14 +150,14 @@ export const initialGroups: GroupData[] = [
 
   createScheduledGroup(
     "Grupp B",
-    ["Kanada", "Europeiskt playoff A", "Qatar", "Schweiz"],
+    ["Kanada", "Bosnien och Hercegovina", "Qatar", "Schweiz"],
     [
       {
         matchNumber: 3,
         date: "12 juni 2026",
         time: "21:00",
         homeTeam: "Kanada",
-        awayTeam: "Europeiskt playoff A",
+        awayTeam: "Bosnien och Hercegovina",
       },
       {
         matchNumber: 8,
@@ -170,7 +171,7 @@ export const initialGroups: GroupData[] = [
         date: "18 juni 2026",
         time: "21:00",
         homeTeam: "Schweiz",
-        awayTeam: "Europeiskt playoff A",
+        awayTeam: "Bosnien och Hercegovina",
       },
       {
         matchNumber: 27,
@@ -190,7 +191,7 @@ export const initialGroups: GroupData[] = [
         matchNumber: 52,
         date: "24 juni 2026",
         time: "21:00",
-        homeTeam: "Europeiskt playoff A",
+        homeTeam: "Bosnien och Hercegovina",
         awayTeam: "Qatar",
       },
     ]
@@ -247,7 +248,7 @@ export const initialGroups: GroupData[] = [
 
   createScheduledGroup(
     "Grupp D",
-    ["USA", "Paraguay", "Australien", "Europeiskt playoff C"],
+    ["USA", "Paraguay", "Australien", "Turkiet"],
     [
       {
         matchNumber: 4,
@@ -261,7 +262,7 @@ export const initialGroups: GroupData[] = [
         date: "14 juni 2026",
         time: "06:00",
         homeTeam: "Australien",
-        awayTeam: "Europeiskt playoff C",
+        awayTeam: "Turkiet",
       },
       {
         matchNumber: 32,
@@ -274,14 +275,14 @@ export const initialGroups: GroupData[] = [
         matchNumber: 31,
         date: "20 juni 2026",
         time: "06:00",
-        homeTeam: "Europeiskt playoff C",
+        homeTeam: "Turkiet",
         awayTeam: "Paraguay",
       },
       {
         matchNumber: 59,
         date: "26 juni 2026",
         time: "04:00",
-        homeTeam: "Europeiskt playoff C",
+        homeTeam: "Turkiet",
         awayTeam: "USA",
       },
       {
@@ -345,7 +346,7 @@ export const initialGroups: GroupData[] = [
 
   createScheduledGroup(
     "Grupp F",
-    ["Nederländerna", "Japan", "Europeiskt playoff B", "Tunisien"],
+    ["Nederländerna", "Japan", "Sverige", "Tunisien"],
     [
       {
         matchNumber: 11,
@@ -358,7 +359,7 @@ export const initialGroups: GroupData[] = [
         matchNumber: 12,
         date: "15 juni 2026",
         time: "03:00",
-        homeTeam: "Europeiskt playoff B",
+        homeTeam: "Sverige",
         awayTeam: "Tunisien",
       },
       {
@@ -366,7 +367,7 @@ export const initialGroups: GroupData[] = [
         date: "20 juni 2026",
         time: "19:00",
         homeTeam: "Nederländerna",
-        awayTeam: "Europeiskt playoff B",
+        awayTeam: "Sverige",
       },
       {
         matchNumber: 36,
@@ -380,7 +381,7 @@ export const initialGroups: GroupData[] = [
         date: "26 juni 2026",
         time: "00:00",
         homeTeam: "Japan",
-        awayTeam: "Europeiskt playoff B",
+        awayTeam: "Sverige",
       },
       {
         matchNumber: 58,
