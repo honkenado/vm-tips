@@ -2,7 +2,51 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
-  return NextResponse.json({ message: "teams API exists" });
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError || !profile?.is_admin) {
+    return NextResponse.json({ error: "Ingen behörighet" }, { status: 403 });
+  }
+
+  const { data: teams, error } = await supabase
+    .from("teams")
+    .select(`
+      id,
+      name,
+      slug,
+      group_letter,
+      fifa_rank,
+      coach,
+      confederation,
+      short_description,
+      qualification_summary,
+      squad_status,
+      source,
+      formation,
+      key_players
+    `)
+    .order("group_letter", { ascending: true })
+    .order("name", { ascending: true });
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  return NextResponse.json({ teams: teams ?? [] });
 }
 
 export async function POST(req: Request) {
