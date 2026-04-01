@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+export async function GET() {
+  return NextResponse.json({ message: "teams API exists" });
+}
+
 export async function POST(req: Request) {
   const supabase = await createClient();
 
-  // 🔐 1. Kolla att användaren är inloggad
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -13,7 +16,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
   }
 
-  // 🔐 2. Kolla att användaren är admin
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("is_admin")
@@ -24,10 +26,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Ingen behörighet" }, { status: 403 });
   }
 
-  // 📦 3. Hämta data från request
   const body = await req.json();
 
-  // 💾 4. Spara i databasen
   const { error } = await supabase.from("teams").insert({
     name: body.name,
     slug: body.slug,
