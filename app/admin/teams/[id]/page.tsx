@@ -108,31 +108,44 @@ export default function EditTeamPage() {
   }, [id]);
 
   async function handleAutofill() {
-    if (!form) return;
+  if (!form) return;
 
-    try {
-      setAutoLoading(true);
-      setMessage(null);
+  try {
+    setAutoLoading(true);
+    setMessage(null);
 
-      const res = await fetch(`/api/admin/teams/${form.id}/autofill`, {
-        method: "POST",
-      });
+    const res = await fetch(`/api/admin/teams/${form.id}/autofill`, {
+      method: "POST",
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      if (!res.ok) {
-        setMessage(data.error || "Kunde inte hämta info automatiskt");
-        return;
-      }
-
-      await reloadTeam(form.id);
-      setMessage("Laginfo hämtad automatiskt.");
-    } catch {
-      setMessage("Något gick fel vid automatisk hämtning");
-    } finally {
-      setAutoLoading(false);
+    if (!res.ok) {
+      setMessage(data.error || "Kunde inte hämta info automatiskt");
+      return;
     }
+
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            confederation: data.updated?.confederation ?? prev.confederation,
+            short_description:
+              data.updated?.short_description ?? prev.short_description,
+            source: data.updated?.source ?? prev.source,
+          }
+        : prev
+    );
+
+    setMessage(
+      `Laginfo hämtad automatiskt.${data.debug ? ` (${data.debug.teamName})` : ""}`
+    );
+  } catch {
+    setMessage("Något gick fel vid automatisk hämtning");
+  } finally {
+    setAutoLoading(false);
   }
+}
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

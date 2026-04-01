@@ -44,7 +44,19 @@ export async function POST(
 
   const { data: team, error: teamError } = await auth.supabase
     .from("teams")
-    .select("id, name, slug, short_description, confederation, source")
+    .select(`
+      id,
+      name,
+      slug,
+      coach,
+      confederation,
+      short_description,
+      qualification_summary,
+      squad_status,
+      source,
+      formation,
+      key_players
+    `)
     .eq("id", id)
     .single();
 
@@ -55,15 +67,28 @@ export async function POST(
     );
   }
 
-  const autofill = await autofillTeamInfo(team);
+  const autofill = await autofillTeamInfo({
+    name: team.name,
+    slug: team.slug,
+    short_description: team.short_description,
+    confederation: team.confederation,
+    source: team.source,
+  });
+
+  const nextConfederation =
+    autofill.confederation ?? team.confederation ?? null;
+
+  const nextShortDescription =
+    autofill.short_description ?? team.short_description ?? null;
+
+  const nextSource = autofill.source ?? team.source ?? "Autofyllt";
 
   const { error: updateError } = await auth.supabase
     .from("teams")
     .update({
-      confederation: autofill.confederation ?? team.confederation ?? null,
-      short_description:
-        autofill.short_description ?? team.short_description ?? null,
-      source: autofill.source ?? team.source ?? null,
+      confederation: nextConfederation,
+      short_description: nextShortDescription,
+      source: nextSource,
     })
     .eq("id", id);
 
@@ -77,9 +102,13 @@ export async function POST(
   return NextResponse.json({
     ok: true,
     updated: {
-      confederation: autofill.confederation ?? null,
-      short_description: autofill.short_description ?? null,
-      source: autofill.source ?? null,
+      confederation: nextConfederation,
+      short_description: nextShortDescription,
+      source: nextSource,
+    },
+    debug: {
+      teamName: team.name,
+      autofill,
     },
   });
 }
