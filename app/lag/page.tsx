@@ -8,8 +8,8 @@ export const metadata = {
   description: "Se alla VM-lag, grupper och trupper.",
 };
 
-export default function TeamsPage() {
-  const grouped = getTeamsGroupedByLetter();
+export default async function TeamsPage() {
+  const grouped = await getTeamsGroupedByLetter();
   const groupLetters = Object.keys(grouped).sort();
 
   return (

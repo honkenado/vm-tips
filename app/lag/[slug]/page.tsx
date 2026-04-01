@@ -7,7 +7,9 @@ import { getAllTeamProfiles, getTeamBySlug } from "@/lib/teams";
 import { notFound } from "next/navigation";
 
 export async function generateStaticParams() {
-  return getAllTeamProfiles().map((team) => ({
+  const teams = await getAllTeamProfiles();
+
+  return teams.map((team) => ({
     slug: team.slug,
   }));
 }
@@ -18,7 +20,7 @@ export default async function TeamPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const team = getTeamBySlug(slug);
+  const team = await getTeamBySlug(slug);
 
   if (!team) {
     notFound();
@@ -48,7 +50,9 @@ export default async function TeamPage({
             </p>
           </div>
 
-          <p className="text-sm text-slate-700">{team.qualificationSummary}</p>
+          <p className="text-sm text-slate-700">
+            {team.qualificationSummary || "Ingen kvalificeringsinfo inlagd ännu."}
+          </p>
 
           {team.qualificationPath.length > 0 ? (
             <div className="mt-4 space-y-3">
@@ -68,6 +72,7 @@ export default async function TeamPage({
               ))}
             </div>
           ) : null}
+
         </section>
 
         <TeamSquadTable squad={team.squad} />

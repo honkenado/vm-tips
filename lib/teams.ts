@@ -1,327 +1,197 @@
 // lib/teams.ts
 
-import { initialGroups } from "@/lib/tournament";
-import type { TeamProfile } from "@/types/team";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import {
+  getAllStaticTeamProfiles,
+  getStaticTeamBySlug,
+  getStaticTeamsGroupedByLetter,
+} from "@/lib/teams-static";
+import type { QualificationEntry, TeamPlayer, TeamProfile } from "@/types/team";
 
-function slugifyTeamName(name: string) {
-  return name
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/å/g, "a")
-    .replace(/ä/g, "a")
-    .replace(/ö/g, "o")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-type TeamSeedData = Omit<TeamProfile, "groupLetter">;
-
-const teamSeedData: Record<string, TeamSeedData> = {
-  Sverige: {
-  name: "Sverige",
-  slug: "sverige",
-  fifaRank: 42,
-  coach: "Graham Potter",
-  confederation: "UEFA",
-  shortDescription:
-    "Sverige är ett fysiskt starkt och välorganiserat landslag med tydlig struktur, stark omställningsfotboll och flera spelare på hög internationell nivå.",
-  qualificationSummary:
-    "Sverige tog sig vidare via playoff och har nu VM i Nordamerika framför sig.",
-  qualificationPath: [
-    {
-      id: "swe-q1",
-      label: "Playoff-semifinal",
-      opponent: "Ukraina",
-      date: "26 mars 2026",
-      note: "SvFF presenterade truppen inför playoff-semifinalen mot Ukraina.",
-    },
-    {
-      id: "swe-q2",
-      label: "Avgörande playoffmatch",
-      opponent: "Polen/Albanien",
-      date: "31 mars 2026",
-      note: "Vid seger mot Ukraina väntade en direkt avgörande kvalfinal hemma på Strawberry Arena.",
-    },
-  ],
-  squad: [
-    {
-      id: "swe-melker-ellborg",
-      name: "Melker Ellborg",
-      position: "Målvakt",
-      club: "Sunderland AFC",
-    },
-    {
-      id: "swe-kristoffer-nordfeldt",
-      name: "Kristoffer Nordfeldt",
-      position: "Målvakt",
-      club: "AIK Fotboll AB",
-      caps: 20,
-      goals: 0,
-    },
-    {
-      id: "swe-noel-tornqvist",
-      name: "Noel Törnqvist",
-      position: "Målvakt",
-      club: "COMO 1907 S.R.L.",
-    },
-    {
-      id: "swe-victor-eriksson",
-      name: "Victor Eriksson",
-      position: "Back",
-      club: "Hammarby Fotboll AB",
-      caps: 1,
-      goals: 0,
-    },
-    {
-      id: "swe-gabriel-gudmundsson",
-      name: "Gabriel Gudmundsson",
-      position: "Back",
-      club: "Leeds United",
-      caps: 23,
-      goals: 0,
-    },
-    {
-      id: "swe-isak-hien",
-      name: "Isak Hien",
-      position: "Back",
-      club: "Atalanta BC",
-      caps: 27,
-      goals: 0,
-    },
-    {
-      id: "swe-herman-johansson",
-      name: "Herman Johansson",
-      position: "Back",
-      club: "FC Dallas",
-      caps: 2,
-      goals: 0,
-    },
-    {
-      id: "swe-gustaf-lagerbielke",
-      name: "Gustaf Lagerbielke",
-      position: "Back",
-      club: "S.C Braga",
-      caps: 9,
-      goals: 2,
-    },
-    {
-      id: "swe-victor-nilsson-lindelof",
-      name: "Victor Nilsson Lindelöf",
-      position: "Back",
-      club: "Aston Villa",
-      caps: 75,
-      goals: 3,
-    },
-    {
-      id: "swe-carl-starfelt",
-      name: "Carl Starfelt",
-      position: "Back",
-      club: "RC Celta de Vigo",
-      caps: 17,
-      goals: 0,
-    },
-    {
-      id: "swe-elliot-stroud",
-      name: "Elliot Stroud",
-      position: "Back",
-      club: "Mjällby AIF",
-    },
-    {
-      id: "swe-daniel-svensson",
-      name: "Daniel Svensson",
-      position: "Back",
-      club: "Borrussia Dortmund",
-      caps: 11,
-      goals: 0,
-    },
-    {
-      id: "swe-taha-abdi-ali",
-      name: "Taha Abdi Ali",
-      position: "Mittfältare",
-      club: "Malmö FF",
-      caps: 1,
-      goals: 0,
-    },
-    {
-      id: "swe-yasin-ayari",
-      name: "Yasin Ayari",
-      position: "Mittfältare",
-      club: "Brighton & Hove Albion",
-      caps: 19,
-      goals: 3,
-    },
-    {
-      id: "swe-roony-bardghji",
-      name: "Roony Bardghji",
-      position: "Mittfältare",
-      club: "FC Barcelona",
-      caps: 3,
-      goals: 0,
-    },
-    {
-      id: "swe-lucas-bergvall",
-      name: "Lucas Bergvall",
-      position: "Mittfältare",
-      club: "Tottenham Hotspur FC",
-      caps: 8,
-      goals: 0,
-    },
-    {
-      id: "swe-anthony-elanga",
-      name: "Anthony Elanga",
-      position: "Anfallare",
-      club: "Newcastle United FC",
-      caps: 28,
-      goals: 6,
-    },
-    {
-      id: "swe-viktor-gyokeres",
-      name: "Viktor Gyökeres",
-      position: "Anfallare",
-      club: "Arsenal FC",
-      caps: 32,
-      goals: 19,
-    },
-    {
-      id: "swe-jesper-karlstrom",
-      name: "Jesper Karlström",
-      position: "Mittfältare",
-      club: "Udinese Calcio",
-      caps: 23,
-      goals: 0,
-    },
-    {
-      id: "swe-hugo-larsson",
-      name: "Hugo Larsson",
-      position: "Mittfältare",
-      club: "Eintracht Frankfurt",
-      caps: 12,
-      goals: 0,
-    },
-    {
-      id: "swe-gustav-lundgren",
-      name: "Gustav Lundgren",
-      position: "Mittfältare",
-      club: "GAIS",
-      caps: 2,
-      goals: 1,
-    },
-    {
-      id: "swe-gustaf-nilsson",
-      name: "Gustaf Nilsson",
-      position: "Anfallare",
-      club: "Club Brugge",
-      caps: 8,
-      goals: 3,
-    },
-    {
-      id: "swe-benjamin-nygren",
-      name: "Benjamin Nygren",
-      position: "Anfallare",
-      club: "Celtic FC",
-      caps: 9,
-      goals: 3,
-    },
-    {
-      id: "swe-eric-smith",
-      name: "Eric Smith",
-      position: "Mittfältare",
-      club: "FC St Pauli",
-    },
-    {
-      id: "swe-mattias-svanberg",
-      name: "Mattias Svanberg",
-      position: "Mittfältare",
-      club: "VfL Wolfsburg",
-      caps: 39,
-      goals: 2,
-    },
-    {
-      id: "swe-williot-swedberg",
-      name: "Williot Swedberg",
-      position: "Anfallare",
-      club: "RC Celta de Vigo",
-      caps: 1,
-      goals: 0,
-    },
-    {
-      id: "swe-besfort-zeneli",
-      name: "Besfort Zeneli",
-      position: "Mittfältare",
-      club: "R. UNION ST-GILLOISE",
-      caps: 6,
-      goals: 0,
-    },
-  ],
-},
-  Spanien: {
-    name: "Spanien",
-    slug: "spanien",
-    fifaRank: 2,
-    coach: "Förbundskapten saknas",
-    confederation: "UEFA",
-    shortDescription:
-      "Spanien är ett tekniskt topplag med starkt bollinnehav och hög internationell status.",
-    qualificationSummary:
-      "Kvalificeringsväg läggs till senare.",
-    squad: [],
-    qualificationPath: [],
-  },
-  Argentina: {
-    name: "Argentina",
-    slug: "argentina",
-    fifaRank: 3,
-    coach: "Förbundskapten saknas",
-    confederation: "CONMEBOL",
-    shortDescription:
-      "Argentina tillhör världseliten och kombinerar individuell spets med hög tävlingsvana.",
-    qualificationSummary:
-      "Kvalificeringsväg läggs till senare.",
-    squad: [],
-    qualificationPath: [],
-  },
+type TeamRow = {
+  id: string;
+  name: string;
+  slug: string;
+  group_letter: string;
+  fifa_rank: number | null;
+  coach: string | null;
+  confederation: string | null;
+  short_description: string | null;
+  qualification_summary: string | null;
+  squad_status: string | null;
+  source: string | null;
+  updated_at: string | null;
 };
 
-function getAllTeamsFromGroups() {
-  return initialGroups.flatMap((group) => {
-    const groupLetter = group.name.replace("Grupp ", "").trim();
+type TeamPlayerRow = {
+  id: string;
+  team_id: string;
+  name: string;
+  position: string;
+  club: string | null;
+  age: number | null;
+  caps: number | null;
+  goals: number | null;
+  shirt_number: number | null;
+  squad_status: string | null;
+  source: string | null;
+  updated_at: string | null;
+};
 
-    return group.teams.map((teamName) => {
-      const seeded = teamSeedData[teamName];
+type QualificationRow = {
+  id: string;
+  team_id: string;
+  label: string;
+  opponent: string | null;
+  result: string | null;
+  match_date: string | null;
+  note: string | null;
+  sort_order: number | null;
+};
 
-      return {
-        name: teamName,
-        slug: seeded?.slug ?? slugifyTeamName(teamName),
-        groupLetter,
-        fifaRank: seeded?.fifaRank,
-        coach: seeded?.coach,
-        confederation: seeded?.confederation,
-        shortDescription: seeded?.shortDescription ?? "",
-        qualificationSummary:
-          seeded?.qualificationSummary ?? "Kvalificeringsväg läggs till senare.",
-        squad: seeded?.squad ?? [],
-        qualificationPath: seeded?.qualificationPath ?? [],
-      };
-    });
-  });
+function mapPlayer(row: TeamPlayerRow): TeamPlayer {
+  return {
+    id: row.id,
+    name: row.name,
+    position: row.position,
+    club: row.club ?? undefined,
+    age: row.age ?? undefined,
+    caps: row.caps ?? undefined,
+    goals: row.goals ?? undefined,
+    shirtNumber: row.shirt_number ?? undefined,
+    squadStatus: row.squad_status ?? undefined,
+    source: row.source ?? undefined,
+    updatedAt: row.updated_at ?? undefined,
+  };
 }
 
-export function getAllTeamProfiles() {
-  return getAllTeamsFromGroups().sort((a, b) => a.name.localeCompare(b.name, "sv"));
+function mapQualification(row: QualificationRow): QualificationEntry {
+  return {
+    id: row.id,
+    label: row.label,
+    opponent: row.opponent ?? undefined,
+    result: row.result ?? undefined,
+    date: row.match_date ?? undefined,
+    note: row.note ?? undefined,
+    sortOrder: row.sort_order ?? undefined,
+  };
 }
 
-export function getTeamsGroupedByLetter() {
-  const allTeams = getAllTeamsFromGroups();
-
-  return allTeams.reduce<Record<string, TeamProfile[]>>((acc, team) => {
-    if (!acc[team.groupLetter]) acc[team.groupLetter] = [];
-    acc[team.groupLetter].push(team);
-    acc[team.groupLetter].sort((a, b) => a.name.localeCompare(b.name, "sv"));
-    return acc;
-  }, {});
+function buildTeamProfile(
+  team: TeamRow,
+  players: TeamPlayerRow[],
+  qualification: QualificationRow[]
+): TeamProfile {
+  return {
+    id: team.id,
+    name: team.name,
+    slug: team.slug,
+    groupLetter: team.group_letter,
+    fifaRank: team.fifa_rank ?? undefined,
+    coach: team.coach ?? undefined,
+    confederation: team.confederation ?? undefined,
+    shortDescription: team.short_description ?? "",
+    qualificationSummary: team.qualification_summary ?? "",
+    squadStatus: team.squad_status ?? undefined,
+    source: team.source ?? undefined,
+    updatedAt: team.updated_at ?? undefined,
+    squad: players.map(mapPlayer),
+    qualificationPath: qualification
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      .map(mapQualification),
+  };
 }
 
-export function getTeamBySlug(slug: string) {
-  return getAllTeamsFromGroups().find((team) => team.slug === slug) ?? null;
+export async function getAllTeamProfiles(): Promise<TeamProfile[]> {
+  try {
+    const supabase = createServerSupabaseClient();
+
+    const { data: teams, error: teamsError } = await supabase
+      .from("teams")
+      .select("*")
+      .order("group_letter", { ascending: true })
+      .order("name", { ascending: true });
+
+    if (teamsError || !teams || teams.length === 0) {
+      return getAllStaticTeamProfiles();
+    }
+
+    const teamIds = teams.map((team) => team.id);
+
+    const [{ data: players }, { data: qualification }] = await Promise.all([
+      supabase
+        .from("team_players")
+        .select("*")
+        .in("team_id", teamIds)
+        .order("name", { ascending: true }),
+      supabase
+        .from("team_qualification_path")
+        .select("*")
+        .in("team_id", teamIds)
+        .order("sort_order", { ascending: true }),
+    ]);
+
+    return (teams as TeamRow[]).map((team) =>
+      buildTeamProfile(
+        team,
+        ((players ?? []) as TeamPlayerRow[]).filter((p) => p.team_id === team.id),
+        ((qualification ?? []) as QualificationRow[]).filter(
+          (q) => q.team_id === team.id
+        )
+      )
+    );
+  } catch {
+    return getAllStaticTeamProfiles();
+  }
+}
+
+export async function getTeamsGroupedByLetter(): Promise<Record<string, TeamProfile[]>> {
+  try {
+    const teams = await getAllTeamProfiles();
+
+    return teams.reduce<Record<string, TeamProfile[]>>((acc, team) => {
+      if (!acc[team.groupLetter]) acc[team.groupLetter] = [];
+      acc[team.groupLetter].push(team);
+      return acc;
+    }, {});
+  } catch {
+    return getStaticTeamsGroupedByLetter();
+  }
+}
+
+export async function getTeamBySlug(slug: string): Promise<TeamProfile | null> {
+  try {
+    const supabase = createServerSupabaseClient();
+
+    const { data: team, error } = await supabase
+      .from("teams")
+      .select("*")
+      .eq("slug", slug)
+      .maybeSingle();
+
+    if (error || !team) {
+      return getStaticTeamBySlug(slug);
+    }
+
+    const [{ data: players }, { data: qualification }] = await Promise.all([
+      supabase
+        .from("team_players")
+        .select("*")
+        .eq("team_id", team.id)
+        .order("name", { ascending: true }),
+      supabase
+        .from("team_qualification_path")
+        .select("*")
+        .eq("team_id", team.id)
+        .order("sort_order", { ascending: true }),
+    ]);
+
+    return buildTeamProfile(
+      team as TeamRow,
+      (players ?? []) as TeamPlayerRow[],
+      (qualification ?? []) as QualificationRow[]
+    );
+  } catch {
+    return getStaticTeamBySlug(slug);
+  }
 }

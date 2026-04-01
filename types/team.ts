@@ -3,12 +3,15 @@
 export type TeamPlayer = {
   id: string;
   name: string;
-  position: "Målvakt" | "Back" | "Mittfältare" | "Anfallare";
+  position: "Målvakt" | "Back" | "Mittfältare" | "Anfallare" | string;
   club?: string;
   age?: number;
   caps?: number;
   goals?: number;
   shirtNumber?: number;
+  squadStatus?: string;
+  source?: string;
+  updatedAt?: string;
 };
 
 export type QualificationEntry = {
@@ -18,9 +21,11 @@ export type QualificationEntry = {
   result?: string;
   date?: string;
   note?: string;
+  sortOrder?: number;
 };
 
 export type TeamProfile = {
+  id?: string;
   name: string;
   slug: string;
   groupLetter: string;
@@ -29,6 +34,9 @@ export type TeamProfile = {
   confederation?: string;
   shortDescription?: string;
   qualificationSummary?: string;
+  squadStatus?: string;
+  source?: string;
+  updatedAt?: string;
   squad: TeamPlayer[];
   qualificationPath: QualificationEntry[];
 };
