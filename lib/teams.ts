@@ -3,7 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import {
   getAllStaticTeamProfiles,
-  getStaticTeamBySlug,
   getStaticTeamsGroupedByLetter,
 } from "@/lib/teams-static";
 import type { QualificationEntry, TeamPlayer, TeamProfile } from "@/types/team";
@@ -126,19 +125,21 @@ export async function getAllTeamProfiles(): Promise<TeamProfile[]> {
 
     const teamIds = teams.map((team) => team.id);
 
-    const [{ data: players, error: playersError }, { data: qualification, error: qualificationError }] =
-      await Promise.all([
-        supabase
-          .from("team_players")
-          .select("*")
-          .in("team_id", teamIds)
-          .order("name", { ascending: true }),
-        supabase
-          .from("team_qualification_path")
-          .select("*")
-          .in("team_id", teamIds)
-          .order("sort_order", { ascending: true }),
-      ]);
+    const [
+      { data: players, error: playersError },
+      { data: qualification, error: qualificationError },
+    ] = await Promise.all([
+      supabase
+        .from("team_players")
+        .select("*")
+        .in("team_id", teamIds)
+        .order("name", { ascending: true }),
+      supabase
+        .from("team_qualification_path")
+        .select("*")
+        .in("team_id", teamIds)
+        .order("sort_order", { ascending: true }),
+    ]);
 
     if (playersError) {
       console.error("[teams] getAllTeamProfiles playersError:", playersError);
@@ -187,61 +188,60 @@ export async function getTeamsGroupedByLetter(): Promise<Record<string, TeamProf
 }
 
 export async function getTeamBySlug(slug: string): Promise<TeamProfile | null> {
-  try {
-    const supabase = await createClient();
+  const supabase = await createClient();
 
-    const { data: team, error } = await supabase
-      .from("teams")
-      .select("*")
-      .eq("slug", slug)
-      .maybeSingle();
+  const { data: team, error } = await supabase
+    .from("teams")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
 
-    console.log("[teams] getTeamBySlug slug:", slug);
-    console.log("[teams] getTeamBySlug team:", team);
-    console.log("[teams] getTeamBySlug error:", error);
+  console.log("[teams] getTeamBySlug slug:", slug);
+  console.log("[teams] getTeamBySlug team:", team);
+  console.log("[teams] getTeamBySlug error:", error);
 
-    if (error || !team) {
-      console.log("[teams] getTeamBySlug fallback used for:", slug);
-      return getStaticTeamBySlug(slug);
-    }
-
-    const [
-      { data: players, error: playersError },
-      { data: qualification, error: qualificationError },
-    ] = await Promise.all([
-      supabase
-        .from("team_players")
-        .select("*")
-        .eq("team_id", team.id)
-        .order("name", { ascending: true }),
-      supabase
-        .from("team_qualification_path")
-        .select("*")
-        .eq("team_id", team.id)
-        .order("sort_order", { ascending: true }),
-    ]);
-
-    if (playersError) {
-      console.error("[teams] getTeamBySlug playersError:", playersError);
-    }
-
-    if (qualificationError) {
-      console.error(
-        "[teams] getTeamBySlug qualificationError:",
-        qualificationError
-      );
-    }
-
-    console.log("[teams] getTeamBySlug players:", players);
-    console.log("[teams] getTeamBySlug qualification:", qualification);
-
-    return buildTeamProfile(
-      team as TeamRow,
-      (players ?? []) as TeamPlayerRow[],
-      (qualification ?? []) as QualificationRow[]
-    );
-  } catch (error) {
-    console.error(`[teams] getTeamBySlug exception for slug ${slug}:`, error);
-    return getStaticTeamBySlug(slug);
+  if (error) {
+    throw new Error(`[teams] Supabase team error: ${error.message}`);
   }
+
+  if (!team) {
+    throw new Error(`[teams] No team found in Supabase for slug: ${slug}`);
+  }
+
+  const [
+    { data: players, error: playersError },
+    { data: qualification, error: qualificationError },
+  ] = await Promise.all([
+    supabase
+      .from("team_players")
+      .select("*")
+      .eq("team_id", team.id)
+      .order("name", { ascending: true }),
+    supabase
+      .from("team_qualification_path")
+      .select("*")
+      .eq("team_id", team.id)
+      .order("sort_order", { ascending: true }),
+  ]);
+
+  console.log("[teams] getTeamBySlug players:", players);
+  console.log("[teams] getTeamBySlug playersError:", playersError);
+  console.log("[teams] getTeamBySlug qualification:", qualification);
+  console.log("[teams] getTeamBySlug qualificationError:", qualificationError);
+
+  if (playersError) {
+    throw new Error(`[teams] Supabase players error: ${playersError.message}`);
+  }
+
+  if (qualificationError) {
+    throw new Error(
+      `[teams] Supabase qualification error: ${qualificationError.message}`
+    );
+  }
+
+  return buildTeamProfile(
+    team as TeamRow,
+    (players ?? []) as TeamPlayerRow[],
+    (qualification ?? []) as QualificationRow[]
+  );
 }
