@@ -1,6 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+type Player = {
+  id: string;
+  team_id: string;
+  name: string;
+  position: string;
+  club: string | null;
+};
 
 export default function TeamPlayersManager({
   teamId,
@@ -13,6 +21,32 @@ export default function TeamPlayersManager({
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [players, setPlayers] = useState<Player[]>([]);
+
+  async function loadPlayers() {
+    const res = await fetch(`/api/admin/teams`);
+    const data = await res.json();
+
+    if (!res.ok) return;
+
+    // denna används inte för players, så vi hämtar från en enkel egen route längre ner
+  }
+
+  async function loadPlayersDirect() {
+    const res = await fetch(`/api/admin/players-list?teamId=${teamId}`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      setMessage(data.error || "Kunde inte läsa spelare");
+      return;
+    }
+
+    setPlayers(data.players ?? []);
+  }
+
+  useEffect(() => {
+    loadPlayersDirect();
+  }, [teamId]);
 
   async function addPlayer() {
     try {
@@ -43,6 +77,7 @@ export default function TeamPlayersManager({
       setName("");
       setPosition("");
       setClub("");
+      loadPlayersDirect();
     } catch {
       setMessage("Något gick fel");
     } finally {
@@ -67,7 +102,7 @@ export default function TeamPlayersManager({
       }
 
       setMessage(`Spelare genererade: ${data.count}`);
-      window.location.reload();
+      loadPlayersDirect();
     } catch {
       setMessage("Något gick fel vid AI-generering");
     } finally {
@@ -76,51 +111,75 @@ export default function TeamPlayersManager({
   }
 
   return (
-    <div className="space-y-4 rounded-xl bg-white p-6">
-      <div className="flex flex-col gap-3 sm:flex-row">
+    <div className="space-y-6">
+      <div className="space-y-4 rounded-xl bg-white p-6">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <button
+            type="button"
+            onClick={generatePlayers}
+            disabled={aiLoading}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {aiLoading ? "Genererar..." : "Generera trupp (AI)"}
+          </button>
+        </div>
+
+        <h2 className="text-xl font-bold text-black">Lägg till spelare</h2>
+
+        <input
+          placeholder="Namn"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full rounded border p-2 text-black"
+        />
+
+        <input
+          placeholder="Position"
+          value={position}
+          onChange={(e) => setPosition(e.target.value)}
+          className="w-full rounded border p-2 text-black"
+        />
+
+        <input
+          placeholder="Klubb"
+          value={club}
+          onChange={(e) => setClub(e.target.value)}
+          className="w-full rounded border p-2 text-black"
+        />
+
         <button
           type="button"
-          onClick={generatePlayers}
-          disabled={aiLoading}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+          onClick={addPlayer}
+          disabled={loading}
+          className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
         >
-          {aiLoading ? "Genererar..." : "Generera trupp (AI)"}
+          {loading ? "Sparar..." : "Lägg till"}
         </button>
+
+        {message && <div className="text-black">{message}</div>}
       </div>
 
-      <h2 className="text-xl font-bold text-black">Lägg till spelare</h2>
+      <div className="rounded-xl bg-white p-6">
+        <h2 className="mb-4 text-xl font-bold text-black">Spelarlista</h2>
 
-      <input
-        placeholder="Namn"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="w-full rounded border p-2 text-black"
-      />
-
-      <input
-        placeholder="Position"
-        value={position}
-        onChange={(e) => setPosition(e.target.value)}
-        className="w-full rounded border p-2 text-black"
-      />
-
-      <input
-        placeholder="Klubb"
-        value={club}
-        onChange={(e) => setClub(e.target.value)}
-        className="w-full rounded border p-2 text-black"
-      />
-
-      <button
-        type="button"
-        onClick={addPlayer}
-        disabled={loading}
-        className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-      >
-        {loading ? "Sparar..." : "Lägg till"}
-      </button>
-
-      {message && <div className="text-black">{message}</div>}
+        {players.length === 0 ? (
+          <p className="text-gray-600">Inga spelare ännu.</p>
+        ) : (
+          <div className="space-y-3">
+            {players.map((player) => (
+              <div
+                key={player.id}
+                className="rounded-lg border border-gray-200 p-3"
+              >
+                <div className="font-semibold text-black">{player.name}</div>
+                <div className="text-sm text-gray-700">
+                  {player.position} • {player.club || "Ingen klubb"}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
