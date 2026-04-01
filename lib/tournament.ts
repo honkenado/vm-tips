@@ -16,12 +16,12 @@ type ScheduledMatch = {
 };
 
 const fifaRankings: Record<string, number> = {
-  Spanien: 1,
-  Argentina: 2,
-  Frankrike: 3,
+  Spanien: 2,
+  Argentina: 3,
+  Frankrike: 1,
   England: 4,
-  Brasilien: 5,
-  Portugal: 6,
+  Brasilien: 6,
+  Portugal: 5,
   Nederländerna: 7,
   Marocko: 8,
   Belgien: 9,
@@ -30,11 +30,11 @@ const fifaRankings: Record<string, number> = {
   Senegal: 12,
   Italien: 13,
   Colombia: 14,
-  USA: 15,
-  Mexiko: 16,
+  USA: 16,
+  Mexiko: 15,
   Uruguay: 17,
-  Schweiz: 18,
-  Japan: 19,
+  Schweiz: 19,
+  Japan: 18,
   Iran: 20,
   Danmark: 21,
   Turkiet: 22,
@@ -61,7 +61,7 @@ const fifaRankings: Record<string, number> = {
   Tjeckien: 43,
   Slovakien: 44,
   Kamerun: 45,
-  Grekland: 46,
+  "DR Kongo": 46,
   Tunisien: 47,
   "Costa Rica": 51,
   Uzbekistan: 52,
@@ -75,6 +75,7 @@ const fifaRankings: Record<string, number> = {
   Saudiarabien: 61,
   Sydafrika: 60,
   "Bosnien och Hercegovina": 66,
+  Irak: 58,
 };
 
 function createScheduledGroup(
@@ -493,7 +494,7 @@ export const initialGroups: GroupData[] = [
 
   createScheduledGroup(
     "Grupp I",
-    ["Frankrike", "Senegal", "FIFA playoff 2", "Norge"],
+    ["Frankrike", "Senegal", "Irak", "Norge"],
     [
       {
         matchNumber: 17,
@@ -506,7 +507,7 @@ export const initialGroups: GroupData[] = [
         matchNumber: 18,
         date: "17 juni 2026",
         time: "00:00",
-        homeTeam: "FIFA playoff 2",
+        homeTeam: "Irak",
         awayTeam: "Norge",
       },
       {
@@ -514,7 +515,7 @@ export const initialGroups: GroupData[] = [
         date: "22 juni 2026",
         time: "23:00",
         homeTeam: "Frankrike",
-        awayTeam: "FIFA playoff 2",
+        awayTeam: "Irak",
       },
       {
         matchNumber: 41,
@@ -535,7 +536,7 @@ export const initialGroups: GroupData[] = [
         date: "26 juni 2026",
         time: "21:00",
         homeTeam: "Senegal",
-        awayTeam: "FIFA playoff 2",
+        awayTeam: "Irak",
       },
     ]
   ),
@@ -591,14 +592,14 @@ export const initialGroups: GroupData[] = [
 
   createScheduledGroup(
     "Grupp K",
-    ["Portugal", "FIFA playoff 1", "Uzbekistan", "Colombia"],
+    ["Portugal", "DR Kongo", "Uzbekistan", "Colombia"],
     [
       {
         matchNumber: 23,
         date: "17 juni 2026",
         time: "19:00",
         homeTeam: "Portugal",
-        awayTeam: "FIFA playoff 1",
+        awayTeam: "DR Kongo",
       },
       {
         matchNumber: 24,
@@ -619,7 +620,7 @@ export const initialGroups: GroupData[] = [
         date: "24 juni 2026",
         time: "03:00",
         homeTeam: "Colombia",
-        awayTeam: "FIFA playoff 1",
+        awayTeam: "DR Kongo",
       },
       {
         matchNumber: 71,
@@ -632,7 +633,7 @@ export const initialGroups: GroupData[] = [
         matchNumber: 72,
         date: "28 juni 2026",
         time: "01:30",
-        homeTeam: "FIFA playoff 1",
+        homeTeam: "DR Kongo",
         awayTeam: "Uzbekistan",
       },
     ]
