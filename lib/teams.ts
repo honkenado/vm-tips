@@ -95,7 +95,9 @@ function buildTeamProfile(
     squadStatus: team.squad_status ?? undefined,
     source: team.source ?? undefined,
     updatedAt: team.updated_at ?? undefined,
-    squad: players.map(mapPlayer),
+    squad: players
+      .sort((a, b) => a.name.localeCompare(b.name, "sv"))
+      .map(mapPlayer),
     qualificationPath: qualification
       .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
       .map(mapQualification),
@@ -112,24 +114,42 @@ export async function getAllTeamProfiles(): Promise<TeamProfile[]> {
       .order("group_letter", { ascending: true })
       .order("name", { ascending: true });
 
-    if (teamsError || !teams || teams.length === 0) {
+    if (teamsError) {
+      console.error("[teams] getAllTeamProfiles teamsError:", teamsError);
+      return getAllStaticTeamProfiles();
+    }
+
+    if (!teams || teams.length === 0) {
+      console.log("[teams] getAllTeamProfiles: inga lag i DB, fallback används");
       return getAllStaticTeamProfiles();
     }
 
     const teamIds = teams.map((team) => team.id);
 
-    const [{ data: players }, { data: qualification }] = await Promise.all([
-      supabase
-        .from("team_players")
-        .select("*")
-        .in("team_id", teamIds)
-        .order("name", { ascending: true }),
-      supabase
-        .from("team_qualification_path")
-        .select("*")
-        .in("team_id", teamIds)
-        .order("sort_order", { ascending: true }),
-    ]);
+    const [{ data: players, error: playersError }, { data: qualification, error: qualificationError }] =
+      await Promise.all([
+        supabase
+          .from("team_players")
+          .select("*")
+          .in("team_id", teamIds)
+          .order("name", { ascending: true }),
+        supabase
+          .from("team_qualification_path")
+          .select("*")
+          .in("team_id", teamIds)
+          .order("sort_order", { ascending: true }),
+      ]);
+
+    if (playersError) {
+      console.error("[teams] getAllTeamProfiles playersError:", playersError);
+    }
+
+    if (qualificationError) {
+      console.error(
+        "[teams] getAllTeamProfiles qualificationError:",
+        qualificationError
+      );
+    }
 
     return (teams as TeamRow[]).map((team) =>
       buildTeamProfile(
@@ -141,7 +161,7 @@ export async function getAllTeamProfiles(): Promise<TeamProfile[]> {
       )
     );
   } catch (error) {
-    console.error("Kunde inte hämta lag från Supabase", error);
+    console.error("[teams] getAllTeamProfiles exception:", error);
     return getAllStaticTeamProfiles();
   }
 }
@@ -151,13 +171,17 @@ export async function getTeamsGroupedByLetter(): Promise<Record<string, TeamProf
     const teams = await getAllTeamProfiles();
 
     return teams.reduce<Record<string, TeamProfile[]>>((acc, team) => {
-      if (!acc[team.groupLetter]) acc[team.groupLetter] = [];
+      if (!acc[team.groupLetter]) {
+        acc[team.groupLetter] = [];
+      }
+
       acc[team.groupLetter].push(team);
       acc[team.groupLetter].sort((a, b) => a.name.localeCompare(b.name, "sv"));
+
       return acc;
     }, {});
   } catch (error) {
-    console.error("Kunde inte gruppera lag", error);
+    console.error("[teams] getTeamsGroupedByLetter exception:", error);
     return getStaticTeamsGroupedByLetter();
   }
 }
@@ -172,11 +196,19 @@ export async function getTeamBySlug(slug: string): Promise<TeamProfile | null> {
       .eq("slug", slug)
       .maybeSingle();
 
+    console.log("[teams] getTeamBySlug slug:", slug);
+    console.log("[teams] getTeamBySlug team:", team);
+    console.log("[teams] getTeamBySlug error:", error);
+
     if (error || !team) {
+      console.log("[teams] getTeamBySlug fallback used for:", slug);
       return getStaticTeamBySlug(slug);
     }
 
-    const [{ data: players }, { data: qualification }] = await Promise.all([
+    const [
+      { data: players, error: playersError },
+      { data: qualification, error: qualificationError },
+    ] = await Promise.all([
       supabase
         .from("team_players")
         .select("*")
@@ -189,13 +221,27 @@ export async function getTeamBySlug(slug: string): Promise<TeamProfile | null> {
         .order("sort_order", { ascending: true }),
     ]);
 
+    if (playersError) {
+      console.error("[teams] getTeamBySlug playersError:", playersError);
+    }
+
+    if (qualificationError) {
+      console.error(
+        "[teams] getTeamBySlug qualificationError:",
+        qualificationError
+      );
+    }
+
+    console.log("[teams] getTeamBySlug players:", players);
+    console.log("[teams] getTeamBySlug qualification:", qualification);
+
     return buildTeamProfile(
       team as TeamRow,
       (players ?? []) as TeamPlayerRow[],
       (qualification ?? []) as QualificationRow[]
     );
   } catch (error) {
-    console.error(`Kunde inte hämta lag med slug ${slug}`, error);
+    console.error(`[teams] getTeamBySlug exception for slug ${slug}:`, error);
     return getStaticTeamBySlug(slug);
   }
 }
