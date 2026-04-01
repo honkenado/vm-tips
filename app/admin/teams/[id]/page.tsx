@@ -108,44 +108,44 @@ export default function EditTeamPage() {
   }, [id]);
 
   async function handleAutofill() {
-  if (!form) return;
+    if (!form) return;
 
-  try {
-    setAutoLoading(true);
-    setMessage(null);
+    try {
+      setAutoLoading(true);
+      setMessage(null);
 
-    const res = await fetch(`/api/admin/teams/${form.id}/autofill`, {
-      method: "POST",
-    });
+      const res = await fetch(`/api/admin/teams/${form.id}/autofill`, {
+        method: "POST",
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      setMessage(data.error || "Kunde inte hämta info automatiskt");
-      return;
+      if (!res.ok) {
+        setMessage(data.error || "Kunde inte hämta info automatiskt");
+        return;
+      }
+
+      setForm((prev) =>
+        prev
+          ? {
+              ...prev,
+              confederation: data.updated?.confederation ?? prev.confederation,
+              short_description:
+                data.updated?.short_description ?? prev.short_description,
+              source: data.updated?.source ?? prev.source,
+            }
+          : prev
+      );
+
+      setMessage(
+        `Laginfo hämtad automatiskt.${data.debug ? ` (${data.debug.teamName})` : ""}`
+      );
+    } catch {
+      setMessage("Något gick fel vid automatisk hämtning");
+    } finally {
+      setAutoLoading(false);
     }
-
-    setForm((prev) =>
-      prev
-        ? {
-            ...prev,
-            confederation: data.updated?.confederation ?? prev.confederation,
-            short_description:
-              data.updated?.short_description ?? prev.short_description,
-            source: data.updated?.source ?? prev.source,
-          }
-        : prev
-    );
-
-    setMessage(
-      `Laginfo hämtad automatiskt.${data.debug ? ` (${data.debug.teamName})` : ""}`
-    );
-  } catch {
-    setMessage("Något gick fel vid automatisk hämtning");
-  } finally {
-    setAutoLoading(false);
   }
-}
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -325,18 +325,12 @@ export default function EditTeamPage() {
         </Field>
 
         {message && (
-          <div
-            className={`rounded-lg p-3 text-sm ${
-              message === "Laginfo hämtad automatiskt."
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
-            }`}
-          >
+          <div className="rounded-lg bg-green-100 p-3 text-sm text-green-700">
             {message}
           </div>
         )}
 
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <button
             type="button"
             onClick={handleAutofill}
@@ -352,6 +346,14 @@ export default function EditTeamPage() {
             className="rounded-xl bg-black px-4 py-2 font-medium text-white transition hover:bg-gray-800 disabled:opacity-50"
           >
             {saving ? "Sparar..." : "Spara ändringar"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => router.push(`/admin/players/${form.id}`)}
+            className="rounded-xl border border-gray-300 bg-white px-4 py-2 font-medium text-black transition hover:bg-gray-100"
+          >
+            Hantera spelare
           </button>
 
           <button
