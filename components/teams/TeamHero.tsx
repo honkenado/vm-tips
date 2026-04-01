@@ -18,7 +18,7 @@ export default function TeamHero({ team }: { team: TeamProfile }) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 md:min-w-[360px]">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:min-w-[460px]">
           <div className="rounded-2xl bg-slate-50 p-3">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
               FIFA-ranking
@@ -44,6 +44,13 @@ export default function TeamHero({ team }: { team: TeamProfile }) {
             <p className="text-lg font-black text-slate-900">
               {team.coach ?? "–"}
             </p>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Truppstorlek
+            </p>
+            <p className="text-lg font-black text-slate-900">{team.squad.length}</p>
           </div>
         </div>
       </div>
