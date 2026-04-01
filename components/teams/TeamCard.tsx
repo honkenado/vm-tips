@@ -30,7 +30,7 @@ export default function TeamCard({ team }: TeamCardProps) {
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-900">
               Grupp {team.groupLetter}
             </p>
             <h3 className="text-base font-black text-slate-900">{team.name}</h3>
@@ -44,13 +44,13 @@ export default function TeamCard({ team }: TeamCardProps) {
         </div>
 
         {team.shortDescription ? (
-          <p className="line-clamp-3 text-sm text-slate-600">
+          <p className="line-clamp-3 text-sm text-slate-900">
             {team.shortDescription}
           </p>
         ) : meta.length > 0 ? (
-          <p className="text-sm text-slate-600">{meta.join(" • ")}</p>
+          <p className="text-sm text-slate-900">{meta.join(" • ")}</p>
         ) : (
-          <p className="text-sm text-slate-500">Trupp, statistik och laginfo</p>
+          <p className="text-sm text-slate-900">Trupp, statistik och laginfo</p>
         )}
 
         <div className="pt-1 text-sm font-bold text-emerald-700">
