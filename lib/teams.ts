@@ -1,6 +1,6 @@
 // lib/teams.ts
 
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import {
   getAllStaticTeamProfiles,
   getStaticTeamBySlug,
@@ -104,7 +104,7 @@ function buildTeamProfile(
 
 export async function getAllTeamProfiles(): Promise<TeamProfile[]> {
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = await createClient();
 
     const { data: teams, error: teamsError } = await supabase
       .from("teams")
@@ -140,7 +140,8 @@ export async function getAllTeamProfiles(): Promise<TeamProfile[]> {
         )
       )
     );
-  } catch {
+  } catch (error) {
+    console.error("Kunde inte hämta lag från Supabase", error);
     return getAllStaticTeamProfiles();
   }
 }
@@ -152,16 +153,18 @@ export async function getTeamsGroupedByLetter(): Promise<Record<string, TeamProf
     return teams.reduce<Record<string, TeamProfile[]>>((acc, team) => {
       if (!acc[team.groupLetter]) acc[team.groupLetter] = [];
       acc[team.groupLetter].push(team);
+      acc[team.groupLetter].sort((a, b) => a.name.localeCompare(b.name, "sv"));
       return acc;
     }, {});
-  } catch {
+  } catch (error) {
+    console.error("Kunde inte gruppera lag", error);
     return getStaticTeamsGroupedByLetter();
   }
 }
 
 export async function getTeamBySlug(slug: string): Promise<TeamProfile | null> {
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = await createClient();
 
     const { data: team, error } = await supabase
       .from("teams")
@@ -191,7 +194,8 @@ export async function getTeamBySlug(slug: string): Promise<TeamProfile | null> {
       (players ?? []) as TeamPlayerRow[],
       (qualification ?? []) as QualificationRow[]
     );
-  } catch {
+  } catch (error) {
+    console.error(`Kunde inte hämta lag med slug ${slug}`, error);
     return getStaticTeamBySlug(slug);
   }
 }
