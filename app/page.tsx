@@ -430,6 +430,9 @@ export default function HomePage() {
                       <Link href="/tv-guide" className={navLinkClassName()}>
                         TV-guide
                       </Link>
+                      <Link href="/lag" className={navLinkClassName()}>
+  Lag & spelare
+</Link>
                     </div>
                   </div>
 
