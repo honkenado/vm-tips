@@ -19,6 +19,22 @@ type TeamFormState = {
   key_players: string;
 };
 
+type TeamApiRow = {
+  id: string;
+  name: string | null;
+  slug: string | null;
+  group_letter: string | null;
+  fifa_rank: number | null;
+  coach: string | null;
+  confederation: string | null;
+  short_description: string | null;
+  qualification_summary: string | null;
+  squad_status: string | null;
+  source: string | null;
+  formation: string | null;
+  key_players: string[] | null;
+};
+
 export default function EditTeamPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -27,10 +43,48 @@ export default function EditTeamPage() {
   const [form, setForm] = useState<TeamFormState | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [autoLoading, setAutoLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   function updateField(name: keyof TeamFormState, value: string) {
     setForm((prev) => (prev ? { ...prev, [name]: value } : prev));
+  }
+
+  function mapTeamToForm(team: TeamApiRow): TeamFormState {
+    return {
+      id: team.id,
+      name: team.name ?? "",
+      slug: team.slug ?? "",
+      group_letter: team.group_letter ?? "",
+      fifa_rank: team.fifa_rank?.toString() ?? "",
+      coach: team.coach ?? "",
+      confederation: team.confederation ?? "",
+      short_description: team.short_description ?? "",
+      qualification_summary: team.qualification_summary ?? "",
+      squad_status: team.squad_status ?? "",
+      source: team.source ?? "",
+      formation: team.formation ?? "",
+      key_players: Array.isArray(team.key_players)
+        ? team.key_players.join(", ")
+        : "",
+    };
+  }
+
+  async function reloadTeam(teamId: string) {
+    const res = await fetch("/api/admin/teams", { cache: "no-store" });
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Kunde inte läsa lag");
+    }
+
+    const team = (data.teams ?? []).find((item: TeamApiRow) => item.id === teamId);
+
+    if (!team) {
+      throw new Error("Kunde inte hitta laget");
+    }
+
+    setForm(mapTeamToForm(team));
   }
 
   useEffect(() => {
@@ -38,39 +92,13 @@ export default function EditTeamPage() {
       try {
         setLoading(true);
         setMessage(null);
-
-        const res = await fetch("/api/admin/teams");
-        const data = await res.json();
-
-        if (!res.ok) {
-          setMessage(data.error || "Kunde inte läsa lag");
-          return;
-        }
-
-        const team = (data.teams ?? []).find((item: { id: string }) => item.id === id);
-
-        if (!team) {
-          setMessage("Kunde inte hitta laget");
-          return;
-        }
-
-        setForm({
-          id: team.id,
-          name: team.name ?? "",
-          slug: team.slug ?? "",
-          group_letter: team.group_letter ?? "",
-          fifa_rank: team.fifa_rank?.toString() ?? "",
-          coach: team.coach ?? "",
-          confederation: team.confederation ?? "",
-          short_description: team.short_description ?? "",
-          qualification_summary: team.qualification_summary ?? "",
-          squad_status: team.squad_status ?? "",
-          source: team.source ?? "",
-          formation: team.formation ?? "",
-          key_players: Array.isArray(team.key_players) ? team.key_players.join(", ") : "",
-        });
-      } catch {
-        setMessage("Något gick fel när laget skulle hämtas");
+        await reloadTeam(id);
+      } catch (error) {
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "Något gick fel när laget skulle hämtas"
+        );
       } finally {
         setLoading(false);
       }
@@ -78,6 +106,33 @@ export default function EditTeamPage() {
 
     loadTeam();
   }, [id]);
+
+  async function handleAutofill() {
+    if (!form) return;
+
+    try {
+      setAutoLoading(true);
+      setMessage(null);
+
+      const res = await fetch(`/api/admin/teams/${form.id}/autofill`, {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessage(data.error || "Kunde inte hämta info automatiskt");
+        return;
+      }
+
+      await reloadTeam(form.id);
+      setMessage("Laginfo hämtad automatiskt.");
+    } catch {
+      setMessage("Något gick fel vid automatisk hämtning");
+    } finally {
+      setAutoLoading(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -257,12 +312,27 @@ export default function EditTeamPage() {
         </Field>
 
         {message && (
-          <div className="rounded-lg bg-red-100 p-3 text-sm text-red-700">
+          <div
+            className={`rounded-lg p-3 text-sm ${
+              message === "Laginfo hämtad automatiskt."
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
             {message}
           </div>
         )}
 
         <div className="flex flex-col gap-3 sm:flex-row">
+          <button
+            type="button"
+            onClick={handleAutofill}
+            disabled={autoLoading}
+            className="rounded-xl bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+          >
+            {autoLoading ? "Hämtar..." : "Hämta info automatiskt"}
+          </button>
+
           <button
             type="submit"
             disabled={saving}
