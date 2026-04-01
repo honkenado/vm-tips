@@ -1,3 +1,3 @@
 export default function Page() {
-  return <div>Team edit page</div>;
+  return <div>Team edit page 2</div>;
 }
