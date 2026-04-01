@@ -17,7 +17,7 @@ const MONTHS_SV: Record<string, number> = {
   december: 11,
 };
 
-export function parseSwedishMatchDate(date: string, time: string) {
+function parseSwedishDateParts(date: string) {
   const parts = date.toLowerCase().trim().split(" ");
   if (parts.length !== 3) return null;
 
@@ -29,13 +29,28 @@ export function parseSwedishMatchDate(date: string, time: string) {
     return null;
   }
 
+  return { year, month, day };
+}
+
+export function parseSwedishMatchDate(date: string, time: string) {
+  const dateParts = parseSwedishDateParts(date);
+  if (!dateParts) return null;
+
   const [hours, minutes] = time.split(":").map(Number);
 
   if (Number.isNaN(hours) || Number.isNaN(minutes)) {
     return null;
   }
 
-  return new Date(year, month, day, hours, minutes, 0, 0);
+  return new Date(
+    dateParts.year,
+    dateParts.month,
+    dateParts.day,
+    hours,
+    minutes,
+    0,
+    0
+  );
 }
 
 export function sortMatchesByDateTime(matches: ScheduleMatch[]) {
@@ -49,6 +64,27 @@ export function sortMatchesByDateTime(matches: ScheduleMatch[]) {
 
     return dateA.getTime() - dateB.getTime();
   });
+}
+
+function getTodayPartsInStockholm() {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Stockholm",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  const parts = formatter.formatToParts(new Date());
+
+  const year = Number(parts.find((p) => p.type === "year")?.value);
+  const month = Number(parts.find((p) => p.type === "month")?.value) - 1;
+  const day = Number(parts.find((p) => p.type === "day")?.value);
+
+  return { year, month, day };
+}
+
+function toComparableDayNumber(year: number, month: number, day: number) {
+  return year * 10000 + (month + 1) * 100 + day;
 }
 
 export function getTodayDateStringSv() {
@@ -85,6 +121,26 @@ export function getMatchesToday(matches: ScheduleMatch[]) {
 
 export function getMatchesTomorrow(matches: ScheduleMatch[]) {
   return getMatchesForExactDate(matches, getTomorrowDateStringSv());
+}
+
+export function getUpcomingMatches(matches: ScheduleMatch[]) {
+  const today = getTodayPartsInStockholm();
+  const todayNumber = toComparableDayNumber(today.year, today.month, today.day);
+
+  return sortMatchesByDateTime(
+    matches.filter((match) => {
+      const parsed = parseSwedishDateParts(match.date);
+      if (!parsed) return false;
+
+      const matchNumber = toComparableDayNumber(
+        parsed.year,
+        parsed.month,
+        parsed.day
+      );
+
+      return matchNumber >= todayNumber;
+    })
+  );
 }
 
 export function groupMatchesByDate(matches: ScheduleMatch[]) {
