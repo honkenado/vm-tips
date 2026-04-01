@@ -22,18 +22,12 @@ export default function TeamPlayersManager({
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
-
-  async function loadPlayers() {
-    const res = await fetch(`/api/admin/teams`);
-    const data = await res.json();
-
-    if (!res.ok) return;
-
-    // denna används inte för players, så vi hämtar från en enkel egen route längre ner
-  }
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   async function loadPlayersDirect() {
-    const res = await fetch(`/api/admin/players-list?teamId=${teamId}`);
+    const res = await fetch(`/api/admin/players-list?teamId=${teamId}`, {
+      cache: "no-store",
+    });
     const data = await res.json();
 
     if (!res.ok) {
@@ -48,22 +42,51 @@ export default function TeamPlayersManager({
     loadPlayersDirect();
   }, [teamId]);
 
-  async function addPlayer() {
+  function resetForm() {
+    setName("");
+    setPosition("");
+    setClub("");
+    setEditingId(null);
+  }
+
+  function startEdit(player: Player) {
+    setEditingId(player.id);
+    setName(player.name ?? "");
+    setPosition(player.position ?? "");
+    setClub(player.club ?? "");
+    setMessage("");
+  }
+
+  async function addOrUpdatePlayer() {
     try {
       setLoading(true);
       setMessage("");
 
-      const res = await fetch("/api/admin/players", {
-        method: "POST",
+      const url = editingId
+        ? `/api/admin/players/${editingId}`
+        : "/api/admin/players";
+
+      const method = editingId ? "PATCH" : "POST";
+
+      const body = editingId
+        ? {
+            name,
+            position,
+            club,
+          }
+        : {
+            team_id: teamId,
+            name,
+            position,
+            club,
+          };
+
+      const res = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          team_id: teamId,
-          name,
-          position,
-          club,
-        }),
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();
@@ -73,15 +96,42 @@ export default function TeamPlayersManager({
         return;
       }
 
-      setMessage("Spelare tillagd");
-      setName("");
-      setPosition("");
-      setClub("");
+      setMessage(editingId ? "Spelare uppdaterad" : "Spelare tillagd");
+      resetForm();
       loadPlayersDirect();
     } catch {
       setMessage("Något gick fel");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function deletePlayer(id: string) {
+    const confirmed = window.confirm("Vill du ta bort spelaren?");
+    if (!confirmed) return;
+
+    try {
+      setMessage("");
+
+      const res = await fetch(`/api/admin/players/${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessage(data.error || "Kunde inte ta bort spelaren");
+        return;
+      }
+
+      if (editingId === id) {
+        resetForm();
+      }
+
+      setMessage("Spelare borttagen");
+      loadPlayersDirect();
+    } catch {
+      setMessage("Något gick fel när spelaren skulle tas bort");
     }
   }
 
@@ -124,7 +174,9 @@ export default function TeamPlayersManager({
           </button>
         </div>
 
-        <h2 className="text-xl font-bold text-black">Lägg till spelare</h2>
+        <h2 className="text-xl font-bold text-black">
+          {editingId ? "Redigera spelare" : "Lägg till spelare"}
+        </h2>
 
         <input
           placeholder="Namn"
@@ -147,14 +199,30 @@ export default function TeamPlayersManager({
           className="w-full rounded border p-2 text-black"
         />
 
-        <button
-          type="button"
-          onClick={addPlayer}
-          disabled={loading}
-          className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-        >
-          {loading ? "Sparar..." : "Lägg till"}
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={addOrUpdatePlayer}
+            disabled={loading}
+            className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+          >
+            {loading
+              ? "Sparar..."
+              : editingId
+              ? "Spara ändringar"
+              : "Lägg till"}
+          </button>
+
+          {editingId && (
+            <button
+              type="button"
+              onClick={resetForm}
+              className="rounded border border-gray-300 bg-white px-4 py-2 text-black hover:bg-gray-100"
+            >
+              Avbryt
+            </button>
+          )}
+        </div>
 
         {message && <div className="text-black">{message}</div>}
       </div>
@@ -169,11 +237,31 @@ export default function TeamPlayersManager({
             {players.map((player) => (
               <div
                 key={player.id}
-                className="rounded-lg border border-gray-200 p-3"
+                className="flex flex-col gap-3 rounded-lg border border-gray-200 p-3 sm:flex-row sm:items-center sm:justify-between"
               >
-                <div className="font-semibold text-black">{player.name}</div>
-                <div className="text-sm text-gray-700">
-                  {player.position} • {player.club || "Ingen klubb"}
+                <div>
+                  <div className="font-semibold text-black">{player.name}</div>
+                  <div className="text-sm text-gray-700">
+                    {player.position} • {player.club || "Ingen klubb"}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(player)}
+                    className="rounded-lg border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-black hover:bg-gray-200"
+                  >
+                    Redigera
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => deletePlayer(player.id)}
+                    className="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+                  >
+                    Ta bort
+                  </button>
                 </div>
               </div>
             ))}
