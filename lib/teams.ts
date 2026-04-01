@@ -1,6 +1,6 @@
 // lib/teams.ts
 
-import { createClient } from "@/lib/supabase/server";
+import { createReadOnlyClient } from "@/lib/supabase/server-readonly";
 import {
   getAllStaticTeamProfiles,
   getStaticTeamsGroupedByLetter,
@@ -105,7 +105,7 @@ function buildTeamProfile(
 
 export async function getAllTeamProfiles(): Promise<TeamProfile[]> {
   try {
-    const supabase = await createClient();
+    const supabase = createReadOnlyClient();
 
     const { data: teams, error: teamsError } = await supabase
       .from("teams")
@@ -188,7 +188,7 @@ export async function getTeamsGroupedByLetter(): Promise<Record<string, TeamProf
 }
 
 export async function getTeamBySlug(slug: string): Promise<TeamProfile | null> {
-  const supabase = await createClient();
+  const supabase = createReadOnlyClient();
 
   const { data: team, error } = await supabase
     .from("teams")

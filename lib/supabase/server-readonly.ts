@@ -1,3 +1,5 @@
+// lib/supabase/server-readonly.ts
+
 import { createClient } from "@supabase/supabase-js";
 
 export function createReadOnlyClient() {
