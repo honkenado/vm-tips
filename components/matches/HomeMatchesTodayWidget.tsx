@@ -13,61 +13,66 @@ export default function HomeMatchesTodayWidget() {
   const heading = todayMatches.length > 0 ? "Matcher idag" : "Matcher imorgon";
 
   return (
-    <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between gap-4">
+    <section className="rounded-[2rem] border border-slate-200/80 bg-white/95 p-4 shadow-[0_12px_30px_rgba(15,23,42,0.08)] backdrop-blur sm:p-5">
+      <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold tracking-tight">{heading}</h2>
-          <p className="text-sm text-zinc-600">
-            Snabb överblick över kommande matcher
+          <h2 className="text-lg font-black tracking-tight text-slate-900">
+            {heading}
+          </h2>
+          <p className="text-sm text-slate-600">
+            Snabb koll på dagens sändningar
           </p>
         </div>
 
-        <div className="flex gap-2">
-          <Link
-            href="/matcher-idag"
-            className="rounded-full border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
-          >
-            Matchdag
-          </Link>
-          <Link
-            href="/tv-guide"
-            className="rounded-full bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
-          >
-            TV-guide
-          </Link>
-        </div>
+        <Link
+          href="/tv-guide"
+          className="inline-flex h-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
+        >
+          Se allt
+        </Link>
       </div>
 
       {matchesToShow.length === 0 ? (
-        <div className="rounded-2xl bg-zinc-50 p-4 text-sm text-zinc-600">
-          Inga matcher hittades.
+        <div className="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-600">
+          Inga matcher att visa just nu.
         </div>
       ) : (
         <div className="space-y-3">
-          {matchesToShow.slice(0, 3).map((match) => (
+          {matchesToShow.slice(0, 2).map((match) => (
             <div
               key={match.id}
-              className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4"
+              className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3"
             >
               <div className="mb-1 flex items-start justify-between gap-3">
-                <p className="text-sm font-semibold text-zinc-900">
-                  {match.homeTeam} – {match.awayTeam}
-                </p>
-                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-slate-900">
+                    {match.homeTeam} – {match.awayTeam}
+                  </p>
+                  <p className="text-xs font-medium text-slate-500">
+                    {match.groupName} • Match {match.matchNumber}
+                  </p>
+                </div>
+
+                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-extrabold text-slate-700 shadow-sm">
                   {match.time}
                 </span>
               </div>
 
-              <p className="text-xs text-zinc-500">
-                {match.groupName} • Match {match.matchNumber}
-              </p>
-
-              <p className="mt-2 text-sm text-zinc-600">
+              <p className="text-sm text-slate-600">
                 TV: {match.tvChannel ?? "TV-kanal saknas"}
-                {match.streamingChannel ? ` • Stream: ${match.streamingChannel}` : ""}
+                {match.streamingChannel
+                  ? ` • Stream: ${match.streamingChannel}`
+                  : ""}
               </p>
             </div>
           ))}
+
+          <Link
+            href="/matcher-idag"
+            className="inline-flex h-10 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-sm font-extrabold text-white transition hover:bg-slate-800"
+          >
+            Öppna matchdag
+          </Link>
         </div>
       )}
     </section>

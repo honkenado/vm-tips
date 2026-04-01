@@ -427,6 +427,9 @@ export default function HomePage() {
                       <Link href="/mitt-resultat" className={navLinkClassName()}>
                         Mitt resultat
                       </Link>
+                      <Link href="/tv-guide" className={navLinkClassName()}>
+                        TV-guide
+                      </Link>
                     </div>
                   </div>
 
@@ -503,12 +506,14 @@ export default function HomePage() {
           </div>
         </header>
 
-        <div className="mb-4 sm:mb-5 md:mb-6">
-          <NewsPreview />
-        </div>
+        <div className="mb-4 grid gap-4 md:mb-6 md:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.85fr)] md:items-start">
+          <div className="min-w-0">
+            <NewsPreview />
+          </div>
 
-        <div className="mb-4 sm:mb-5 md:mb-6">
-          <HomeMatchesTodayWidget />
+          <div className="min-w-0">
+            <HomeMatchesTodayWidget />
+          </div>
         </div>
 
         <div className="grid gap-4 sm:gap-6 md:gap-8">
