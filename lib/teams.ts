@@ -73,9 +73,7 @@ function getAllTeamsFromGroups() {
         fifaRank: seeded?.fifaRank,
         coach: seeded?.coach,
         confederation: seeded?.confederation,
-        shortDescription:
-          seeded?.shortDescription ??
-          `${teamName} spelar i Grupp ${groupLetter} i Addes VM-tips.`,
+        shortDescription: seeded?.shortDescription ?? "",
         qualificationSummary:
           seeded?.qualificationSummary ?? "Kvalificeringsväg läggs till senare.",
         squad: seeded?.squad ?? [],
