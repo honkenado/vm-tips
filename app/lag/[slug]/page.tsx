@@ -3,16 +3,10 @@
 import Link from "next/link";
 import TeamHero from "@/components/teams/TeamHero";
 import TeamSquadTable from "@/components/teams/TeamSquadTable";
-import { getAllTeamProfiles, getTeamBySlug } from "@/lib/teams";
+import { getTeamBySlug } from "@/lib/teams";
 import { notFound } from "next/navigation";
 
-export async function generateStaticParams() {
-  const teams = await getAllTeamProfiles();
-
-  return teams.map((team) => ({
-    slug: team.slug,
-  }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function TeamPage({
   params,
@@ -72,7 +66,6 @@ export default async function TeamPage({
               ))}
             </div>
           ) : null}
-
         </section>
 
         <TeamSquadTable squad={team.squad} />
