@@ -6,6 +6,7 @@ import AuthStatus from "@/components/auth-status";
 import BestThirdsSection from "@/components/BestThirdsSection";
 import GoldenBootSection from "@/components/GoldenBootSection";
 import GroupSection from "@/components/GroupSection";
+import HomeMatchesTodayWidget from "@/components/matches/HomeMatchesTodayWidget";
 import KnockoutFullSection from "@/components/KnockoutFullSection";
 import LeaguesSection from "@/components/leagues-section";
 import NewsPreview from "@/components/NewsPreview";
@@ -502,7 +503,13 @@ export default function HomePage() {
           </div>
         </header>
 
-        <NewsPreview />
+        <div className="mb-4 sm:mb-5 md:mb-6">
+          <NewsPreview />
+        </div>
+
+        <div className="mb-4 sm:mb-5 md:mb-6">
+          <HomeMatchesTodayWidget />
+        </div>
 
         <div className="grid gap-4 sm:gap-6 md:gap-8">
           {(viewMode === "all" || viewMode === "groups") && (

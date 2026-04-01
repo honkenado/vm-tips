@@ -15,9 +15,7 @@ export default function TvGuideList({
     <section className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">TV-guide</h1>
-        <p className="text-sm text-zinc-600">
-          Matcher, tider och kanaler
-        </p>
+        <p className="text-sm text-zinc-600">Matcher, tider och kanaler</p>
       </div>
 
       <div className="space-y-4">
@@ -34,7 +32,7 @@ export default function TvGuideList({
               {grouped[date].map((match) => (
                 <div
                   key={match.id}
-                  className="grid grid-cols-1 gap-2 px-4 py-3 md:grid-cols-[80px_1fr_160px]"
+                  className="grid grid-cols-1 gap-2 px-4 py-3 md:grid-cols-[80px_1fr_180px]"
                 >
                   <div className="text-sm font-semibold text-zinc-900">
                     {match.time}
@@ -50,7 +48,12 @@ export default function TvGuideList({
                   </div>
 
                   <div className="text-sm text-zinc-600">
-                    {match.tvChannel ?? "TV-kanal saknas"}
+                    <div>{match.tvChannel ?? "TV-kanal saknas"}</div>
+                    {match.streamingChannel ? (
+                      <div className="text-xs text-zinc-500">
+                        Stream: {match.streamingChannel}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               ))}

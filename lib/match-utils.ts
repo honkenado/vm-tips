@@ -25,11 +25,7 @@ export function parseSwedishMatchDate(date: string, time: string) {
   const month = MONTHS_SV[parts[1]];
   const year = Number(parts[2]);
 
-  if (
-    Number.isNaN(day) ||
-    typeof month !== "number" ||
-    Number.isNaN(year)
-  ) {
+  if (Number.isNaN(day) || typeof month !== "number" || Number.isNaN(year)) {
     return null;
   }
 
@@ -65,11 +61,30 @@ export function getTodayDateStringSv() {
   }).format(now);
 }
 
-export function getMatchesToday(matches: ScheduleMatch[]) {
-  const today = getTodayDateStringSv().toLowerCase();
+export function getTomorrowDateStringSv() {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  return new Intl.DateTimeFormat("sv-SE", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Stockholm",
+  }).format(tomorrow);
+}
+
+export function getMatchesForExactDate(matches: ScheduleMatch[], dateString: string) {
   return sortMatchesByDateTime(
-    matches.filter((match) => match.date.toLowerCase() === today)
+    matches.filter((match) => match.date.toLowerCase() === dateString.toLowerCase())
   );
+}
+
+export function getMatchesToday(matches: ScheduleMatch[]) {
+  return getMatchesForExactDate(matches, getTodayDateStringSv());
+}
+
+export function getMatchesTomorrow(matches: ScheduleMatch[]) {
+  return getMatchesForExactDate(matches, getTomorrowDateStringSv());
 }
 
 export function groupMatchesByDate(matches: ScheduleMatch[]) {

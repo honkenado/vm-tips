@@ -6,7 +6,7 @@ import { getMatchesToday } from "@/lib/match-utils";
 
 export const metadata = {
   title: "Matcher idag | Addes VM-tips",
-  description: "Se dagens matcher i VM-tipset.",
+  description: "Se dagens matcher i Addes VM-tips.",
 };
 
 export default function MatchesTodayPage() {
