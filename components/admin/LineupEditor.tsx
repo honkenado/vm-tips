@@ -71,11 +71,29 @@ const FORMATIONS: Record<
   ],
 };
 
-function makeSlots(formation: string): Slot[] {
+function makeBaseSlots(formation: string): Slot[] {
   return (FORMATIONS[formation] ?? FORMATIONS["4-3-3"]).map((slot) => ({
     ...slot,
     player_id: null,
   }));
+}
+
+function mergeSlots(formation: string, savedSlots: Slot[]): Slot[] {
+  const base = makeBaseSlots(formation);
+  const savedMap = new Map(savedSlots.map((slot) => [slot.slot_key, slot]));
+
+  return base.map((slot) => {
+    const saved = savedMap.get(slot.slot_key);
+    return saved
+      ? {
+          slot_key: slot.slot_key,
+          role_label: slot.role_label,
+          x_pos: slot.x_pos,
+          y_pos: slot.y_pos,
+          player_id: saved.player_id ?? null,
+        }
+      : slot;
+  });
 }
 
 export default function LineupEditor({
@@ -91,7 +109,7 @@ export default function LineupEditor({
 }) {
   const [formation, setFormation] = useState(initialFormation || "4-3-3");
   const [slots, setSlots] = useState<Slot[]>(
-    initialSlots.length > 0 ? initialSlots : makeSlots(initialFormation || "4-3-3")
+    mergeSlots(initialFormation || "4-3-3", initialSlots ?? [])
   );
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -102,15 +120,8 @@ export default function LineupEditor({
   );
 
   function applyFormation(newFormation: string) {
-    const base = makeSlots(newFormation);
-
-    const merged = base.map((slot, index) => ({
-      ...slot,
-      player_id: slots[index]?.player_id ?? null,
-    }));
-
     setFormation(newFormation);
-    setSlots(merged);
+    setSlots((prev) => mergeSlots(newFormation, prev));
   }
 
   function handleDrop(slotKey: string, playerId: string) {
@@ -242,9 +253,7 @@ export default function LineupEditor({
                   onDrop={(e) => {
                     e.preventDefault();
                     const playerId = e.dataTransfer.getData("text/plain");
-                    if (playerId) {
-                      handleDrop(slot.slot_key, playerId);
-                    }
+                    if (playerId) handleDrop(slot.slot_key, playerId);
                   }}
                   className="absolute -translate-x-1/2 -translate-y-1/2"
                   style={{
