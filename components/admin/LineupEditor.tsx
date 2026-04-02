@@ -329,18 +329,37 @@ export default function LineupEditor({
         </div>
 
         <div className="rounded-2xl border border-gray-300 bg-[#10212b] p-4">
-          <div className="relative mx-auto aspect-[3/4] w-full max-w-[520px] overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-[#183140] to-[#0b1820]">
-            <div className="absolute inset-3 rounded-[1.25rem] border border-white/10" />
+          <div className="relative mx-auto aspect-[3/4] w-full max-w-[520px] overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-[#1f6a3d] via-[#175433] to-[#103a24] shadow-inner">
+            {/* Mjuk grässtruktur */}
+            <div className="absolute inset-0 opacity-[0.08]">
+              <div className="h-full w-full bg-[linear-gradient(to_bottom,transparent_0%,rgba(255,255,255,0.35)_50%,transparent_100%)] bg-[length:100%_74px]" />
+            </div>
 
-            <div className="absolute left-1/2 top-3 bottom-3 w-px -translate-x-1/2 bg-white/10" />
+            {/* Yttre planlinje */}
+            <div className="absolute inset-3 rounded-[1.25rem] border border-white/20" />
 
-            <div className="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/20" />
+            {/* Mittlinje */}
+            <div className="absolute left-3 right-3 top-1/2 h-px -translate-y-1/2 bg-white/20" />
 
-            <div className="absolute left-1/2 top-3 h-[100px] w-[190px] -translate-x-1/2 rounded-b-[18px] border-x border-b border-white/20" />
-            <div className="absolute left-1/2 top-3 h-[42px] w-[78px] -translate-x-1/2 rounded-b-[10px] border-x border-b border-white/20" />
+            {/* Mittcirkel */}
+            <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/20" />
 
-            <div className="absolute bottom-3 left-1/2 h-[100px] w-[190px] -translate-x-1/2 rounded-t-[18px] border-x border-t border-white/20" />
-            <div className="absolute bottom-3 left-1/2 h-[42px] w-[78px] -translate-x-1/2 rounded-t-[10px] border-x border-t border-white/20" />
+            {/* Mittpunkt */}
+            <div className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70" />
+
+            {/* Övre straffområde */}
+            <div className="absolute left-1/2 top-3 h-[112px] w-[220px] -translate-x-1/2 border-x border-b border-white/20" />
+            <div className="absolute left-1/2 top-3 h-[50px] w-[92px] -translate-x-1/2 border-x border-b border-white/20" />
+            <div className="absolute left-1/2 top-[86px] h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-white/70" />
+
+            {/* Nedre straffområde */}
+            <div className="absolute bottom-3 left-1/2 h-[112px] w-[220px] -translate-x-1/2 border-x border-t border-white/20" />
+            <div className="absolute bottom-3 left-1/2 h-[50px] w-[92px] -translate-x-1/2 border-x border-t border-white/20" />
+            <div className="absolute bottom-[86px] left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-white/70" />
+
+            {/* Mål */}
+            <div className="absolute left-1/2 top-0 h-3 w-[84px] -translate-x-1/2 rounded-b-md border-x border-b border-white/20 bg-white/5" />
+            <div className="absolute bottom-0 left-1/2 h-3 w-[84px] -translate-x-1/2 rounded-t-md border-x border-t border-white/20 bg-white/5" />
 
             {slots.map((slot) => {
               const player = slot.player_id ? playerMap[slot.player_id] : null;
@@ -360,11 +379,11 @@ export default function LineupEditor({
                     top: `${slot.y_pos}%`,
                   }}
                 >
-                  <div className="flex w-[92px] flex-col items-center">
+                  <div className="flex w-[96px] flex-col items-center">
                     <button
                       type="button"
                       onDoubleClick={() => clearSlot(slot.slot_key)}
-                      className={`flex h-11 w-11 items-center justify-center rounded-full border text-[11px] font-black shadow-md ${
+                      className={`flex h-11 w-11 items-center justify-center rounded-full border text-[11px] font-black shadow-lg backdrop-blur-sm ${
                         player
                           ? "border-slate-200 bg-white text-slate-900"
                           : "border-white/20 bg-white/15 text-white/80"
@@ -374,7 +393,7 @@ export default function LineupEditor({
                       {player?.shirt_number ?? slot.role_label}
                     </button>
 
-                    <div className="mt-1 max-w-[92px] text-center text-[11px] font-semibold leading-tight text-white">
+                    <div className="mt-1.5 max-w-[96px] text-center text-[11px] font-semibold leading-tight text-white drop-shadow-sm">
                       {player ? player.name : slot.role_label}
                     </div>
                   </div>
