@@ -1,36 +1,18 @@
-import Image from "next/image";
 import Link from "next/link";
 
-type HelpCardProps = {
+type HelpSectionProps = {
   title: string;
-  text: string;
-  imageSrc: string;
-  imageAlt: string;
+  children: React.ReactNode;
 };
 
-function HelpCard({ title, text, imageSrc, imageAlt }: HelpCardProps) {
+function HelpSection({ title, children }: HelpSectionProps) {
   return (
-    <section className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-100 px-4 py-4 sm:px-6">
-        <h2 className="text-xl font-black text-slate-900 sm:text-2xl">
-          {title}
-        </h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:text-[15px]">
-          {text}
-        </p>
-      </div>
-
-      <div className="p-3 sm:p-4 md:p-5">
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-          <Image
-            src={imageSrc}
-            alt={imageAlt}
-            width={1600}
-            height={900}
-            className="h-auto w-full object-contain"
-            priority={imageSrc === "/help/header.png"}
-          />
-        </div>
+    <section className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 className="text-xl font-black text-slate-900 sm:text-2xl">
+        {title}
+      </h2>
+      <div className="mt-3 text-sm leading-7 text-slate-700 md:text-base space-y-3">
+        {children}
       </div>
     </section>
   );
@@ -39,60 +21,85 @@ function HelpCard({ title, text, imageSrc, imageAlt }: HelpCardProps) {
 export default function HelpPage() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#ecfdf5_0%,_#f8fafc_35%,_#f1f5f9_68%,_#e2e8f0_100%)] px-4 py-6 sm:px-6 md:py-8">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-6 overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-gradient-to-r from-emerald-950 via-green-900 to-slate-950 p-5 text-white shadow-[0_20px_50px_rgba(15,23,42,0.20)] sm:p-6">
-          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-white/75">
-            Addes VM-tips
-          </p>
-          <h1 className="mt-2 text-3xl font-black sm:text-4xl">Hjälp</h1>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-200 sm:text-[15px]">
-            Här ser du hur appen fungerar och hur du fyller i ditt tips.
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-6 overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-gradient-to-r from-emerald-950 via-green-900 to-slate-950 p-6 text-white">
+          <h1 className="text-3xl font-black sm:text-4xl">Hjälp</h1>
+          <p className="mt-3 text-sm text-slate-200">
+            Så använder du Addes VM-tips – steg för steg.
           </p>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link
-              href="/"
-              className="rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-slate-100"
-            >
-              Till startsidan
+          <div className="mt-4 flex gap-2">
+            <Link href="/" className="rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-900">
+              Startsidan
             </Link>
-            <Link
-              href="/rules"
-              className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
-            >
+            <Link href="/rules" className="rounded-full border border-white/20 px-4 py-2 text-sm">
               Regler
             </Link>
           </div>
         </div>
 
-        <div className="grid gap-5 sm:gap-6">
-          <HelpCard
-            title="1. Översikt och navigation"
-            text="I toppen av appen hittar du knappar för regler, hjälp, medlemmar, ligor och att spara ditt tips. Här ser du också appens header och huvudnavigering."
-            imageSrc="/help/header.png"
-            imageAlt="Header och navigation i Addes VM-tips"
-          />
+        <div className="space-y-6">
 
-          <HelpCard
-            title="2. Fyll i gruppspelet"
-            text="Välj grupp och skriv in exakta matchresultat. Tabellerna uppdateras automatiskt efter varje resultat så att du direkt ser hur grupperna utvecklas."
-            imageSrc="/help/groups.png"
-            imageAlt="Gruppspel i Addes VM-tips"
-          />
+          <HelpSection title="1. Fyll i ditt tips">
+            <p>Gå till <strong>Grupper</strong> och välj grupp A–L.</p>
+            <p>Skriv in resultat i matcherna. Tabellen uppdateras automatiskt.</p>
+            <p>När grupperna är klara byggs slutspelet upp automatiskt.</p>
+          </HelpSection>
 
-          <HelpCard
-            title="3. Slutspelsträdet"
-            text="När gruppspelet är ifyllt genereras slutspelet automatiskt. Där väljer du vinnare i varje match hela vägen fram till final och bronsmatch."
-            imageSrc="/help/knockout.png"
-            imageAlt="Slutspelsträd i Addes VM-tips"
-          />
+          <HelpSection title="2. Slutspelet">
+            <p>Under <strong>Slutspel</strong> väljer du vinnare i varje match.</p>
+            <p>Du tippar hela vägen till världsmästare.</p>
+          </HelpSection>
 
-          <HelpCard
-            title="4. Ligor och kompisligor"
-            text="Du kan skapa en egen liga eller gå med i en befintlig via ligakod. På ligasidan ser du dina ligor och kan jämföra dig med andra deltagare."
-            imageSrc="/help/leagues.png"
-            imageAlt="Ligor i Addes VM-tips"
-          />
+          <HelpSection title="3. Spara ditt tips">
+            <p>Klicka på <strong>Spara tips</strong> högst upp.</p>
+            <p>Gör du ändringar måste du spara igen.</p>
+          </HelpSection>
+
+          <HelpSection title="4. Betalning">
+            <p>Om du står som <strong>Ej betald</strong> behöver du swisha:</p>
+            <p className="font-bold text-emerald-700">
+              070-3222546
+            </p>
+            <p>Märk betalningen med din <strong>unika kod</strong>.</p>
+          </HelpSection>
+
+          <HelpSection title="5. Lag & spelare (viktig!)">
+            <p>
+              För att se laginformation:
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Klicka på <strong>Lag & spelare</strong> i menyn</li>
+              <li>Välj ett lag</li>
+              <li>Du får upp:</li>
+            </ul>
+            <ul className="list-disc pl-8 space-y-1">
+              <li>Trolig startelva</li>
+              <li>Trupp</li>
+              <li>Laginfo</li>
+              <li>Vägen till VM</li>
+            </ul>
+          </HelpSection>
+
+          <HelpSection title="6. Matcher idag">
+            <p>På startsidan ser du dagens matcher.</p>
+            <p>Klicka på <strong>Öppna matchdag</strong> för hela schemat.</p>
+          </HelpSection>
+
+          <HelpSection title="7. Ligor">
+            <p>Skapa egen liga eller gå med via kod.</p>
+            <p>Alla använder samma tips som i huvudtävlingen.</p>
+          </HelpSection>
+
+          <HelpSection title="8. Mitt resultat">
+            <p>Här ser du:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Dina poäng</li>
+              <li>Poängfördelning</li>
+              <li>Senaste sparning</li>
+            </ul>
+          </HelpSection>
+
         </div>
       </div>
     </main>

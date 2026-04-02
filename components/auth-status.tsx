@@ -82,6 +82,8 @@ export default function AuthStatus() {
     );
   }
 
+  const isUnpaid = profile?.payment_status === "unpaid";
+
   return (
     <div className="flex w-full flex-col gap-2 lg:items-end">
       <div className="flex flex-wrap items-center gap-2 text-[13px] text-white/80 lg:justify-end">
@@ -107,6 +109,20 @@ export default function AuthStatus() {
           </div>
         )}
       </div>
+
+      {profile && isUnpaid && (
+        <div className="max-w-[360px] rounded-xl border border-yellow-400/20 bg-yellow-500/10 px-3 py-2 text-[12px] leading-5 text-yellow-200 lg:text-right">
+          Swisha <span className="font-bold text-white">170 kr</span> till{" "}
+          <span className="font-bold text-white">070-3222546</span>
+          {profile.payment_code ? (
+            <>
+              {" "}
+              och märk med kod <span className="font-bold text-white">{profile.payment_code}</span>
+            </>
+          ) : null}
+          .
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2 lg:justify-end">
         {profile?.is_admin && (
