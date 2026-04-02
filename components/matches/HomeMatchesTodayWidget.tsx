@@ -1,16 +1,25 @@
-// components/matches/HomeMatchesTodayWidget.tsx
-
 import Link from "next/link";
 import { getGroupStageSchedule } from "@/lib/match-schedule";
-import { getMatchesToday, getMatchesTomorrow } from "@/lib/match-utils";
+import {
+  getMatchesToday,
+  getNextMatchdayMatches,
+  getNextMatchdayLabel,
+} from "@/lib/match-utils";
 
 export default function HomeMatchesTodayWidget() {
   const schedule = getGroupStageSchedule();
   const todayMatches = getMatchesToday(schedule);
-  const tomorrowMatches = getMatchesTomorrow(schedule);
+  const nextMatchdayMatches = getNextMatchdayMatches(schedule);
 
-  const matchesToShow = todayMatches.length > 0 ? todayMatches : tomorrowMatches;
-  const heading = todayMatches.length > 0 ? "Matcher idag" : "Matcher imorgon";
+  const showingToday = todayMatches.length > 0;
+  const matchesToShow = showingToday ? todayMatches : nextMatchdayMatches;
+
+  const heading = showingToday ? "Matcher idag" : "Nästa matcher";
+  const subheading = showingToday
+    ? "Snabb koll på dagens sändningar"
+    : nextMatchdayMatches.length > 0
+    ? `Nästa matchdag: ${getNextMatchdayLabel(schedule)}`
+    : "Inga matcher att visa just nu.";
 
   return (
     <section className="rounded-[2rem] border border-slate-200/80 bg-white/95 p-4 shadow-[0_12px_30px_rgba(15,23,42,0.08)] backdrop-blur sm:p-5">
@@ -19,9 +28,7 @@ export default function HomeMatchesTodayWidget() {
           <h2 className="text-lg font-black tracking-tight text-slate-900">
             {heading}
           </h2>
-          <p className="text-sm text-slate-600">
-            Snabb koll på dagens sändningar
-          </p>
+          <p className="text-sm text-slate-600">{subheading}</p>
         </div>
 
         <Link
@@ -71,7 +78,7 @@ export default function HomeMatchesTodayWidget() {
             href="/matcher-idag"
             className="inline-flex h-10 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-sm font-extrabold text-white transition hover:bg-slate-800"
           >
-            Öppna matchdag
+            {showingToday ? "Öppna dagens matcher" : "Öppna nästa matchdag"}
           </Link>
         </div>
       )}

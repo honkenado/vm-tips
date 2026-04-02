@@ -1,5 +1,3 @@
-// lib/match-utils.ts
-
 import type { ScheduleMatch } from "@/lib/match-schedule";
 
 const MONTHS_SV: Record<string, number> = {
@@ -109,7 +107,10 @@ export function getTomorrowDateStringSv() {
   }).format(tomorrow);
 }
 
-export function getMatchesForExactDate(matches: ScheduleMatch[], dateString: string) {
+export function getMatchesForExactDate(
+  matches: ScheduleMatch[],
+  dateString: string
+) {
   return sortMatchesByDateTime(
     matches.filter((match) => match.date.toLowerCase() === dateString.toLowerCase())
   );
@@ -141,6 +142,20 @@ export function getUpcomingMatches(matches: ScheduleMatch[]) {
       return matchNumber >= todayNumber;
     })
   );
+}
+
+export function getNextMatchdayMatches(matches: ScheduleMatch[]) {
+  const upcoming = getUpcomingMatches(matches);
+  if (upcoming.length === 0) return [];
+
+  const nextDate = upcoming[0].date;
+
+  return upcoming.filter((match) => match.date === nextDate);
+}
+
+export function getNextMatchdayLabel(matches: ScheduleMatch[]) {
+  const nextMatchdayMatches = getNextMatchdayMatches(matches);
+  return nextMatchdayMatches[0]?.date ?? "";
 }
 
 export function groupMatchesByDate(matches: ScheduleMatch[]) {
