@@ -140,7 +140,9 @@ export default function EditTeamPage() {
       );
 
       setMessage(
-        `Laginfo hämtad automatiskt${data.debug?.teamName ? ` (${data.debug.teamName})` : ""}.`
+        `Laginfo hämtad automatiskt${
+          data.debug?.teamName ? ` (${data.debug.teamName})` : ""
+        }.`
       );
     } catch {
       setMessage("Något gick fel vid automatisk hämtning");
@@ -243,6 +245,14 @@ export default function EditTeamPage() {
             className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-gray-100"
           >
             Hantera spelare
+          </button>
+
+          <button
+            type="button"
+            onClick={() => router.push(`/admin/lineups/${form.id}`)}
+            className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-gray-100"
+          >
+            Hantera uppställning
           </button>
 
           <button
