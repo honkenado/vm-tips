@@ -1,5 +1,3 @@
-// lib/teams-static.ts
-
 import { initialGroups } from "@/lib/tournament";
 import type { TeamProfile } from "@/types/team";
 
@@ -15,7 +13,10 @@ function slugifyTeamName(name: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-type TeamSeedData = Omit<TeamProfile, "groupLetter" | "id" | "updatedAt">;
+type TeamSeedData = Omit<
+  TeamProfile,
+  "id" | "groupLetter" | "updatedAt" | "lineup"
+>;
 
 export const teamSeedData: Record<string, TeamSeedData> = {
   Sverige: {
@@ -50,12 +51,6 @@ export const teamSeedData: Record<string, TeamSeedData> = {
     ],
     squad: [
       {
-        id: "swe-melker-ellborg",
-        name: "Melker Ellborg",
-        position: "Målvakt",
-        club: "Sunderland AFC",
-      },
-      {
         id: "swe-kristoffer-nordfeldt",
         name: "Kristoffer Nordfeldt",
         position: "Målvakt",
@@ -64,10 +59,36 @@ export const teamSeedData: Record<string, TeamSeedData> = {
         goals: 0,
       },
       {
-        id: "swe-noel-tornqvist",
-        name: "Noel Törnqvist",
-        position: "Målvakt",
-        club: "COMO 1907 S.R.L.",
+        id: "swe-victor-nilsson-lindelof",
+        name: "Victor Nilsson Lindelöf",
+        position: "Back",
+        club: "Aston Villa",
+        caps: 75,
+        goals: 3,
+      },
+      {
+        id: "swe-lucas-bergvall",
+        name: "Lucas Bergvall",
+        position: "Mittfältare",
+        club: "Tottenham Hotspur FC",
+        caps: 8,
+        goals: 0,
+      },
+      {
+        id: "swe-anthony-elanga",
+        name: "Anthony Elanga",
+        position: "Anfallare",
+        club: "Newcastle United FC",
+        caps: 28,
+        goals: 6,
+      },
+      {
+        id: "swe-viktor-gyokeres",
+        name: "Viktor Gyökeres",
+        position: "Anfallare",
+        club: "Arsenal FC",
+        caps: 32,
+        goals: 19,
       },
     ],
   },
@@ -79,10 +100,12 @@ function getAllTeamsFromGroups(): TeamProfile[] {
 
     return group.teams.map((teamName) => {
       const seeded = teamSeedData[teamName];
+      const slug = seeded?.slug ?? slugifyTeamName(teamName);
 
       return {
+        id: `static-${slug}`,
         name: teamName,
-        slug: seeded?.slug ?? slugifyTeamName(teamName),
+        slug,
         groupLetter,
         fifaRank: seeded?.fifaRank,
         coach: seeded?.coach,
@@ -92,15 +115,19 @@ function getAllTeamsFromGroups(): TeamProfile[] {
           seeded?.qualificationSummary ?? "Kvalificeringsväg läggs till senare.",
         squadStatus: seeded?.squadStatus ?? "unknown",
         source: seeded?.source ?? "statisk fallback",
+        updatedAt: undefined,
         squad: seeded?.squad ?? [],
         qualificationPath: seeded?.qualificationPath ?? [],
+        lineup: null,
       };
     });
   });
 }
 
 export function getAllStaticTeamProfiles() {
-  return getAllTeamsFromGroups().sort((a, b) => a.name.localeCompare(b.name, "sv"));
+  return getAllTeamsFromGroups().sort((a, b) =>
+    a.name.localeCompare(b.name, "sv")
+  );
 }
 
 export function getStaticTeamsGroupedByLetter() {

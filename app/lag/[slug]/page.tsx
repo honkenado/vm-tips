@@ -1,7 +1,6 @@
-// app/lag/[slug]/page.tsx
-
 import Link from "next/link";
 import TeamHero from "@/components/teams/TeamHero";
+import TeamLineup from "@/components/teams/TeamLineup";
 import TeamSquadTable from "@/components/teams/TeamSquadTable";
 import { getTeamBySlug } from "@/lib/teams";
 import { notFound } from "next/navigation";
@@ -33,6 +32,11 @@ export default async function TeamPage({
 
       <div className="grid gap-6">
         <TeamHero team={team} />
+
+        <TeamLineup
+          formation={team.lineup?.formation ?? null}
+          slots={team.lineup?.slots ?? []}
+        />
 
         <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-3">

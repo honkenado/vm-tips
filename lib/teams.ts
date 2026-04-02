@@ -1,11 +1,14 @@
-// lib/teams.ts
-
 import { createReadOnlyClient } from "@/lib/supabase/server-readonly";
 import {
   getAllStaticTeamProfiles,
   getStaticTeamsGroupedByLetter,
 } from "@/lib/teams-static";
-import type { QualificationEntry, TeamPlayer, TeamProfile } from "@/types/team";
+import type {
+  QualificationEntry,
+  TeamLineup,
+  TeamPlayer,
+  TeamProfile,
+} from "@/types/team";
 
 type TeamRow = {
   id: string;
@@ -48,6 +51,23 @@ type QualificationRow = {
   sort_order: number | null;
 };
 
+type TeamLineupRow = {
+  id: string;
+  team_id: string;
+  lineup_name: string;
+  formation: string;
+};
+
+type TeamLineupSlotRow = {
+  id: string;
+  lineup_id: string;
+  slot_key: string;
+  role_label: string;
+  x_pos: number | string;
+  y_pos: number | string;
+  player_id: string | null;
+};
+
 function mapPlayer(row: TeamPlayerRow): TeamPlayer {
   return {
     id: row.id,
@@ -76,11 +96,50 @@ function mapQualification(row: QualificationRow): QualificationEntry {
   };
 }
 
+function buildLineup(
+  lineupRow: TeamLineupRow | null,
+  slotRows: TeamLineupSlotRow[],
+  squad: TeamPlayer[]
+): TeamLineup | null {
+  if (!lineupRow) return null;
+
+  const squadMap = new Map(
+    squad.map((player) => [
+      player.id,
+      {
+        id: player.id,
+        name: player.name,
+        shirtNumber: player.shirtNumber ?? null,
+      },
+    ])
+  );
+
+  return {
+    id: lineupRow.id,
+    formation: lineupRow.formation,
+    lineupName: lineupRow.lineup_name,
+    slots: slotRows.map((slot) => ({
+      id: slot.id,
+      slotKey: slot.slot_key,
+      roleLabel: slot.role_label,
+      xPos: Number(slot.x_pos),
+      yPos: Number(slot.y_pos),
+      playerId: slot.player_id,
+      player: slot.player_id ? squadMap.get(slot.player_id) ?? null : null,
+    })),
+  };
+}
+
 function buildTeamProfile(
   team: TeamRow,
   players: TeamPlayerRow[],
-  qualification: QualificationRow[]
+  qualification: QualificationRow[],
+  lineup: TeamLineup | null = null
 ): TeamProfile {
+  const mappedSquad = players
+    .sort((a, b) => a.name.localeCompare(b.name, "sv"))
+    .map(mapPlayer);
+
   return {
     id: team.id,
     name: team.name,
@@ -94,12 +153,11 @@ function buildTeamProfile(
     squadStatus: team.squad_status ?? undefined,
     source: team.source ?? undefined,
     updatedAt: team.updated_at ?? undefined,
-    squad: players
-      .sort((a, b) => a.name.localeCompare(b.name, "sv"))
-      .map(mapPlayer),
+    squad: mappedSquad,
     qualificationPath: qualification
       .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
       .map(mapQualification),
+    lineup,
   };
 }
 
@@ -158,7 +216,8 @@ export async function getAllTeamProfiles(): Promise<TeamProfile[]> {
         ((players ?? []) as TeamPlayerRow[]).filter((p) => p.team_id === team.id),
         ((qualification ?? []) as QualificationRow[]).filter(
           (q) => q.team_id === team.id
-        )
+        ),
+        null
       )
     );
   } catch (error) {
@@ -211,6 +270,7 @@ export async function getTeamBySlug(slug: string): Promise<TeamProfile | null> {
   const [
     { data: players, error: playersError },
     { data: qualification, error: qualificationError },
+    { data: lineupRow, error: lineupError },
   ] = await Promise.all([
     supabase
       .from("team_players")
@@ -222,12 +282,20 @@ export async function getTeamBySlug(slug: string): Promise<TeamProfile | null> {
       .select("*")
       .eq("team_id", team.id)
       .order("sort_order", { ascending: true }),
+    supabase
+      .from("team_lineups")
+      .select("id, team_id, lineup_name, formation")
+      .eq("team_id", team.id)
+      .eq("lineup_name", "Startelva")
+      .maybeSingle(),
   ]);
 
   console.log("[teams] getTeamBySlug players:", players);
   console.log("[teams] getTeamBySlug playersError:", playersError);
   console.log("[teams] getTeamBySlug qualification:", qualification);
   console.log("[teams] getTeamBySlug qualificationError:", qualificationError);
+  console.log("[teams] getTeamBySlug lineupRow:", lineupRow);
+  console.log("[teams] getTeamBySlug lineupError:", lineupError);
 
   if (playersError) {
     throw new Error(`[teams] Supabase players error: ${playersError.message}`);
@@ -239,9 +307,40 @@ export async function getTeamBySlug(slug: string): Promise<TeamProfile | null> {
     );
   }
 
+  if (lineupError) {
+    throw new Error(`[teams] Supabase lineup error: ${lineupError.message}`);
+  }
+
+  let lineup: TeamLineup | null = null;
+
+  if (lineupRow) {
+    const { data: slotRows, error: slotsError } = await supabase
+      .from("team_lineup_slots")
+      .select("id, lineup_id, slot_key, role_label, x_pos, y_pos, player_id")
+      .eq("lineup_id", lineupRow.id);
+
+    console.log("[teams] getTeamBySlug slotRows:", slotRows);
+    console.log("[teams] getTeamBySlug slotsError:", slotsError);
+
+    if (slotsError) {
+      throw new Error(`[teams] Supabase lineup slots error: ${slotsError.message}`);
+    }
+
+    const mappedSquad = ((players ?? []) as TeamPlayerRow[])
+      .sort((a, b) => a.name.localeCompare(b.name, "sv"))
+      .map(mapPlayer);
+
+    lineup = buildLineup(
+      lineupRow as TeamLineupRow,
+      (slotRows ?? []) as TeamLineupSlotRow[],
+      mappedSquad
+    );
+  }
+
   return buildTeamProfile(
     team as TeamRow,
     (players ?? []) as TeamPlayerRow[],
-    (qualification ?? []) as QualificationRow[]
+    (qualification ?? []) as QualificationRow[],
+    lineup
   );
 }
