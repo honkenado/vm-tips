@@ -66,21 +66,16 @@ export async function PATCH(
     key_players: body.key_players ?? [],
   };
 
-  const { data, error } = await auth.supabase
+  const { error } = await auth.supabase
     .from("teams")
     .update(payload)
-    .eq("id", id)
-    .select("*")
-    .single();
+    .eq("id", id);
 
   if (error) {
     return NextResponse.json(
       {
         error: error.message,
-        debug: {
-          id,
-          payload,
-        },
+        debug: { id, payload },
       },
       { status: 400 }
     );
@@ -88,7 +83,7 @@ export async function PATCH(
 
   return NextResponse.json({
     ok: true,
-    team: data,
+    message: "Laget uppdaterades",
   });
 }
 
