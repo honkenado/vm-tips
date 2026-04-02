@@ -19,32 +19,47 @@ export default async function AdminLayout({
     <div className="mx-auto max-w-6xl px-4 py-6">
       <div className="mb-6 rounded-2xl border border-slate-300 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          
+          {/* 🔹 Header */}
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Adminpanel</h1>
             <p className="text-sm text-slate-600">
-              Inloggad som <span className="font-medium">{displayName}</span>
+              Inloggad som{" "}
+              <span className="font-medium">{displayName}</span>
             </p>
           </div>
 
+          {/* 🔹 Navigation */}
           <div className="flex flex-wrap gap-2">
+            
+            <Link
+              href="/admin/teams"
+              className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              Lagredigering
+            </Link>
+
             <Link
               href="/admin/payments"
               className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
               Betalningskoll
             </Link>
+
             <Link
               href="/admin/results"
               className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
               Resultat / facit
             </Link>
+
             <Link
               href="/"
               className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
             >
               Till startsidan
             </Link>
+
           </div>
         </div>
       </div>
