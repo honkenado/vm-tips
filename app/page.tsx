@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import AuthStatus from "@/components/auth-status";
 import BestThirdsSection from "@/components/BestThirdsSection";
 import GoldenBootSection from "@/components/GoldenBootSection";
@@ -68,7 +69,23 @@ function accentButtonClassName() {
   return "inline-flex h-10 items-center justify-center rounded-full border border-emerald-300/20 bg-emerald-500 px-4 text-[13px] font-semibold text-white transition hover:bg-emerald-400";
 }
 
+function slugifyTeamName(teamName: string) {
+  return teamName
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/å/g, "a")
+    .replace(/ä/g, "a")
+    .replace(/ö/g, "o")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
 export default function HomePage() {
+  const router = useRouter();
+
   const [groups, setGroups] = useState<GroupData[]>(initialGroups);
   const [knockoutWinners, setKnockoutWinners] = useState<Record<string, string>>(
     {}
@@ -80,6 +97,17 @@ export default function HomePage() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [hasLoadedFromDatabase, setHasLoadedFromDatabase] = useState(false);
   const [myLeagues, setMyLeagues] = useState<MyLeague[]>([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  useEffect(() => {
+    if (!saveMessage) return;
+
+    const timeout = window.setTimeout(() => {
+      setSaveMessage(null);
+    }, 3500);
+
+    return () => window.clearTimeout(timeout);
+  }, [saveMessage]);
 
   async function loadMyLeagues() {
     try {
@@ -117,6 +145,8 @@ export default function HomePage() {
         if (data.prediction?.golden_boot) {
           setGoldenBoot(data.prediction.golden_boot);
         }
+
+        setHasUnsavedChanges(false);
       } catch (error) {
         console.error("Kunde inte läsa från databasen", error);
       } finally {
@@ -210,6 +240,7 @@ export default function HomePage() {
     );
 
     setKnockoutWinners({});
+    setHasUnsavedChanges(true);
     setSaveMessage(null);
   }
 
@@ -230,6 +261,7 @@ export default function HomePage() {
     );
 
     setKnockoutWinners({});
+    setHasUnsavedChanges(true);
     setSaveMessage(null);
   }
 
@@ -239,6 +271,7 @@ export default function HomePage() {
       return { ...cleaned, [matchId]: team };
     });
 
+    setHasUnsavedChanges(true);
     setSaveMessage(null);
   }
 
@@ -300,11 +333,13 @@ export default function HomePage() {
     setGoldenBoot("");
     setViewMode("all");
     setActiveGroupLetter("A");
+    setHasUnsavedChanges(true);
     setSaveMessage(null);
   }
 
   function resetKnockout() {
     setKnockoutWinners({});
+    setHasUnsavedChanges(true);
     setSaveMessage(null);
   }
 
@@ -314,13 +349,14 @@ export default function HomePage() {
     setGoldenBoot("");
     setViewMode("all");
     setActiveGroupLetter("A");
+    setHasUnsavedChanges(true);
     setSaveMessage(null);
   }
 
   async function savePredictionToDatabase() {
     if (isDeadlinePassed()) {
       setSaveMessage("Deadline har passerat – tipset är låst");
-      return;
+      return false;
     }
 
     try {
@@ -343,15 +379,35 @@ export default function HomePage() {
 
       if (!res.ok) {
         setSaveMessage(data.error || "Kunde inte spara tipset");
-        return;
+        return false;
       }
 
-      setSaveMessage("Tipset är sparat");
+      setSaveMessage("✅ Tipset är sparat");
+      setHasUnsavedChanges(false);
+      return true;
     } catch (error) {
       console.error("Fel vid sparning", error);
       setSaveMessage("Något gick fel vid sparning");
+      return false;
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleTeamNavigate(teamName: string) {
+    const slug = slugifyTeamName(teamName);
+
+    if (!slug) return;
+
+    if (!hasUnsavedChanges) {
+      router.push(`/lag/${slug}`);
+      return;
+    }
+
+    const saved = await savePredictionToDatabase();
+
+    if (saved) {
+      router.push(`/lag/${slug}`);
     }
   }
 
@@ -431,8 +487,8 @@ export default function HomePage() {
                         TV-guide
                       </Link>
                       <Link href="/lag" className={navLinkClassName()}>
-  Lag & spelare
-</Link>
+                        Lag & spelare
+                      </Link>
                     </div>
                   </div>
 
@@ -456,6 +512,7 @@ export default function HomePage() {
                       <button
                         onClick={runAddeBoy}
                         className={accentButtonClassName()}
+                        title="Slumpar ett komplett tips"
                       >
                         Adde Boy
                       </button>
@@ -492,11 +549,17 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {(deadlinePassed || saveMessage) && (
+              {(deadlinePassed || saveMessage || hasUnsavedChanges) && (
                 <div className="flex flex-col gap-2">
                   {deadlinePassed && (
                     <p className="text-sm font-semibold text-amber-300">
                       Deadline har passerat. Tipset är nu låst.
+                    </p>
+                  )}
+
+                  {!deadlinePassed && hasUnsavedChanges && !saveMessage && (
+                    <p className="text-sm text-white/80">
+                      Du har osparade ändringar.
                     </p>
                   )}
 
@@ -552,6 +615,7 @@ export default function HomePage() {
                 group={visibleGroup}
                 onUpdateMatch={updateMatch}
                 onResetGroup={resetGroup}
+                onTeamClick={handleTeamNavigate}
               />
             </SectionCard>
           )}
@@ -571,7 +635,14 @@ export default function HomePage() {
           )}
 
           {(viewMode === "all" || viewMode === "goldenboot") && (
-            <GoldenBootSection value={goldenBoot} onChange={setGoldenBoot} />
+            <GoldenBootSection
+              value={goldenBoot}
+              onChange={(value) => {
+                setGoldenBoot(value);
+                setHasUnsavedChanges(true);
+                setSaveMessage(null);
+              }}
+            />
           )}
 
           {viewMode === "leagues" && (

@@ -8,6 +8,7 @@ export default function GroupSection({
   group,
   onUpdateMatch,
   onResetGroup,
+  onTeamClick,
 }: {
   group: GroupData;
   onUpdateMatch: (
@@ -17,6 +18,7 @@ export default function GroupSection({
     value: string
   ) => void;
   onResetGroup: (groupName: string) => void;
+  onTeamClick?: (teamName: string) => void | Promise<void>;
 }) {
   const table = useMemo(() => calculateTable(group.teams, group.matches), [group]);
 
@@ -26,6 +28,23 @@ export default function GroupSection({
 
   function handleScoreMouseUp(e: React.MouseEvent<HTMLInputElement>) {
     e.preventDefault();
+  }
+
+  function renderTeamButton(teamName: string, className: string) {
+    if (!onTeamClick) {
+      return <p className={className}>{teamName}</p>;
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={() => onTeamClick(teamName)}
+        className={`${className} cursor-pointer transition hover:text-emerald-700 hover:underline`}
+        title={`Öppna ${teamName}`}
+      >
+        {teamName}
+      </button>
+    );
   }
 
   return (
@@ -96,13 +115,12 @@ export default function GroupSection({
 
                   <div className="space-y-3 md:hidden">
                     <div className="text-center">
-                      <p
-                        className={`truncate text-lg font-black ${
+                      {renderTeamButton(
+                        match.homeTeam,
+                        `truncate text-lg font-black ${
                           isFilled ? "text-emerald-950" : "text-slate-900"
-                        }`}
-                      >
-                        {match.homeTeam}
-                      </p>
+                        }`
+                      )}
                     </div>
 
                     <div className="flex items-center justify-center gap-2">
@@ -150,25 +168,23 @@ export default function GroupSection({
                     </div>
 
                     <div className="text-center">
-                      <p
-                        className={`truncate text-lg font-black ${
+                      {renderTeamButton(
+                        match.awayTeam,
+                        `truncate text-lg font-black ${
                           isFilled ? "text-emerald-950" : "text-slate-900"
-                        }`}
-                      >
-                        {match.awayTeam}
-                      </p>
+                        }`
+                      )}
                     </div>
                   </div>
 
                   <div className="hidden grid-cols-1 gap-3 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center">
                     <div className="min-w-0 text-center md:text-right">
-                      <p
-                        className={`truncate text-base font-black sm:text-lg ${
+                      {renderTeamButton(
+                        match.homeTeam,
+                        `truncate text-base font-black sm:text-lg ${
                           isFilled ? "text-emerald-950" : "text-slate-900"
-                        }`}
-                      >
-                        {match.homeTeam}
-                      </p>
+                        }`
+                      )}
                     </div>
 
                     <div className="flex items-center justify-center gap-2">
@@ -216,13 +232,12 @@ export default function GroupSection({
                     </div>
 
                     <div className="min-w-0 text-center md:text-left">
-                      <p
-                        className={`truncate text-base font-black sm:text-lg ${
+                      {renderTeamButton(
+                        match.awayTeam,
+                        `truncate text-base font-black sm:text-lg ${
                           isFilled ? "text-emerald-950" : "text-slate-900"
-                        }`}
-                      >
-                        {match.awayTeam}
-                      </p>
+                        }`
+                      )}
                     </div>
                   </div>
                 </div>
