@@ -22,52 +22,141 @@ const FORMATIONS: Record<
   Array<{ slot_key: string; role_label: string; x_pos: number; y_pos: number }>
 > = {
   "4-3-3": [
-    { slot_key: "GK", role_label: "GK", x_pos: 50, y_pos: 90 },
+    { slot_key: "GK", role_label: "GK", x_pos: 50, y_pos: 86 },
 
-    { slot_key: "LB", role_label: "LB", x_pos: 18, y_pos: 72 },
-    { slot_key: "LCB", role_label: "LCB", x_pos: 38, y_pos: 74 },
-    { slot_key: "RCB", role_label: "RCB", x_pos: 62, y_pos: 74 },
-    { slot_key: "RB", role_label: "RB", x_pos: 82, y_pos: 72 },
+    { slot_key: "LB", role_label: "LB", x_pos: 22, y_pos: 68 },
+    { slot_key: "LCB", role_label: "LCB", x_pos: 38, y_pos: 70 },
+    { slot_key: "RCB", role_label: "RCB", x_pos: 62, y_pos: 70 },
+    { slot_key: "RB", role_label: "RB", x_pos: 78, y_pos: 68 },
 
-    { slot_key: "LCM", role_label: "LCM", x_pos: 28, y_pos: 52 },
-    { slot_key: "CM", role_label: "CM", x_pos: 50, y_pos: 48 },
-    { slot_key: "RCM", role_label: "RCM", x_pos: 72, y_pos: 52 },
+    { slot_key: "LCM", role_label: "LCM", x_pos: 30, y_pos: 50 },
+    { slot_key: "CM", role_label: "CM", x_pos: 50, y_pos: 46 },
+    { slot_key: "RCM", role_label: "RCM", x_pos: 70, y_pos: 50 },
 
-    { slot_key: "LW", role_label: "LW", x_pos: 20, y_pos: 24 },
-    { slot_key: "ST", role_label: "ST", x_pos: 50, y_pos: 18 },
-    { slot_key: "RW", role_label: "RW", x_pos: 80, y_pos: 24 },
+    { slot_key: "LW", role_label: "LW", x_pos: 24, y_pos: 22 },
+    { slot_key: "ST", role_label: "ST", x_pos: 50, y_pos: 16 },
+    { slot_key: "RW", role_label: "RW", x_pos: 76, y_pos: 22 },
   ],
-  "4-4-2": [
-    { slot_key: "GK", role_label: "GK", x_pos: 50, y_pos: 90 },
 
-    { slot_key: "LB", role_label: "LB", x_pos: 18, y_pos: 72 },
-    { slot_key: "LCB", role_label: "LCB", x_pos: 38, y_pos: 74 },
-    { slot_key: "RCB", role_label: "RCB", x_pos: 62, y_pos: 74 },
-    { slot_key: "RB", role_label: "RB", x_pos: 82, y_pos: 72 },
+  "4-4-2": [
+    { slot_key: "GK", role_label: "GK", x_pos: 50, y_pos: 86 },
+
+    { slot_key: "LB", role_label: "LB", x_pos: 22, y_pos: 68 },
+    { slot_key: "LCB", role_label: "LCB", x_pos: 38, y_pos: 70 },
+    { slot_key: "RCB", role_label: "RCB", x_pos: 62, y_pos: 70 },
+    { slot_key: "RB", role_label: "RB", x_pos: 78, y_pos: 68 },
+
+    { slot_key: "LM", role_label: "LM", x_pos: 20, y_pos: 46 },
+    { slot_key: "LCM", role_label: "LCM", x_pos: 40, y_pos: 48 },
+    { slot_key: "RCM", role_label: "RCM", x_pos: 60, y_pos: 48 },
+    { slot_key: "RM", role_label: "RM", x_pos: 80, y_pos: 46 },
+
+    { slot_key: "LS", role_label: "LS", x_pos: 40, y_pos: 20 },
+    { slot_key: "RS", role_label: "RS", x_pos: 60, y_pos: 20 },
+  ],
+
+  "3-5-2": [
+    { slot_key: "GK", role_label: "GK", x_pos: 50, y_pos: 86 },
+
+    { slot_key: "LCB", role_label: "LCB", x_pos: 30, y_pos: 70 },
+    { slot_key: "CB", role_label: "CB", x_pos: 50, y_pos: 72 },
+    { slot_key: "RCB", role_label: "RCB", x_pos: 70, y_pos: 70 },
+
+    { slot_key: "LWB", role_label: "LWB", x_pos: 14, y_pos: 46 },
+    { slot_key: "LCM", role_label: "LCM", x_pos: 36, y_pos: 50 },
+    { slot_key: "CM", role_label: "CM", x_pos: 50, y_pos: 44 },
+    { slot_key: "RCM", role_label: "RCM", x_pos: 64, y_pos: 50 },
+    { slot_key: "RWB", role_label: "RWB", x_pos: 86, y_pos: 46 },
+
+    { slot_key: "LS", role_label: "LS", x_pos: 40, y_pos: 20 },
+    { slot_key: "RS", role_label: "RS", x_pos: 60, y_pos: 20 },
+  ],
+
+  "4-2-3-1": [
+    { slot_key: "GK", role_label: "GK", x_pos: 50, y_pos: 86 },
+
+    { slot_key: "LB", role_label: "LB", x_pos: 22, y_pos: 68 },
+    { slot_key: "LCB", role_label: "LCB", x_pos: 38, y_pos: 70 },
+    { slot_key: "RCB", role_label: "RCB", x_pos: 62, y_pos: 70 },
+    { slot_key: "RB", role_label: "RB", x_pos: 78, y_pos: 68 },
+
+    { slot_key: "LDM", role_label: "LDM", x_pos: 40, y_pos: 55 },
+    { slot_key: "RDM", role_label: "RDM", x_pos: 60, y_pos: 55 },
+
+    { slot_key: "LAM", role_label: "LAM", x_pos: 24, y_pos: 34 },
+    { slot_key: "CAM", role_label: "CAM", x_pos: 50, y_pos: 30 },
+    { slot_key: "RAM", role_label: "RAM", x_pos: 76, y_pos: 34 },
+
+    { slot_key: "ST", role_label: "ST", x_pos: 50, y_pos: 16 },
+  ],
+
+  "4-1-4-1": [
+    { slot_key: "GK", role_label: "GK", x_pos: 50, y_pos: 86 },
+
+    { slot_key: "LB", role_label: "LB", x_pos: 22, y_pos: 68 },
+    { slot_key: "LCB", role_label: "LCB", x_pos: 38, y_pos: 70 },
+    { slot_key: "RCB", role_label: "RCB", x_pos: 62, y_pos: 70 },
+    { slot_key: "RB", role_label: "RB", x_pos: 78, y_pos: 68 },
+
+    { slot_key: "DM", role_label: "DM", x_pos: 50, y_pos: 58 },
+
+    { slot_key: "LM", role_label: "LM", x_pos: 18, y_pos: 38 },
+    { slot_key: "LCM", role_label: "LCM", x_pos: 38, y_pos: 40 },
+    { slot_key: "RCM", role_label: "RCM", x_pos: 62, y_pos: 40 },
+    { slot_key: "RM", role_label: "RM", x_pos: 82, y_pos: 38 },
+
+    { slot_key: "ST", role_label: "ST", x_pos: 50, y_pos: 16 },
+  ],
+
+  "3-4-3": [
+    { slot_key: "GK", role_label: "GK", x_pos: 50, y_pos: 86 },
+
+    { slot_key: "LCB", role_label: "LCB", x_pos: 30, y_pos: 70 },
+    { slot_key: "CB", role_label: "CB", x_pos: 50, y_pos: 72 },
+    { slot_key: "RCB", role_label: "RCB", x_pos: 70, y_pos: 70 },
 
     { slot_key: "LM", role_label: "LM", x_pos: 18, y_pos: 48 },
-    { slot_key: "LCM", role_label: "LCM", x_pos: 40, y_pos: 50 },
-    { slot_key: "RCM", role_label: "RCM", x_pos: 60, y_pos: 50 },
+    { slot_key: "LCM", role_label: "LCM", x_pos: 40, y_pos: 48 },
+    { slot_key: "RCM", role_label: "RCM", x_pos: 60, y_pos: 48 },
     { slot_key: "RM", role_label: "RM", x_pos: 82, y_pos: 48 },
 
-    { slot_key: "LS", role_label: "LS", x_pos: 38, y_pos: 22 },
-    { slot_key: "RS", role_label: "RS", x_pos: 62, y_pos: 22 },
+    { slot_key: "LW", role_label: "LW", x_pos: 24, y_pos: 22 },
+    { slot_key: "ST", role_label: "ST", x_pos: 50, y_pos: 16 },
+    { slot_key: "RW", role_label: "RW", x_pos: 76, y_pos: 22 },
   ],
-  "3-5-2": [
-    { slot_key: "GK", role_label: "GK", x_pos: 50, y_pos: 90 },
 
-    { slot_key: "LCB", role_label: "LCB", x_pos: 30, y_pos: 74 },
-    { slot_key: "CB", role_label: "CB", x_pos: 50, y_pos: 76 },
-    { slot_key: "RCB", role_label: "RCB", x_pos: 70, y_pos: 74 },
+  "5-3-2": [
+    { slot_key: "GK", role_label: "GK", x_pos: 50, y_pos: 86 },
 
-    { slot_key: "LWB", role_label: "LWB", x_pos: 12, y_pos: 48 },
-    { slot_key: "LCM", role_label: "LCM", x_pos: 36, y_pos: 52 },
-    { slot_key: "CM", role_label: "CM", x_pos: 50, y_pos: 46 },
-    { slot_key: "RCM", role_label: "RCM", x_pos: 64, y_pos: 52 },
-    { slot_key: "RWB", role_label: "RWB", x_pos: 88, y_pos: 48 },
+    { slot_key: "LWB", role_label: "LWB", x_pos: 12, y_pos: 64 },
+    { slot_key: "LCB", role_label: "LCB", x_pos: 30, y_pos: 70 },
+    { slot_key: "CB", role_label: "CB", x_pos: 50, y_pos: 72 },
+    { slot_key: "RCB", role_label: "RCB", x_pos: 70, y_pos: 70 },
+    { slot_key: "RWB", role_label: "RWB", x_pos: 88, y_pos: 64 },
 
-    { slot_key: "LS", role_label: "LS", x_pos: 38, y_pos: 22 },
-    { slot_key: "RS", role_label: "RS", x_pos: 62, y_pos: 22 },
+    { slot_key: "LCM", role_label: "LCM", x_pos: 34, y_pos: 44 },
+    { slot_key: "CM", role_label: "CM", x_pos: 50, y_pos: 40 },
+    { slot_key: "RCM", role_label: "RCM", x_pos: 66, y_pos: 44 },
+
+    { slot_key: "LS", role_label: "LS", x_pos: 40, y_pos: 18 },
+    { slot_key: "RS", role_label: "RS", x_pos: 60, y_pos: 18 },
+  ],
+
+  "4-5-1": [
+    { slot_key: "GK", role_label: "GK", x_pos: 50, y_pos: 86 },
+
+    { slot_key: "LB", role_label: "LB", x_pos: 22, y_pos: 68 },
+    { slot_key: "LCB", role_label: "LCB", x_pos: 38, y_pos: 70 },
+    { slot_key: "RCB", role_label: "RCB", x_pos: 62, y_pos: 70 },
+    { slot_key: "RB", role_label: "RB", x_pos: 78, y_pos: 68 },
+
+    { slot_key: "LM", role_label: "LM", x_pos: 16, y_pos: 42 },
+    { slot_key: "LCM", role_label: "LCM", x_pos: 34, y_pos: 44 },
+    { slot_key: "CM", role_label: "CM", x_pos: 50, y_pos: 40 },
+    { slot_key: "RCM", role_label: "RCM", x_pos: 66, y_pos: 44 },
+    { slot_key: "RM", role_label: "RM", x_pos: 84, y_pos: 42 },
+
+    { slot_key: "ST", role_label: "ST", x_pos: 50, y_pos: 16 },
   ],
 };
 
@@ -190,6 +279,11 @@ export default function LineupEditor({
               <option value="4-3-3">4-3-3</option>
               <option value="4-4-2">4-4-2</option>
               <option value="3-5-2">3-5-2</option>
+              <option value="4-2-3-1">4-2-3-1</option>
+              <option value="4-1-4-1">4-1-4-1</option>
+              <option value="3-4-3">3-4-3</option>
+              <option value="5-3-2">5-3-2</option>
+              <option value="4-5-1">4-5-1</option>
             </select>
           </div>
 
@@ -236,12 +330,17 @@ export default function LineupEditor({
 
         <div className="rounded-2xl border border-gray-300 bg-[#10212b] p-4">
           <div className="relative mx-auto aspect-[3/4] w-full max-w-[520px] overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-[#183140] to-[#0b1820]">
-            <div className="absolute inset-x-[12%] top-[6%] h-[18%] rounded-b-[999px] border-x border-b border-white/20" />
-            <div className="absolute inset-x-[22%] top-[0%] h-[10%] rounded-b-[14px] border-x border-b border-white/20" />
-            <div className="absolute left-1/2 top-[50%] h-[1px] w-full -translate-x-1/2 bg-white/15" />
-            <div className="absolute left-1/2 top-[50%] h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/20" />
-            <div className="absolute inset-x-[12%] bottom-[6%] h-[18%] rounded-t-[999px] border-x border-t border-white/20" />
-            <div className="absolute inset-x-[22%] bottom-[0%] h-[10%] rounded-t-[14px] border-x border-t border-white/20" />
+            <div className="absolute inset-3 rounded-[1.25rem] border border-white/10" />
+
+            <div className="absolute left-1/2 top-3 bottom-3 w-px -translate-x-1/2 bg-white/10" />
+
+            <div className="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/20" />
+
+            <div className="absolute left-1/2 top-3 h-[100px] w-[190px] -translate-x-1/2 rounded-b-[18px] border-x border-b border-white/20" />
+            <div className="absolute left-1/2 top-3 h-[42px] w-[78px] -translate-x-1/2 rounded-b-[10px] border-x border-b border-white/20" />
+
+            <div className="absolute bottom-3 left-1/2 h-[100px] w-[190px] -translate-x-1/2 rounded-t-[18px] border-x border-t border-white/20" />
+            <div className="absolute bottom-3 left-1/2 h-[42px] w-[78px] -translate-x-1/2 rounded-t-[10px] border-x border-t border-white/20" />
 
             {slots.map((slot) => {
               const player = slot.player_id ? playerMap[slot.player_id] : null;
@@ -261,17 +360,21 @@ export default function LineupEditor({
                     top: `${slot.y_pos}%`,
                   }}
                 >
-                  <div className="flex w-[110px] flex-col items-center gap-1">
+                  <div className="flex w-[92px] flex-col items-center">
                     <button
                       type="button"
                       onDoubleClick={() => clearSlot(slot.slot_key)}
-                      className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-white text-xs font-bold text-black shadow-md"
+                      className={`flex h-11 w-11 items-center justify-center rounded-full border text-[11px] font-black shadow-md ${
+                        player
+                          ? "border-slate-200 bg-white text-slate-900"
+                          : "border-white/20 bg-white/15 text-white/80"
+                      }`}
                       title={`${slot.role_label} — dubbelklicka för att rensa`}
                     >
                       {player?.shirt_number ?? slot.role_label}
                     </button>
 
-                    <div className="text-center text-xs font-medium text-white">
+                    <div className="mt-1 max-w-[92px] text-center text-[11px] font-semibold leading-tight text-white">
                       {player ? player.name : slot.role_label}
                     </div>
                   </div>
