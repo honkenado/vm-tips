@@ -11,6 +11,24 @@ import {
 } from "@/lib/tournament";
 import type { GroupData, ViewMode } from "@/types/tournament";
 
+function migrateLegacyGroupNames(groups: GroupData[]): GroupData[] {
+  const migrateTeamName = (team: string) => {
+    if (team === "FIFA playoff 1") return "DR Kongo";
+    if (team === "FIFA playoff 2") return "Irak";
+    return team;
+  };
+
+  return groups.map((group) => ({
+    ...group,
+    teams: group.teams.map(migrateTeamName),
+    matches: group.matches.map((match) => ({
+      ...match,
+      homeTeam: migrateTeamName(match.homeTeam),
+      awayTeam: migrateTeamName(match.awayTeam),
+    })),
+  }));
+}
+
 export default function AdminResultsPage() {
   const [groups, setGroups] = useState<GroupData[]>(initialGroups);
   const [knockoutWinners, setKnockoutWinners] = useState<Record<string, string>>(
@@ -34,7 +52,7 @@ export default function AdminResultsPage() {
         }
 
         if (data.results?.group_stage?.length) {
-          setGroups(data.results.group_stage);
+          setGroups(migrateLegacyGroupNames(data.results.group_stage));
         }
 
         if (data.results?.knockout) {
