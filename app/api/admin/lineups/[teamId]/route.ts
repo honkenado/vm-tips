@@ -3,14 +3,15 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(
   _req: Request,
-  { params }: { params: { teamId: string } }
+  { params }: { params: Promise<{ teamId: string }> }
 ) {
+  const { teamId } = await params;
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("team_lineups")
     .select("*")
-    .eq("team_id", params.teamId)
+    .eq("team_id", teamId)
     .single();
 
   if (error && error.code !== "PGRST116") {
@@ -24,8 +25,9 @@ export async function GET(
 
 export async function POST(
   req: Request,
-  { params }: { params: { teamId: string } }
+  { params }: { params: Promise<{ teamId: string }> }
 ) {
+  const { teamId } = await params;
   const supabase = await createClient();
   const body = await req.json();
 
@@ -38,9 +40,8 @@ export async function POST(
     );
   }
 
-  // UPSERT = skapa eller uppdatera
   const { error } = await supabase.from("team_lineups").upsert({
-    team_id: params.teamId,
+    team_id: teamId,
     positions,
   });
 
