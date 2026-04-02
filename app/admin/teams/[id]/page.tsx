@@ -74,150 +74,355 @@ export default function EditTeamPage() {
     const res = await fetch("/api/admin/teams", { cache: "no-store" });
     const data = await res.json();
 
+    if (!res.ok) {
+      throw new Error(data.error || "Kunde inte läsa lag");
+    }
+
     const team = (data.teams ?? []).find(
       (item: TeamApiRow) => item.id === teamId
     );
+
+    if (!team) {
+      throw new Error("Kunde inte hitta laget");
+    }
 
     setForm(mapTeamToForm(team));
   }
 
   useEffect(() => {
-    reloadTeam(id).finally(() => setLoading(false));
+    async function loadTeam() {
+      try {
+        setLoading(true);
+        setMessage(null);
+        await reloadTeam(id);
+      } catch (error) {
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "Något gick fel när laget skulle hämtas"
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadTeam();
   }, [id]);
+
+  async function handleAutofill() {
+    if (!form) return;
+
+    try {
+      setAutoLoading(true);
+      setMessage(null);
+
+      const res = await fetch(`/api/admin/teams/${form.id}/autofill`, {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessage(data.error || "Kunde inte hämta info automatiskt");
+        return;
+      }
+
+      setForm((prev) =>
+        prev
+          ? {
+              ...prev,
+              confederation: data.updated?.confederation ?? prev.confederation,
+              short_description:
+                data.updated?.short_description ?? prev.short_description,
+              source: data.updated?.source ?? prev.source,
+            }
+          : prev
+      );
+
+      setMessage(
+        `Laginfo hämtad automatiskt${data.debug?.teamName ? ` (${data.debug.teamName})` : ""}.`
+      );
+    } catch {
+      setMessage("Något gick fel vid automatisk hämtning");
+    } finally {
+      setAutoLoading(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (!form) return;
 
-    setSaving(true);
-    setMessage(null);
+    try {
+      setSaving(true);
+      setMessage(null);
 
-    const res = await fetch(`/api/admin/teams/${form.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        fifa_rank: form.fifa_rank ? Number(form.fifa_rank) : null,
-        key_players: form.key_players
-          .split(",")
-          .map((x) => x.trim())
-          .filter(Boolean),
-      }),
-    });
+      const res = await fetch(`/api/admin/teams/${form.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          slug: form.slug.trim(),
+          group_letter: form.group_letter.trim().toUpperCase(),
+          fifa_rank: form.fifa_rank ? Number(form.fifa_rank) : null,
+          coach: form.coach.trim() || null,
+          confederation: form.confederation.trim() || null,
+          short_description: form.short_description.trim() || null,
+          qualification_summary: form.qualification_summary.trim() || null,
+          squad_status: form.squad_status.trim() || null,
+          source: form.source.trim() || null,
+          formation: form.formation.trim() || null,
+          key_players: form.key_players
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      setMessage(`Fel: ${data.error}`);
+      if (!res.ok) {
+        setMessage(
+          data.error
+            ? `Kunde inte spara laget: ${data.error}`
+            : "Kunde inte spara laget"
+        );
+        return;
+      }
+
+      setMessage("Ändringar sparades.");
+      await reloadTeam(form.id);
+    } catch {
+      setMessage("Något gick fel när laget skulle sparas");
+    } finally {
       setSaving(false);
-      return;
     }
-
-    setMessage("Sparat!");
-    await reloadTeam(form.id);
-    setSaving(false);
   }
 
-  async function handleAutofill() {
-    if (!form) return;
-
-    setAutoLoading(true);
-
-    const res = await fetch(`/api/admin/teams/${form.id}/autofill`, {
-      method: "POST",
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      setForm((prev) =>
-        prev
-          ? {
-              ...prev,
-              short_description:
-                data.updated?.short_description ?? prev.short_description,
-              confederation:
-                data.updated?.confederation ?? prev.confederation,
-            }
-          : prev
-      );
-
-      setMessage("AI fyllde info");
-    }
-
-    setAutoLoading(false);
+  if (loading) {
+    return <div className="text-white">Laddar lag...</div>;
   }
 
-  if (loading || !form) return <div className="text-white">Laddar...</div>;
+  if (!form) {
+    return (
+      <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-700">
+        {message || "Laget kunde inte laddas."}
+      </div>
+    );
+  }
+
+  const isSuccessMessage =
+    !!message &&
+    (message.toLowerCase().includes("hämtad automatiskt") ||
+      message.toLowerCase().includes("sparades"));
 
   return (
-    <div className="max-w-4xl space-y-6">
-      {/* HEADER */}
-      <div className="flex justify-between items-center">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">{form.name}</h1>
-          <p className="text-gray-400">Redigera lag</p>
+          <h1 className="text-3xl font-bold text-white">{form.name}</h1>
+          <p className="text-sm text-gray-400">Redigera lag</p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
+            type="button"
             onClick={handleAutofill}
-            className="bg-blue-600 text-white px-3 py-2 rounded"
+            disabled={autoLoading}
+            className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
           >
-            AI fyll
+            {autoLoading ? "Hämtar..." : "AI-fyll laginfo"}
           </button>
 
           <button
+            type="button"
             onClick={() => router.push(`/admin/players/${form.id}`)}
-            className="bg-white px-3 py-2 rounded"
+            className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-gray-100"
           >
-            Spelare
+            Hantera spelare
+          </button>
+
+          <button
+            type="button"
+            onClick={() => router.push("/admin/teams")}
+            className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-gray-100"
+          >
+            Till laglistan
           </button>
         </div>
       </div>
 
-      {/* FORM */}
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded space-y-4">
-        <input
-          value={form.name}
-          onChange={(e) => updateField("name", e.target.value)}
-          placeholder="Lag"
-          className="w-full border p-2"
-        />
-
-        <input
-          value={form.coach}
-          onChange={(e) => updateField("coach", e.target.value)}
-          placeholder="Tränare"
-          className="w-full border p-2"
-        />
-
-        <input
-          value={form.formation}
-          onChange={(e) => updateField("formation", e.target.value)}
-          placeholder="Formation"
-          className="w-full border p-2"
-        />
-
-        <textarea
-          value={form.short_description}
-          onChange={(e) =>
-            updateField("short_description", e.target.value)
-          }
-          placeholder="Beskrivning"
-          className="w-full border p-2"
-        />
-
-        <button
-          type="submit"
-          className="bg-black text-white px-4 py-2 rounded"
+      {message && (
+        <div
+          className={`rounded-xl p-4 text-sm ${
+            isSuccessMessage
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }`}
         >
-          {saving ? "Sparar..." : "Spara"}
-        </button>
+          {message}
+        </div>
+      )}
 
-        {message && <div className="text-black">{message}</div>}
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-2xl border border-gray-300 bg-white p-6 shadow-sm"
+      >
+        <div className="space-y-6">
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-black">Grundinfo</h2>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Lagnamn">
+                <input
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-black"
+                  value={form.name}
+                  onChange={(e) => updateField("name", e.target.value)}
+                  required
+                />
+              </Field>
+
+              <Field label="Slug">
+                <input
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-black"
+                  value={form.slug}
+                  onChange={(e) => updateField("slug", e.target.value)}
+                  required
+                />
+              </Field>
+
+              <Field label="Grupp">
+                <input
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-black"
+                  value={form.group_letter}
+                  onChange={(e) => updateField("group_letter", e.target.value)}
+                  maxLength={1}
+                  required
+                />
+              </Field>
+
+              <Field label="FIFA-ranking">
+                <input
+                  type="number"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-black"
+                  value={form.fifa_rank}
+                  onChange={(e) => updateField("fifa_rank", e.target.value)}
+                />
+              </Field>
+
+              <Field label="Tränare">
+                <input
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-black"
+                  value={form.coach}
+                  onChange={(e) => updateField("coach", e.target.value)}
+                />
+              </Field>
+
+              <Field label="Förbund">
+                <input
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-black"
+                  value={form.confederation}
+                  onChange={(e) => updateField("confederation", e.target.value)}
+                />
+              </Field>
+
+              <Field label="Formation">
+                <input
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-black"
+                  placeholder="t.ex. 4-3-3"
+                  value={form.formation}
+                  onChange={(e) => updateField("formation", e.target.value)}
+                />
+              </Field>
+
+              <Field label="Nyckelspelare (kommaseparerat)">
+                <input
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-black"
+                  placeholder="Player 1, Player 2"
+                  value={form.key_players}
+                  onChange={(e) => updateField("key_players", e.target.value)}
+                />
+              </Field>
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-black">Lagtext</h2>
+
+            <Field label="Kort beskrivning">
+              <textarea
+                className="min-h-[120px] w-full rounded-lg border border-gray-300 px-3 py-2 text-black"
+                value={form.short_description}
+                onChange={(e) =>
+                  updateField("short_description", e.target.value)
+                }
+              />
+            </Field>
+
+            <Field label="Vägen till VM / kvalsammanfattning">
+              <textarea
+                className="min-h-[150px] w-full rounded-lg border border-gray-300 px-3 py-2 text-black"
+                value={form.qualification_summary}
+                onChange={(e) =>
+                  updateField("qualification_summary", e.target.value)
+                }
+              />
+            </Field>
+
+            <Field label="Truppstatus">
+              <textarea
+                className="min-h-[120px] w-full rounded-lg border border-gray-300 px-3 py-2 text-black"
+                value={form.squad_status}
+                onChange={(e) => updateField("squad_status", e.target.value)}
+              />
+            </Field>
+
+            <Field label="Källa">
+              <input
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-black"
+                value={form.source}
+                onChange={(e) => updateField("source", e.target.value)}
+              />
+            </Field>
+          </section>
+
+          <div className="flex flex-wrap gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-xl bg-black px-5 py-2.5 font-medium text-white transition hover:bg-gray-800 disabled:opacity-50"
+            >
+              {saving ? "Sparar..." : "Spara ändringar"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/admin/teams")}
+              className="rounded-xl border border-gray-300 bg-white px-5 py-2.5 font-medium text-black transition hover:bg-gray-100"
+            >
+              Avbryt
+            </button>
+          </div>
+        </div>
       </form>
     </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block space-y-1">
+      <span className="block text-sm font-medium text-black">{label}</span>
+      {children}
+    </label>
   );
 }
