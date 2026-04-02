@@ -78,7 +78,9 @@ export default function EditTeamPage() {
       throw new Error(data.error || "Kunde inte läsa lag");
     }
 
-    const team = (data.teams ?? []).find((item: TeamApiRow) => item.id === teamId);
+    const team = (data.teams ?? []).find(
+      (item: TeamApiRow) => item.id === teamId
+    );
 
     if (!team) {
       throw new Error("Kunde inte hitta laget");
@@ -183,12 +185,17 @@ export default function EditTeamPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setMessage(data.error || "Kunde inte spara laget");
+        setMessage(
+          data.error
+            ? `Kunde inte spara laget: ${data.error}`
+            : "Kunde inte spara laget"
+        );
+        console.error("PATCH error:", data);
         return;
       }
 
-      router.push("/admin/teams");
-      router.refresh();
+      setMessage("Ändringar sparades.");
+      await reloadTeam(form.id);
     } catch {
       setMessage("Något gick fel när laget skulle sparas");
     } finally {
@@ -207,6 +214,11 @@ export default function EditTeamPage() {
       </div>
     );
   }
+
+  const isSuccessMessage =
+    !!message &&
+    (message.toLowerCase().includes("hämtad automatiskt") ||
+      message.toLowerCase().includes("sparades"));
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -325,7 +337,13 @@ export default function EditTeamPage() {
         </Field>
 
         {message && (
-          <div className="rounded-lg bg-green-100 p-3 text-sm text-green-700">
+          <div
+            className={`rounded-lg p-3 text-sm ${
+              isSuccessMessage
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
             {message}
           </div>
         )}

@@ -10,7 +10,7 @@ async function checkAdmin() {
 
   if (!user) {
     return {
-      ok: false,
+      ok: false as const,
       status: 401,
       error: "Ej inloggad",
       supabase,
@@ -25,7 +25,7 @@ async function checkAdmin() {
 
   if (profileError || !profile?.is_admin) {
     return {
-      ok: false,
+      ok: false as const,
       status: 403,
       error: "Ingen behörighet",
       supabase,
@@ -33,7 +33,7 @@ async function checkAdmin() {
   }
 
   return {
-    ok: true,
+    ok: true as const,
     supabase,
   };
 }
@@ -51,29 +51,45 @@ export async function PATCH(
 
   const body = await req.json();
 
-  const { error } = await auth.supabase
+  const payload = {
+    name: body.name ?? null,
+    slug: body.slug ?? null,
+    group_letter: body.group_letter ?? null,
+    fifa_rank: body.fifa_rank ?? null,
+    coach: body.coach ?? null,
+    confederation: body.confederation ?? null,
+    short_description: body.short_description ?? null,
+    qualification_summary: body.qualification_summary ?? null,
+    squad_status: body.squad_status ?? null,
+    source: body.source ?? null,
+    formation: body.formation ?? null,
+    key_players: body.key_players ?? [],
+  };
+
+  const { data, error } = await auth.supabase
     .from("teams")
-    .update({
-      name: body.name,
-      slug: body.slug,
-      group_letter: body.group_letter,
-      fifa_rank: body.fifa_rank,
-      coach: body.coach,
-      confederation: body.confederation,
-      short_description: body.short_description,
-      qualification_summary: body.qualification_summary,
-      squad_status: body.squad_status,
-      source: body.source,
-      formation: body.formation,
-      key_players: body.key_players ?? [],
-    })
-    .eq("id", id);
+    .update(payload)
+    .eq("id", id)
+    .select("*")
+    .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: error.message,
+        debug: {
+          id,
+          payload,
+        },
+      },
+      { status: 400 }
+    );
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    ok: true,
+    team: data,
+  });
 }
 
 export async function DELETE(
