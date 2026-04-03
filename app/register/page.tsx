@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 function generateReferralCode() {
@@ -10,7 +10,6 @@ function generateReferralCode() {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const supabase = createClient();
 
   const [firstName, setFirstName] = useState("");
@@ -21,11 +20,15 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [referralFromUrl, setReferralFromUrl] = useState<string | null>(null);
 
-  const referralFromUrl = useMemo(() => {
-    const ref = searchParams.get("ref");
-    return ref ? ref.trim().toUpperCase() : null;
-  }, [searchParams]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    setReferralFromUrl(ref ? ref.trim().toUpperCase() : null);
+  }, []);
 
   async function createUniqueReferralCode() {
     for (let i = 0; i < 10; i += 1) {
