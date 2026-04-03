@@ -1,65 +1,121 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+
+function generateReferralCode() {
+  return Math.random().toString(36).substring(2, 7).toUpperCase();
+}
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const referralFromUrl = useMemo(() => {
+    const ref = searchParams.get("ref");
+    return ref ? ref.trim().toUpperCase() : null;
+  }, [searchParams]);
+
+  async function createUniqueReferralCode() {
+    for (let i = 0; i < 10; i += 1) {
+      const code = generateReferralCode();
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("referral_code", code)
+        .maybeSingle();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data) {
+        return code;
+      }
+    }
+
+    throw new Error("Kunde inte skapa unik värvningskod. Försök igen.");
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setErrorMessage(null);
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    try {
+      const referralCode = await createUniqueReferralCode();
 
-    if (error) {
-      setErrorMessage(error.message);
-      setLoading(false);
-      return;
-    }
-
-    const user = data.user;
-
-    if (user) {
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: user.id,
-        username,
-        first_name: firstName,
-        last_name: lastName,
-        phone,
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
       });
 
-      if (profileError) {
-        setErrorMessage(profileError.message);
+      if (error) {
+        setErrorMessage(error.message);
         setLoading(false);
         return;
       }
-    }
 
-    setLoading(false);
-    router.push('/login');
+      const user = data.user;
+
+      if (user) {
+        const referredBy =
+          referralFromUrl && referralFromUrl !== referralCode
+            ? referralFromUrl
+            : null;
+
+        const { error: profileError } = await supabase.from("profiles").insert({
+          id: user.id,
+          username: username.trim(),
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          phone: phone.trim(),
+          referral_code: referralCode,
+          referred_by: referredBy,
+        });
+
+        if (profileError) {
+          setErrorMessage(profileError.message);
+          setLoading(false);
+          return;
+        }
+      }
+
+      setLoading(false);
+      router.push("/login");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Något gick fel"
+      );
+      setLoading(false);
+    }
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
+    <main className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white">
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-8 shadow-2xl">
-        <h1 className="text-3xl font-bold mb-2">Skapa konto</h1>
-        <p className="text-white/70 mb-6">Registrera dig för att spara ditt VM-tips.</p>
+        <h1 className="mb-2 text-3xl font-bold">Skapa konto</h1>
+        <p className="mb-6 text-white/70">
+          Registrera dig för att spara ditt VM-tips.
+        </p>
+
+        {referralFromUrl && (
+          <div className="mb-5 rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+            Du registrerar dig via en värvningslänk.
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -133,9 +189,9 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-white text-black font-semibold py-3 disabled:opacity-50"
+            className="w-full rounded-xl bg-white py-3 font-semibold text-black disabled:opacity-50"
           >
-            {loading ? 'Skapar konto...' : 'Skapa konto'}
+            {loading ? "Skapar konto..." : "Skapa konto"}
           </button>
         </form>
       </div>

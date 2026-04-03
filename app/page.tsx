@@ -489,6 +489,9 @@ export default function HomePage() {
                       <Link href="/lag" className={navLinkClassName()}>
                         Lag & spelare
                       </Link>
+                      <Link href="/varva" className={navLinkClassName()}>
+                        Värva medlemmar
+                      </Link>
                     </div>
                   </div>
 
