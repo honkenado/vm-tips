@@ -21,11 +21,7 @@ function formatNewsDate(dateString: string) {
   }).format(date);
 }
 
-export default function TeamNews({
-  slug,
-}: {
-  slug: string;
-}) {
+export default function TeamNews({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<TeamNewsItem[]>([]);
   const [title, setTitle] = useState("Senaste nytt");
@@ -69,23 +65,6 @@ export default function TeamNews({
     };
   }, [slug]);
 
-  if (loading) {
-    return (
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-3">
-          <h2 className="text-xl font-black tracking-tight text-slate-900">
-            Senaste nytt
-          </h2>
-          <p className="text-sm text-slate-600">Laddar nyheter...</p>
-        </div>
-      </section>
-    );
-  }
-
-  if (error || items.length === 0) {
-    return null;
-  }
-
   return (
     <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
       <div className="mb-3">
@@ -97,33 +76,45 @@ export default function TeamNews({
         </p>
       </div>
 
-      <div className="space-y-3">
-        {items.map((item, index) => (
-          <a
-            key={`${item.link}-${index}`}
-            href={item.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-emerald-300 hover:bg-emerald-50/50"
-          >
-            <p className="text-sm font-black text-slate-900">{item.title}</p>
+      {loading ? (
+        <p className="text-sm text-slate-600">Laddar nyheter...</p>
+      ) : error ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          Kunde inte hämta nyheter just nu.
+        </div>
+      ) : items.length === 0 ? (
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          Inga relevanta nyheter hittades just nu.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {items.map((item, index) => (
+            <a
+              key={`${item.link}-${index}`}
+              href={item.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-emerald-300 hover:bg-emerald-50/50"
+            >
+              <p className="text-sm font-black text-slate-900">{item.title}</p>
 
-            <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
-              {item.source ? (
-                <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-slate-600">
-                  {item.source}
-                </span>
-              ) : null}
+              <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
+                {item.source ? (
+                  <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-slate-600">
+                    {item.source}
+                  </span>
+                ) : null}
 
-              {item.pubDate ? (
-                <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-slate-600">
-                  {formatNewsDate(item.pubDate)}
-                </span>
-              ) : null}
-            </div>
-          </a>
-        ))}
-      </div>
+                {item.pubDate ? (
+                  <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-slate-600">
+                    {formatNewsDate(item.pubDate)}
+                  </span>
+                ) : null}
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

@@ -39,7 +39,7 @@ export default async function TeamPage({
           slots={team.lineup?.slots ?? []}
         />
 
-        {slug === "mexiko" ? <TeamNews slug={slug} /> : null}
+        <TeamNews slug={slug} />
 
         <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-3">
