@@ -179,8 +179,18 @@ function getLikelyPlayerName(cellHtml: string, fallbackText: string) {
 }
 
 function isLikelySquadTable(tableHtml: string) {
-  const rows = extractRows(tableHtml).slice(0, 8);
+  const lower = tableHtml.toLowerCase();
 
+  if (
+    lower.includes("recent call-ups") ||
+    lower.includes("recent call ups") ||
+    lower.includes("recent callup") ||
+    lower.includes("recent call-up")
+  ) {
+    return false;
+  }
+
+  const rows = extractRows(tableHtml).slice(0, 8);
   let headerTexts: string[] = [];
 
   for (const row of rows) {
@@ -191,9 +201,11 @@ function isLikelySquadTable(tableHtml: string) {
 
     if (
       texts.some((t) => t.includes("player") || t.includes("name")) &&
-      (texts.some((t) => t === "pos" || t.includes("position")) ||
+      (
+        texts.some((t) => t === "pos" || t.includes("position")) ||
         texts.some((t) => t.includes("club")) ||
-        texts.some((t) => t.includes("caps")))
+        texts.some((t) => t.includes("caps"))
+      )
     ) {
       headerTexts = texts;
       break;
@@ -219,58 +231,57 @@ function isLikelySquadTable(tableHtml: string) {
   return hasName && (hasPos || hasClub || hasCaps || hasGoals);
 }
 
-function extractCurrentSquadSection(html: string) {
+function findCurrentSquadTable(html: string) {
   const lower = html.toLowerCase();
 
-  const markers = [
-    'id="current_squad"',
-    'id="current squad"',
-    ">current squad<",
-    "current squad",
+  const headingPatterns = [
+    /<h[2-4][^>]*>[\s\S]*?current squad[\s\S]*?<\/h[2-4]>/i,
+    /<span[^>]*id="current_squad"[^>]*><\/span>/i,
+    /<span[^>]*id="Current_squad"[^>]*><\/span>/i,
   ];
 
-  let start = -1;
+  let startIndex = -1;
 
-  for (const marker of markers) {
-    start = lower.indexOf(marker);
-    if (start !== -1) break;
+  for (const pattern of headingPatterns) {
+    const match = html.match(pattern);
+    if (match && typeof match.index === "number") {
+      startIndex = match.index + match[0].length;
+      break;
+    }
   }
 
-  if (start === -1) {
+  if (startIndex === -1) {
+    const fallbackIndex = lower.indexOf("current squad");
+    if (fallbackIndex !== -1) {
+      startIndex = fallbackIndex;
+    }
+  }
+
+  if (startIndex === -1) {
     return null;
   }
 
-  const afterStart = html.slice(start);
-  const nextHeadingMatch = afterStart.match(
-    /<h[2-4][^>]*>[\s\S]*?<\/h[2-4]>/i
-  );
+  const afterHeading = html.slice(startIndex);
 
-  if (!nextHeadingMatch) {
-    return afterStart;
+  const nextHeadingMatch = afterHeading.match(/<h[2-4][^>]*>/i);
+  const sectionHtml =
+    nextHeadingMatch && typeof nextHeadingMatch.index === "number"
+      ? afterHeading.slice(0, nextHeadingMatch.index)
+      : afterHeading;
+
+  const sectionTables = extractTables(sectionHtml).filter(isLikelySquadTable);
+
+  if (sectionTables.length > 0) {
+    return sectionTables[0];
   }
 
-  const firstHeadingIndex = afterStart.indexOf(nextHeadingMatch[0]);
-  const afterFirstHeading = afterStart.slice(firstHeadingIndex + nextHeadingMatch[0].length);
-
-  const nextSectionMatch = afterFirstHeading.match(/<h[2-4][^>]*>/i);
-  if (!nextSectionMatch || nextSectionMatch.index == null) {
-    return afterStart;
-  }
-
-  return afterStart.slice(
-    0,
-    firstHeadingIndex + nextHeadingMatch[0].length + nextSectionMatch.index
-  );
+  return null;
 }
 
 function findBestSquadTable(html: string) {
-  const currentSquadSection = extractCurrentSquadSection(html);
-
-  if (currentSquadSection) {
-    const sectionTables = extractTables(currentSquadSection).filter(isLikelySquadTable);
-    if (sectionTables.length > 0) {
-      return sectionTables[0];
-    }
+  const currentSquadTable = findCurrentSquadTable(html);
+  if (currentSquadTable) {
+    return currentSquadTable;
   }
 
   const allTables = extractTables(html).filter(isLikelySquadTable);
@@ -332,9 +343,7 @@ function parsePlayersFromTable(tableHtml: string): ParsedPlayer[] {
     const rawGoalsText = goalsIndex >= 0 ? texts[goalsIndex] ?? "" : "";
 
     const possibleGroupPosition =
-      texts.length <= 2
-        ? normalizePosition(texts.join(" "))
-        : "";
+      texts.length <= 2 ? normalizePosition(texts.join(" ")) : "";
 
     if (!rawPosText && possibleGroupPosition) {
       lastKnownPosition = possibleGroupPosition;
