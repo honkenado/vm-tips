@@ -295,10 +295,10 @@ async function findBestSquadTable(title: string): Promise<SquadTableResult> {
 
 export async function POST(
   _req: Request,
-  { params }: { params: { teamId: string } }
+  context: { params: Promise<{ teamId: string }> }
 ) {
   try {
-    const { teamId } = params;
+    const { teamId } = await context.params;
     const supabase = await createClient();
 
     const { data: team, error: teamError } = await supabase
