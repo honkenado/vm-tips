@@ -16,6 +16,11 @@ type ParsedPlayer = {
   goals: number | null;
 };
 
+type WikiSection = {
+  index: string;
+  line: string;
+};
+
 function decodeHtmlEntities(text: string) {
   return text
     .replace(/&nbsp;/g, " ")
@@ -178,17 +183,18 @@ function getLikelyPlayerName(cellHtml: string, fallbackText: string) {
   return removeCaptainAndNotes(fallbackText);
 }
 
-function isLikelySquadTable(tableHtml: string) {
+function isRecentCallupsTable(tableHtml: string) {
   const lower = tableHtml.toLowerCase();
-
-  if (
+  return (
     lower.includes("recent call-ups") ||
     lower.includes("recent call ups") ||
-    lower.includes("recent callup") ||
-    lower.includes("recent call-up")
-  ) {
-    return false;
-  }
+    lower.includes("recent call-up") ||
+    lower.includes("recent callup")
+  );
+}
+
+function isLikelySquadTable(tableHtml: string) {
+  if (isRecentCallupsTable(tableHtml)) return false;
 
   const rows = extractRows(tableHtml).slice(0, 8);
   let headerTexts: string[] = [];
@@ -212,9 +218,7 @@ function isLikelySquadTable(tableHtml: string) {
     }
   }
 
-  if (headerTexts.length === 0) {
-    return false;
-  }
+  if (headerTexts.length === 0) return false;
 
   const hasName = headerTexts.some(
     (t) => t.includes("player") || t.includes("name")
@@ -229,63 +233,6 @@ function isLikelySquadTable(tableHtml: string) {
   );
 
   return hasName && (hasPos || hasClub || hasCaps || hasGoals);
-}
-
-function findCurrentSquadTable(html: string) {
-  const lower = html.toLowerCase();
-
-  const headingPatterns = [
-    /<h[2-4][^>]*>[\s\S]*?current squad[\s\S]*?<\/h[2-4]>/i,
-    /<span[^>]*id="current_squad"[^>]*><\/span>/i,
-    /<span[^>]*id="Current_squad"[^>]*><\/span>/i,
-  ];
-
-  let startIndex = -1;
-
-  for (const pattern of headingPatterns) {
-    const match = html.match(pattern);
-    if (match && typeof match.index === "number") {
-      startIndex = match.index + match[0].length;
-      break;
-    }
-  }
-
-  if (startIndex === -1) {
-    const fallbackIndex = lower.indexOf("current squad");
-    if (fallbackIndex !== -1) {
-      startIndex = fallbackIndex;
-    }
-  }
-
-  if (startIndex === -1) {
-    return null;
-  }
-
-  const afterHeading = html.slice(startIndex);
-
-  const nextHeadingMatch = afterHeading.match(/<h[2-4][^>]*>/i);
-  const sectionHtml =
-    nextHeadingMatch && typeof nextHeadingMatch.index === "number"
-      ? afterHeading.slice(0, nextHeadingMatch.index)
-      : afterHeading;
-
-  const sectionTables = extractTables(sectionHtml).filter(isLikelySquadTable);
-
-  if (sectionTables.length > 0) {
-    return sectionTables[0];
-  }
-
-  return null;
-}
-
-function findBestSquadTable(html: string) {
-  const currentSquadTable = findCurrentSquadTable(html);
-  if (currentSquadTable) {
-    return currentSquadTable;
-  }
-
-  const allTables = extractTables(html).filter(isLikelySquadTable);
-  return allTables[0] ?? null;
 }
 
 function parsePlayersFromTable(tableHtml: string): ParsedPlayer[] {
@@ -319,9 +266,7 @@ function parsePlayersFromTable(tableHtml: string): ParsedPlayer[] {
       continue;
     }
 
-    if (headers.length === 0) {
-      continue;
-    }
+    if (headers.length === 0) continue;
 
     const nameIndex = findColumnIndex(headers, ["name", "player"]);
     const posIndex = findColumnIndex(headers, ["pos", "position"]);
@@ -330,13 +275,11 @@ function parsePlayersFromTable(tableHtml: string): ParsedPlayer[] {
     const capsIndex = findColumnIndex(headers, ["caps"]);
     const goalsIndex = findColumnIndex(headers, ["goals", "goal", "gls"]);
 
-    if (nameIndex === -1) {
-      continue;
-    }
+    if (nameIndex === -1) continue;
 
     const rawNameCell = cells[nameIndex] ?? "";
     const rawNameText = texts[nameIndex] ?? "";
-    let rawPosText = posIndex >= 0 ? texts[posIndex] ?? "" : "";
+    const rawPosText = posIndex >= 0 ? texts[posIndex] ?? "" : "";
     const rawClubText = clubIndex >= 0 ? texts[clubIndex] ?? "" : "";
     const rawAgeText = ageIndex >= 0 ? texts[ageIndex] ?? "" : "";
     const rawCapsText = capsIndex >= 0 ? texts[capsIndex] ?? "" : "";
@@ -398,7 +341,67 @@ function parsePlayersFromTable(tableHtml: string): ParsedPlayer[] {
   return Array.from(unique.values());
 }
 
-async function fetchWikipediaHtml(title: string) {
+async function fetchWikipediaSections(title: string): Promise<WikiSection[]> {
+  const url = new URL("https://en.wikipedia.org/w/api.php");
+  url.searchParams.set("action", "parse");
+  url.searchParams.set("page", title);
+  url.searchParams.set("prop", "sections");
+  url.searchParams.set("format", "json");
+  url.searchParams.set("formatversion", "2");
+  url.searchParams.set("origin", "*");
+  url.searchParams.set("redirects", "1");
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      "User-Agent": "AddesVMTips/1.0 (contact: admin@addesvmtips.se)",
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Kunde inte hämta sektioner från Wikipedia");
+  }
+
+  const json = await response.json();
+  return (json?.parse?.sections ?? []) as WikiSection[];
+}
+
+async function fetchWikipediaSectionHtml(
+  title: string,
+  sectionIndex: string
+): Promise<string> {
+  const url = new URL("https://en.wikipedia.org/w/api.php");
+  url.searchParams.set("action", "parse");
+  url.searchParams.set("page", title);
+  url.searchParams.set("section", sectionIndex);
+  url.searchParams.set("prop", "text");
+  url.searchParams.set("format", "json");
+  url.searchParams.set("formatversion", "2");
+  url.searchParams.set("origin", "*");
+  url.searchParams.set("redirects", "1");
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      "User-Agent": "AddesVMTips/1.0 (contact: admin@addesvmtips.se)",
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Kunde inte hämta Current squad-sektion från Wikipedia");
+  }
+
+  const json = await response.json();
+  const html = json?.parse?.text;
+
+  if (!html || typeof html !== "string") {
+    throw new Error("Current squad-sektionen kunde inte tolkas");
+  }
+
+  return html;
+}
+
+async function fetchWikipediaHtml(title: string): Promise<string> {
   const url = new URL("https://en.wikipedia.org/w/api.php");
   url.searchParams.set("action", "parse");
   url.searchParams.set("page", title);
@@ -406,10 +409,11 @@ async function fetchWikipediaHtml(title: string) {
   url.searchParams.set("format", "json");
   url.searchParams.set("formatversion", "2");
   url.searchParams.set("origin", "*");
+  url.searchParams.set("redirects", "1");
 
   const response = await fetch(url.toString(), {
     headers: {
-      "User-Agent": "Mozilla/5.0",
+      "User-Agent": "AddesVMTips/1.0 (contact: admin@addesvmtips.se)",
     },
     cache: "no-store",
   });
@@ -426,6 +430,48 @@ async function fetchWikipediaHtml(title: string) {
   }
 
   return html;
+}
+
+async function findBestSquadTable(title: string) {
+  const sections = await fetchWikipediaSections(title);
+
+  const currentSquadSection = sections.find((section) =>
+    section.line.toLowerCase().includes("current squad")
+  );
+
+  if (currentSquadSection) {
+    const sectionHtml = await fetchWikipediaSectionHtml(
+      title,
+      currentSquadSection.index
+    );
+
+    const sectionTables = extractTables(sectionHtml).filter(isLikelySquadTable);
+
+    if (sectionTables.length > 0) {
+      return {
+        table: sectionTables[0],
+        source: "section",
+        section: currentSquadSection.line,
+      };
+    }
+  }
+
+  const fullHtml = await fetchWikipediaHtml(title);
+  const allTables = extractTables(fullHtml).filter(isLikelySquadTable);
+
+  if (allTables.length > 0) {
+    return {
+      table: allTables[0],
+      source: "full-page-fallback",
+      section: null,
+    };
+  }
+
+  return {
+    table: null,
+    source: currentSquadSection ? "section" : "no-current-squad-section",
+    section: currentSquadSection?.line ?? null,
+  };
 }
 
 export async function POST(
@@ -459,13 +505,19 @@ export async function POST(
       );
     }
 
-    const html = await fetchWikipediaHtml(team.wikipedia_title);
-    const squadTable = findBestSquadTable(html);
+    const squadResult = await findBestSquadTable(team.wikipedia_title);
+    const squadTable = squadResult.table;
 
     if (!squadTable) {
       return NextResponse.json(
         {
           error: "Kunde inte hitta någon läsbar spelartrupp på Wikipedia-sidan.",
+          debug: {
+            team: team.name,
+            wikipediaTitle: team.wikipedia_title,
+            source: squadResult.source,
+            section: squadResult.section,
+          },
         },
         { status: 400 }
       );
@@ -480,6 +532,8 @@ export async function POST(
           debug: {
             team: team.name,
             wikipediaTitle: team.wikipedia_title,
+            source: squadResult.source,
+            section: squadResult.section,
             tablePreview: squadTable.slice(0, 1200),
           },
         },
@@ -494,6 +548,8 @@ export async function POST(
           debug: {
             team: team.name,
             wikipediaTitle: team.wikipedia_title,
+            source: squadResult.source,
+            section: squadResult.section,
             count: players.length,
             names: players.slice(0, 20).map((player) => player.name),
           },
@@ -542,6 +598,10 @@ export async function POST(
       team: team.name,
       count: inserted?.length ?? rows.length,
       players: inserted ?? [],
+      debug: {
+        source: squadResult.source,
+        section: squadResult.section,
+      },
     });
   } catch (error) {
     const message =
