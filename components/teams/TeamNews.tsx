@@ -16,8 +16,9 @@ function formatNewsDate(dateString: string) {
   if (Number.isNaN(date.getTime())) return "";
 
   return new Intl.DateTimeFormat("sv-SE", {
-    dateStyle: "medium",
-    timeStyle: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   }).format(date);
 }
 
@@ -47,7 +48,7 @@ export default function TeamNews({ slug }: { slug: string }) {
 
         if (!isMounted) return;
 
-        setItems(data.items ?? []);
+        setItems((data.items ?? []).slice(0, 4));
         setTitle(data.title || "Senaste nytt");
       } catch (err) {
         if (!isMounted) return;
@@ -67,17 +68,25 @@ export default function TeamNews({ slug }: { slug: string }) {
 
   return (
     <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-3">
+      <div className="mb-4">
         <h2 className="text-xl font-black tracking-tight text-slate-900">
           {title}
         </h2>
-        <p className="text-sm text-slate-600">
-          Automatiskt nyhetsflöde från externa källor.
-        </p>
+        <p className="text-sm text-slate-600">Relevanta nyheter om laget.</p>
       </div>
 
       {loading ? (
-        <p className="text-sm text-slate-600">Laddar nyheter...</p>
+        <div className="space-y-3">
+          {[...Array(4)].map((_, index) => (
+            <div
+              key={index}
+              className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+            >
+              <div className="h-4 w-4/5 animate-pulse rounded bg-slate-200" />
+              <div className="mt-3 h-3 w-1/3 animate-pulse rounded bg-slate-200" />
+            </div>
+          ))}
+        </div>
       ) : error ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           Kunde inte hämta nyheter just nu.
@@ -94,21 +103,21 @@ export default function TeamNews({ slug }: { slug: string }) {
               href={item.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="block rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-emerald-300 hover:bg-emerald-50/50"
+              className="block rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-emerald-300 hover:bg-emerald-50/60"
             >
-              <p className="text-sm font-black text-slate-900">{item.title}</p>
+              <p className="text-[15px] font-bold leading-6 text-slate-900">
+                {item.title}
+              </p>
 
-              <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
+              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-slate-500">
                 {item.source ? (
-                  <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-slate-600">
+                  <span className="font-semibold text-slate-700">
                     {item.source}
                   </span>
                 ) : null}
 
                 {item.pubDate ? (
-                  <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-slate-600">
-                    {formatNewsDate(item.pubDate)}
-                  </span>
+                  <span>{formatNewsDate(item.pubDate)}</span>
                 ) : null}
               </div>
             </a>
