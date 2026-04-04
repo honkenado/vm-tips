@@ -19,7 +19,7 @@ type GoldenBootEntry = {
   name: string;
   payment_status: "paid" | "unpaid";
   golden_boot: string;
-  golden_boot_corrected: string;
+  golden_boot_corrected: string | null;
 };
 
 type GoldenBootRowProps = {

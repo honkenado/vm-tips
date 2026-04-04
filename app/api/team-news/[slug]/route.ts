@@ -1,5 +1,3 @@
-// app/api/team-news/[slug]/route.ts
-
 import { NextResponse } from "next/server";
 import { TEAM_NEWS_OVERRIDES } from "@/lib/team-news-config";
 
@@ -26,9 +24,6 @@ type TeamNewsConfig = {
   teamName: string;
   title: string;
   query: string;
-  hl: string;
-  gl: string;
-  ceid: string;
   includeTerms: string[];
   strongIncludeTerms: string[];
   excludeTerms: string[];
@@ -50,7 +45,9 @@ function stripCdata(text: string) {
 }
 
 function stripHtml(text: string) {
-  return decodeHtmlEntities(text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim());
+  return decodeHtmlEntities(
+    text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
+  );
 }
 
 function extractTag(content: string, tag: string) {
@@ -203,16 +200,17 @@ function buildGoogleNewsQuery(config: {
   aliases: string[];
   players: string[];
 }) {
-  const mainTerms = uniq([config.teamName, ...config.aliases]).map((term) => `"${term}"`);
+  const mainTerms = uniq([config.teamName, ...config.aliases]).map(
+    (term) => `"${term}"`
+  );
   const playerTerms = uniq(config.players).map((term) => `"${term}"`);
 
   const positiveParts: string[] = [];
   if (mainTerms.length > 0) positiveParts.push(`(${mainTerms.join(" OR ")})`);
-  if (playerTerms.length > 0) positiveParts.push(`(${playerTerms.join(" OR ")})`);
+  if (playerTerms.length > 0)
+    positiveParts.push(`(${playerTerms.join(" OR ")})`);
 
-  const freshnessParts = [
-    "when:14d",
-  ];
+  const freshnessParts = ["when:14d"];
 
   const negativeParts = [
     "-women",
@@ -241,7 +239,10 @@ function buildGoogleNewsQuery(config: {
   return [...positiveParts, ...freshnessParts, ...negativeParts].join(" ");
 }
 
-function isLikelyGenericTournamentArticle(text: string, config: TeamNewsConfig) {
+function isLikelyGenericTournamentArticle(
+  text: string,
+  config: TeamNewsConfig
+) {
   const genericTerms = [
     "world cup",
     "fifa world cup",
@@ -262,7 +263,8 @@ function isLikelyGenericTournamentArticle(text: string, config: TeamNewsConfig) 
 
   const genericHits = countMatches(text, genericTerms);
   const teamHits =
-    countMatches(text, config.includeTerms) + countMatches(text, config.strongIncludeTerms);
+    countMatches(text, config.includeTerms) +
+    countMatches(text, config.strongIncludeTerms);
 
   return genericHits >= 2 && teamHits <= 1;
 }
@@ -275,6 +277,24 @@ function isTooOld(pubDate: string) {
   const fourteenDays = 14 * 24 * 60 * 60 * 1000;
 
   return now - timestamp > fourteenDays;
+}
+
+function isSwedishSource(text: string) {
+  const value = text.toLowerCase();
+
+  const swedishIndicators = [
+    ".se",
+    "aftonbladet",
+    "expressen",
+    "svt",
+    "tv4",
+    "fotbollskanalen",
+    "svenskafans",
+    "dn",
+    "svd",
+  ];
+
+  return swedishIndicators.some((term) => value.includes(term));
 }
 
 function shouldRejectItem(item: NewsItem, config: TeamNewsConfig) {
@@ -316,12 +336,18 @@ function scoreNewsItem(item: NewsItem, config: TeamNewsConfig) {
   const includeInTitle = countMatches(title, config.includeTerms);
   const includeInDescription = countMatches(description, config.includeTerms);
   const strongIncludeInTitle = countMatches(title, config.strongIncludeTerms);
-  const strongIncludeInDescription = countMatches(description, config.strongIncludeTerms);
+  const strongIncludeInDescription = countMatches(
+    description,
+    config.strongIncludeTerms
+  );
 
   const excludeInTitle = countMatches(title, config.excludeTerms);
   const excludeInDescription = countMatches(description, config.excludeTerms);
   const strongExcludeInTitle = countMatches(title, config.strongExcludeTerms);
-  const strongExcludeInDescription = countMatches(description, config.strongExcludeTerms);
+  const strongExcludeInDescription = countMatches(
+    description,
+    config.strongExcludeTerms
+  );
 
   score += includeInTitle * 4;
   score += includeInDescription * 2;
@@ -353,9 +379,15 @@ function scoreNewsItem(item: NewsItem, config: TeamNewsConfig) {
     score -= 8;
   }
 
+  if (isSwedishSource(`${item.source} ${item.title}`)) {
+    score += 5;
+  }
+
   const timestamp = Date.parse(item.pubDate || "");
   if (timestamp) {
-    const ageDays = Math.floor((Date.now() - timestamp) / (24 * 60 * 60 * 1000));
+    const ageDays = Math.floor(
+      (Date.now() - timestamp) / (24 * 60 * 60 * 1000)
+    );
     if (ageDays <= 2) score += 4;
     else if (ageDays <= 5) score += 2;
     else if (ageDays <= 10) score += 1;
@@ -368,8 +400,15 @@ function dedupeItems(items: RankedNewsItem[]) {
   const seen = new Set<string>();
 
   return items.filter((item) => {
-    const normalizedTitle = normalizeText(item.title).replace(/\s*-\s*[^-]+$/, "").trim();
-    const normalizedLink = item.link.replace(/^https?:\/\//, "").replace(/\/$/, "").trim();
+    const normalizedTitle = normalizeText(item.title)
+      .replace(/\s*-\s*[^-]+$/, "")
+      .trim();
+
+    const normalizedLink = item.link
+      .replace(/^https?:\/\//, "")
+      .replace(/\/$/, "")
+      .trim();
+
     const key = `${normalizedTitle}::${normalizedLink}`;
 
     if (seen.has(key)) return false;
@@ -410,13 +449,26 @@ function getTeamNewsConfig(slug: string): TeamNewsConfig {
   const fallbackTeamName = slugToTeamName(normalizedSlug);
   const teamName = override?.teamName ?? fallbackTeamName;
 
-  const aliases = uniq([...getGenericAliases(teamName), ...(override?.aliases ?? [])]);
-  const strongAliases = uniq([...getGenericStrongAliases(teamName), ...(override?.strongAliases ?? [])]);
-  const excludeTerms = uniq([...getBaseExcludeTerms(), ...(override?.extraExcludeTerms ?? [])]);
+  const aliases = uniq([
+    ...getGenericAliases(teamName),
+    ...(override?.aliases ?? []),
+  ]);
+
+  const strongAliases = uniq([
+    ...getGenericStrongAliases(teamName),
+    ...(override?.strongAliases ?? []),
+  ]);
+
+  const excludeTerms = uniq([
+    ...getBaseExcludeTerms(),
+    ...(override?.extraExcludeTerms ?? []),
+  ]);
+
   const strongExcludeTerms = uniq([
     ...getBaseStrongExcludeTerms(),
     ...(override?.extraStrongExcludeTerms ?? []),
   ]);
+
   const players = uniq(override?.players ?? []);
 
   return {
@@ -428,9 +480,6 @@ function getTeamNewsConfig(slug: string): TeamNewsConfig {
       aliases,
       players,
     }),
-    hl: override?.hl ?? "en",
-    gl: override?.gl ?? "US",
-    ceid: override?.ceid ?? "US:en",
     includeTerms: uniq([teamName, ...aliases, ...players]),
     strongIncludeTerms: strongAliases,
     excludeTerms,
@@ -443,28 +492,47 @@ export async function GET(_request: Request, context: RouteContext) {
   const { slug } = await context.params;
   const config = getTeamNewsConfig(slug);
 
-  const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(
+  const swedishUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(
     config.query
-  )}&hl=${config.hl}&gl=${config.gl}&ceid=${config.ceid}`;
+  )}&hl=sv&gl=SE&ceid=SE:sv`;
+
+  const englishUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(
+    config.query
+  )}&hl=en&gl=US&ceid=US:en`;
 
   try {
-    const response = await fetch(rssUrl, {
-      next: { revalidate: 3600 },
-      headers: {
-        "User-Agent": "Mozilla/5.0 AddesVMTips/1.0",
-      },
-    });
+    const [svRes, enRes] = await Promise.all([
+      fetch(swedishUrl, {
+        next: { revalidate: 3600 },
+        headers: {
+          "User-Agent": "Mozilla/5.0 AddesVMTips/1.0",
+        },
+      }),
+      fetch(englishUrl, {
+        next: { revalidate: 3600 },
+        headers: {
+          "User-Agent": "Mozilla/5.0 AddesVMTips/1.0",
+        },
+      }),
+    ]);
 
-    if (!response.ok) {
+    if (!svRes.ok && !enRes.ok) {
       return NextResponse.json(
         { error: "Kunde inte hämta nyheter", items: [], title: config.title },
         { status: 500 }
       );
     }
 
-    const xml = await response.text();
-    const rawItems = parseRssItems(xml).sort(sortByDateDesc);
-    const rankedItems = rankAndFilterItems(rawItems, config);
+    const [svXml, enXml] = await Promise.all([
+      svRes.ok ? svRes.text() : "",
+      enRes.ok ? enRes.text() : "",
+    ]);
+
+    const svItems = svXml ? parseRssItems(svXml) : [];
+    const enItems = enXml ? parseRssItems(enXml) : [];
+
+    const allItems = [...svItems, ...enItems].sort(sortByDateDesc);
+    const rankedItems = rankAndFilterItems(allItems, config);
 
     return NextResponse.json({
       title: config.title,
