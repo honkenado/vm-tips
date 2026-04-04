@@ -34,6 +34,7 @@ function stripTags(html: string) {
       .replace(/<sup[^>]*>[\s\S]*?<\/sup>/gi, " ")
       .replace(/<span[^>]*class="[^"]*flagicon[^"]*"[^>]*>[\s\S]*?<\/span>/gi, " ")
       .replace(/<img[^>]*>/gi, " ")
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
       .replace(/<[^>]+>/g, " ")
       .replace(/\[[^\]]*\]/g, " ")
       .replace(/\s+/g, " ")
@@ -52,7 +53,7 @@ function extractWikiLinks(html: string) {
     .filter(
       (text) =>
         !/^\d+$/.test(text) &&
-        !/^(club|caps|goals|pos|player|name|age)$/i.test(text)
+        !/^(club|caps|goals|pos|player|name|age|no\.?)$/i.test(text)
     );
 }
 
@@ -83,6 +84,7 @@ function normalizePosition(value: string) {
     text.includes("defender") ||
     text.includes("centre-back") ||
     text.includes("center-back") ||
+    text.includes("full-back") ||
     text.includes("back")
   ) {
     return "DF";
@@ -91,8 +93,8 @@ function normalizePosition(value: string) {
   if (
     text === "mf" ||
     text.includes("midfielder") ||
-    text.includes("winger") ||
-    text.includes("midfield")
+    text.includes("midfield") ||
+    text.includes("winger")
   ) {
     return "MF";
   }
@@ -159,58 +161,120 @@ function findColumnIndex(headers: string[], variants: string[]) {
   );
 }
 
-function tableScore(tableHtml: string) {
-  const rows = extractRows(tableHtml);
-  let bestHeaderScore = 0;
-
-  for (const row of rows.slice(0, 6)) {
-    const cells = extractCells(row);
-    const headerTexts = cells.map((cell) => stripTags(cell).toLowerCase());
-
-    const score =
-      (headerTexts.some((h) => h.includes("player") || h.includes("name")) ? 3 : 0) +
-      (headerTexts.some((h) => h === "pos" || h.includes("position")) ? 3 : 0) +
-      (headerTexts.some((h) => h.includes("club")) ? 2 : 0) +
-      (headerTexts.some((h) => h.includes("caps")) ? 2 : 0) +
-      (headerTexts.some((h) => h.includes("goals") || h === "gls") ? 2 : 0) +
-      (headerTexts.some((h) => h.includes("age") || h.includes("date of birth")) ? 1 : 0);
-
-    bestHeaderScore = Math.max(bestHeaderScore, score);
-  }
-
-  const lower = tableHtml.toLowerCase();
-
-  return (
-    bestHeaderScore +
-    (lower.includes("current squad") ? 4 : 0) +
-    (lower.includes("wikitable") ? 1 : 0)
-  );
-}
-
-function findBestSquadTable(html: string) {
-  const tables = extractTables(html);
-
-  const scored = tables
-    .map((table) => ({ table, score: tableScore(table) }))
-    .sort((a, b) => b.score - a.score);
-
-  return scored[0]?.score > 0 ? scored[0].table : null;
-}
-
-function getLikelyPlayerName(cellHtml: string, text: string) {
+function getLikelyPlayerName(cellHtml: string, fallbackText: string) {
   const links = extractWikiLinks(cellHtml);
 
   const linkedName = links.find(
     (value) =>
-      /^[A-ZÀ-ÿ][A-Za-zÀ-ÿ'´`.\- ]{1,}$/.test(value) &&
-      value.split(" ").length >= 2
+      /^[A-ZÀ-ÿ][A-Za-zÀ-ÿ'´`.\- ]+$/.test(value) &&
+      value.split(" ").length >= 2 &&
+      !/^(fifa|uefa|caf|afc|concacaf|club|caps|goals)$/i.test(value)
   );
 
   if (linkedName) {
     return removeCaptainAndNotes(linkedName);
   }
 
-  return removeCaptainAndNotes(text);
+  return removeCaptainAndNotes(fallbackText);
+}
+
+function isLikelySquadTable(tableHtml: string) {
+  const rows = extractRows(tableHtml).slice(0, 8);
+
+  let headerTexts: string[] = [];
+
+  for (const row of rows) {
+    const cells = extractCells(row);
+    if (cells.length === 0) continue;
+
+    const texts = cells.map((cell) => stripTags(cell).toLowerCase());
+
+    if (
+      texts.some((t) => t.includes("player") || t.includes("name")) &&
+      (texts.some((t) => t === "pos" || t.includes("position")) ||
+        texts.some((t) => t.includes("club")) ||
+        texts.some((t) => t.includes("caps")))
+    ) {
+      headerTexts = texts;
+      break;
+    }
+  }
+
+  if (headerTexts.length === 0) {
+    return false;
+  }
+
+  const hasName = headerTexts.some(
+    (t) => t.includes("player") || t.includes("name")
+  );
+  const hasPos = headerTexts.some(
+    (t) => t === "pos" || t.includes("position")
+  );
+  const hasClub = headerTexts.some((t) => t.includes("club"));
+  const hasCaps = headerTexts.some((t) => t.includes("caps"));
+  const hasGoals = headerTexts.some(
+    (t) => t.includes("goals") || t === "gls"
+  );
+
+  return hasName && (hasPos || hasClub || hasCaps || hasGoals);
+}
+
+function extractCurrentSquadSection(html: string) {
+  const lower = html.toLowerCase();
+
+  const markers = [
+    'id="current_squad"',
+    'id="current squad"',
+    ">current squad<",
+    "current squad",
+  ];
+
+  let start = -1;
+
+  for (const marker of markers) {
+    start = lower.indexOf(marker);
+    if (start !== -1) break;
+  }
+
+  if (start === -1) {
+    return null;
+  }
+
+  const afterStart = html.slice(start);
+  const nextHeadingMatch = afterStart.match(
+    /<h[2-4][^>]*>[\s\S]*?<\/h[2-4]>/i
+  );
+
+  if (!nextHeadingMatch) {
+    return afterStart;
+  }
+
+  const firstHeadingIndex = afterStart.indexOf(nextHeadingMatch[0]);
+  const afterFirstHeading = afterStart.slice(firstHeadingIndex + nextHeadingMatch[0].length);
+
+  const nextSectionMatch = afterFirstHeading.match(/<h[2-4][^>]*>/i);
+  if (!nextSectionMatch || nextSectionMatch.index == null) {
+    return afterStart;
+  }
+
+  return afterStart.slice(
+    0,
+    firstHeadingIndex + nextHeadingMatch[0].length + nextSectionMatch.index
+  );
+}
+
+function findBestSquadTable(html: string) {
+  const currentSquadSection = extractCurrentSquadSection(html);
+
+  if (currentSquadSection) {
+    const sectionTables = extractTables(currentSquadSection).filter(isLikelySquadTable);
+    if (sectionTables.length > 0) {
+      return sectionTables[0];
+    }
+  }
+
+  const allTables = extractTables(html).filter(isLikelySquadTable);
+  return allTables[0] ?? null;
 }
 
 function parsePlayersFromTable(tableHtml: string): ParsedPlayer[] {
@@ -224,15 +288,22 @@ function parsePlayersFromTable(tableHtml: string): ParsedPlayer[] {
     const cells = extractCells(row);
     if (cells.length < 2) continue;
 
-    const headerLike = cells.every((cell) => cellTag(cell) === "th");
     const texts = cells.map((cell) => stripTags(cell));
     const lowerTexts = texts.map((text) => text.toLowerCase());
+    const onlyHeaders = cells.every((cell) => cellTag(cell) === "th");
 
-    const hasHeaderKeywords =
-      lowerTexts.some((t) => t.includes("player") || t.includes("name")) &&
-      lowerTexts.some((t) => t === "pos" || t.includes("position"));
+    const headerLike =
+      onlyHeaders ||
+      (
+        lowerTexts.some((t) => t.includes("player") || t.includes("name")) &&
+        (
+          lowerTexts.some((t) => t === "pos" || t.includes("position")) ||
+          lowerTexts.some((t) => t.includes("club")) ||
+          lowerTexts.some((t) => t.includes("caps"))
+        )
+      );
 
-    if (headerLike || hasHeaderKeywords) {
+    if (headerLike) {
       headers = lowerTexts;
       continue;
     }
@@ -254,13 +325,29 @@ function parsePlayersFromTable(tableHtml: string): ParsedPlayer[] {
 
     const rawNameCell = cells[nameIndex] ?? "";
     const rawNameText = texts[nameIndex] ?? "";
-    const rawPosText = posIndex >= 0 ? texts[posIndex] ?? "" : "";
+    let rawPosText = posIndex >= 0 ? texts[posIndex] ?? "" : "";
     const rawClubText = clubIndex >= 0 ? texts[clubIndex] ?? "" : "";
     const rawAgeText = ageIndex >= 0 ? texts[ageIndex] ?? "" : "";
     const rawCapsText = capsIndex >= 0 ? texts[capsIndex] ?? "" : "";
     const rawGoalsText = goalsIndex >= 0 ? texts[goalsIndex] ?? "" : "";
 
+    const possibleGroupPosition =
+      texts.length <= 2
+        ? normalizePosition(texts.join(" "))
+        : "";
+
+    if (!rawPosText && possibleGroupPosition) {
+      lastKnownPosition = possibleGroupPosition;
+      continue;
+    }
+
     const name = getLikelyPlayerName(rawNameCell, rawNameText);
+
+    if (normalizePosition(rawNameText) && texts.length <= 2) {
+      lastKnownPosition = normalizePosition(rawNameText);
+      continue;
+    }
+
     const normalizedPos = normalizePosition(rawPosText) || lastKnownPosition;
 
     if (normalizedPos) {
@@ -271,8 +358,12 @@ function parsePlayersFromTable(tableHtml: string): ParsedPlayer[] {
     if (!normalizedPos) continue;
 
     if (
-      /^(current squad|players|pos|player|name|club|caps|goals|age)$/i.test(name)
+      /^(current squad|players|pos|player|name|club|caps|goals|age|no\.?)$/i.test(name)
     ) {
+      continue;
+    }
+
+    if (/^\d+$/.test(name)) {
       continue;
     }
 
@@ -360,19 +451,12 @@ export async function POST(
     }
 
     const html = await fetchWikipediaHtml(team.wikipedia_title);
-
-    let squadTable = findBestSquadTable(html);
-
-    if (!squadTable) {
-      const tables = extractTables(html);
-      squadTable =
-        tables.find((table) => table.toLowerCase().includes("wikitable")) ?? null;
-    }
+    const squadTable = findBestSquadTable(html);
 
     if (!squadTable) {
       return NextResponse.json(
         {
-          error: "Ingen tabell hittades på Wikipedia-sidan.",
+          error: "Kunde inte hitta någon läsbar spelartrupp på Wikipedia-sidan.",
         },
         { status: 400 }
       );
@@ -387,7 +471,22 @@ export async function POST(
           debug: {
             team: team.name,
             wikipediaTitle: team.wikipedia_title,
-            tablePreview: squadTable.slice(0, 800),
+            tablePreview: squadTable.slice(0, 1200),
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    if (players.length > 35) {
+      return NextResponse.json(
+        {
+          error: "För många spelare hittades. Troligen valdes fel tabell.",
+          debug: {
+            team: team.name,
+            wikipediaTitle: team.wikipedia_title,
+            count: players.length,
+            names: players.slice(0, 20).map((player) => player.name),
           },
         },
         { status: 400 }
