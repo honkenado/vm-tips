@@ -125,25 +125,25 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
 
   return (
     <main className="min-h-screen bg-slate-100">
-      <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-4 py-4 md:px-6 md:py-6">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1400px] flex-col gap-4 px-4 py-4 md:px-6 md:py-4">
         {/* HERO / DASHBOARD-TOPP */}
-        <section className="overflow-hidden rounded-[2rem] border border-slate-800 bg-[radial-gradient(circle_at_top_left,_rgba(22,163,74,0.55),_rgba(3,7,18,1)_75%)] text-white shadow-xl">
-          <div className="grid gap-6 p-4 md:grid-cols-[1.4fr_0.9fr] md:p-8">
+        <section className="overflow-hidden rounded-[2rem] border border-slate-800 bg-[radial-gradient(circle_at_top_left,_rgba(22,163,74,0.55),_rgba(3,7,18,1)_75%)] text-white shadow-xl lg:min-h-[calc(100vh-2rem)]">
+          <div className="grid gap-4 p-4 md:grid-cols-[1.35fr_0.85fr] md:p-6 lg:h-full">
             {/* Vänster */}
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between md:justify-start">
                 <span className="inline-flex w-fit rounded-full border border-white/15 bg-white/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/85">
                   FIFA World Cup 2026
                 </span>
               </div>
 
-              <div className="flex flex-col gap-5 md:flex-row md:items-start">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start">
                 <div className="shrink-0">
-                  <div className="flex h-28 w-28 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-lg md:h-36 md:w-36">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-lg md:h-28 md:w-28">
                     <img
                       src="/logo.png"
                       alt="Addes VM-tips"
-                      className="h-24 w-24 object-contain md:h-32 md:w-32"
+                      className="h-20 w-20 object-contain md:h-24 md:w-24"
                     />
                   </div>
                 </div>
@@ -237,7 +237,7 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
             </div>
 
             {/* Höger */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               <div className="flex flex-col items-start gap-3 rounded-[1.75rem] border border-white/10 bg-slate-950/30 p-4 shadow-lg md:items-end">
                 <div className="text-sm text-white/80">{displayName}</div>
 
@@ -282,7 +282,7 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
                 </div>
               </div>
 
-              <div className="rounded-[1.75rem] bg-white p-5 text-slate-900 shadow-lg">
+              <div className="rounded-[1.75rem] bg-white p-4 text-slate-900 shadow-lg">
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div>
                     <p className="text-3xl font-black tracking-tight">Nästa match</p>
@@ -343,7 +343,7 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
                 </Link>
               </div>
 
-              <div className="rounded-[1.75rem] bg-white p-5 text-slate-900 shadow-lg">
+              <div className="rounded-[1.75rem] bg-white p-4 text-slate-900 shadow-lg">
                 <h2 className="text-2xl font-black tracking-tight">Din status</h2>
                 <div className="mt-3 text-sm text-slate-500">
                   Du har sparat ditt tips men inte skickat in allt ännu.
@@ -381,7 +381,7 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
                 </div>
               </div>
 
-              <div className="rounded-[1.75rem] bg-white p-5 text-slate-900 shadow-lg">
+              <className="rounded-[1.75rem] bg-white p-4 text-slate-900 shadow-lg">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="text-2xl font-black tracking-tight">
@@ -448,7 +448,7 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
         </section>
 
         {/* INNEHÅLL UNDER HERO */}
-        <section className="grid gap-6 lg:grid-cols-[1.9fr_1fr]">
+        <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between gap-3 bg-[radial-gradient(circle_at_top_left,_rgba(22,163,74,0.85),_rgba(2,6,23,1)_70%)] px-5 py-4 text-white">
               <div>
