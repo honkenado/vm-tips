@@ -22,6 +22,14 @@ function formatNewsDate(dateString: string) {
   }).format(date);
 }
 
+function cleanNewsTitle(title: string) {
+  if (!title) return "";
+
+  return title
+    .replace(/\s*[–—-]\s*[^–—-]+$/, "")
+    .trim();
+}
+
 export default function TeamNews({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<TeamNewsItem[]>([]);
@@ -76,11 +84,11 @@ export default function TeamNews({ slug }: { slug: string }) {
       </div>
 
       {loading ? (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {[...Array(4)].map((_, index) => (
             <div
               key={index}
-              className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+              className="rounded-2xl border border-slate-200 bg-slate-50 p-3"
             >
               <div className="h-4 w-4/5 animate-pulse rounded bg-slate-200" />
               <div className="mt-3 h-3 w-1/3 animate-pulse rounded bg-slate-200" />
@@ -96,22 +104,22 @@ export default function TeamNews({ slug }: { slug: string }) {
           Inga relevanta nyheter hittades just nu.
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {items.map((item, index) => (
             <a
               key={`${item.link}-${index}`}
               href={item.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="block rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-emerald-300 hover:bg-emerald-50/60"
+              className="block rounded-2xl border border-slate-200 bg-slate-50 p-3 transition hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-sm"
             >
               <p className="text-[15px] font-bold leading-6 text-slate-900">
-                {item.title}
+                {cleanNewsTitle(item.title)}
               </p>
 
               <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-slate-500">
                 {item.source ? (
-                  <span className="font-semibold text-slate-700">
+                  <span className="font-semibold text-emerald-700">
                     {item.source}
                   </span>
                 ) : null}
