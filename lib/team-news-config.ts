@@ -349,11 +349,13 @@ export const TEAM_NEWS_OVERRIDES: Record<string, TeamNewsOverride> = {
     extraExcludeTerms: ["tourism", "travel", "economy"],
   },
 
-  saudiarabien: {
+    saudiarabien: {
     teamName: "Saudi Arabia",
     aliases: [
       "Saudi Arabia national team",
       "Saudi Arabia football team",
+      "Saudi national team",
+      "Saudi football team",
       "Green Falcons",
     ],
     strongAliases: ["Saudi Arabia national team", "Green Falcons"],
@@ -362,6 +364,7 @@ export const TEAM_NEWS_OVERRIDES: Record<string, TeamNewsOverride> = {
       "Firas Al-Buraikan",
       "Mohammed Al-Owais",
       "Saud Abdulhamid",
+      "Hassan Kadesh",
     ],
     extraExcludeTerms: [
       "oil",
@@ -372,6 +375,19 @@ export const TEAM_NEWS_OVERRIDES: Record<string, TeamNewsOverride> = {
       "defense",
       "defence",
       "diplomacy",
+      "flag football",
+      "where to watch",
+      "live stream",
+      "tv channels",
+      "broadcast",
+      "streaming",
+      "market",
+      "analysis and forecast",
+      "forecast to",
+      "gmp",
+      "reagents",
+      "indexbox",
+      "correction",
     ],
   },
 
@@ -450,11 +466,7 @@ export const TEAM_NEWS_OVERRIDES: Record<string, TeamNewsOverride> = {
       "Bafana Bafana",
     ],
     strongAliases: ["South Africa national team", "Bafana Bafana"],
-    players: [
-      "Percy Tau",
-      "Teboho Mokoena",
-      "Ronwen Williams",
-    ],
+    players: ["Percy Tau", "Teboho Mokoena", "Ronwen Williams"],
     extraExcludeTerms: [
       "election",
       "economy",
@@ -522,11 +534,7 @@ export const TEAM_NEWS_OVERRIDES: Record<string, TeamNewsOverride> = {
     teamName: "Tunisia",
     aliases: ["Tunisia national team", "Tunisia football team"],
     strongAliases: ["Tunisia national team"],
-    players: [
-      "Youssef Msakni",
-      "Ellyes Skhiri",
-      "Montassar Talbi",
-    ],
+    players: ["Youssef Msakni", "Ellyes Skhiri", "Montassar Talbi"],
   },
 
   tyskland: {

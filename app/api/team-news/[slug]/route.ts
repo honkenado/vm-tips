@@ -202,6 +202,15 @@ function getBaseExcludeTerms() {
     "visa",
     "daily life",
     "easter",
+    "where to watch",
+    "live stream",
+    "live streams",
+    "tv channel",
+    "tv channels",
+    "how to watch",
+    "broadcast",
+    "streaming",
+    "flag football",
   ];
 }
 
@@ -469,6 +478,41 @@ function hasFootballContext(text: string, config: TeamNewsConfig) {
   return footballHits > 0 || strongHits > 0;
 }
 
+function isWatchGuideArticle(item: NewsItem) {
+  const normalized = normalizeText(
+    `${item.title} ${item.description} ${item.source}`
+  );
+
+  const watchGuideTerms = [
+    "where to watch",
+    "how to watch",
+    "live stream",
+    "live streams",
+    "tv channel",
+    "tv channels",
+    "broadcast",
+    "streaming",
+  ];
+
+  return countMatches(normalized, watchGuideTerms) > 0;
+}
+
+function isOtherFootballCodeArticle(item: NewsItem) {
+  const normalized = normalizeText(
+    `${item.title} ${item.description} ${item.source}`
+  );
+
+  const wrongFootballTerms = [
+    "flag football",
+    "nfl",
+    "super bowl",
+    "touchdown",
+    "quarterback",
+  ];
+
+  return countMatches(normalized, wrongFootballTerms) > 0;
+}
+
 function isGeneralCountryArticle(item: NewsItem, config: TeamNewsConfig) {
   const normalized = normalizeText(
     `${item.title} ${item.description} ${item.source}`
@@ -556,12 +600,46 @@ function looksLikeWrongCountryGeneralNews(
 
   return teamHits > 0 && footballHits === 0 && nonFootballHits > 0;
 }
+function isJunkMarketOrGenericWireArticle(item: NewsItem) {
+  const normalized = normalizeText(
+    `${item.title} ${item.description} ${item.source}`
+  );
+
+  const junkTerms = [
+    "market",
+    "analysis and forecast",
+    "forecast to",
+    "gmp",
+    "cell-selection",
+    "cell selection",
+    "reagents",
+    "industry",
+    "size",
+    "growth",
+    "indexbox",
+    "correction",
+  ];
+
+  return countMatches(normalized, junkTerms) > 0;
+}
 
 function shouldRejectItem(item: NewsItem, config: TeamNewsConfig) {
   const combined = `${item.title} ${item.description} ${item.source}`;
   const normalized = normalizeText(combined);
 
   if (isTooOld(item.pubDate)) {
+    return true;
+  }
+
+  if (isWatchGuideArticle(item)) {
+    return true;
+  }
+
+  if (isOtherFootballCodeArticle(item)) {
+    return true;
+  }
+
+  if (isJunkMarketOrGenericWireArticle(item)) {
     return true;
   }
 
@@ -719,7 +797,7 @@ function rankAndFilterItems(items: NewsItem[], config: TeamNewsConfig) {
       ...item,
       score: scoreNewsItem(item, config),
     }))
-    .filter((item) => item.score >= 6)
+    .filter((item) => item.score >= 8)
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
 
