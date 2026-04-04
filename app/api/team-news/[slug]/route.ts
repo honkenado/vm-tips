@@ -28,11 +28,13 @@ type TeamNewsConfig = {
   strongIncludeTerms: string[];
   excludeTerms: string[];
   strongExcludeTerms: string[];
+  footballTerms: string[];
   maxItems: number;
 };
 
 function decodeHtmlEntities(text: string) {
   return text
+    .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
@@ -56,6 +58,21 @@ function extractTag(content: string, tag: string) {
   return decodeHtmlEntities(stripCdata(match[1].trim()));
 }
 
+function extractSourceFromDescription(description: string) {
+  const cleaned = stripHtml(description);
+
+  const sourceSplit = cleaned
+    .split(/\s{2,}| {2,}| \u00a0\u00a0 | \u00a0{2,}/g)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (sourceSplit.length >= 2) {
+    return sourceSplit[sourceSplit.length - 1];
+  }
+
+  return "";
+}
+
 function parseRssItems(xml: string): NewsItem[] {
   const itemMatches = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)];
 
@@ -66,8 +83,10 @@ function parseRssItems(xml: string): NewsItem[] {
       const title = extractTag(itemXml, "title");
       const link = extractTag(itemXml, "link");
       const pubDate = extractTag(itemXml, "pubDate");
-      const source = extractTag(itemXml, "source");
-      const description = stripHtml(extractTag(itemXml, "description"));
+      const sourceFromTag = extractTag(itemXml, "source");
+      const rawDescription = extractTag(itemXml, "description");
+      const description = stripHtml(rawDescription);
+      const source = sourceFromTag || extractSourceFromDescription(rawDescription);
 
       return {
         title,
@@ -137,6 +156,7 @@ function getGenericAliases(teamName: string) {
     `${teamName} national team`,
     `${teamName} football team`,
     `${teamName} national football team`,
+    `${teamName} soccer team`,
   ];
 }
 
@@ -160,10 +180,28 @@ function getBaseExcludeTerms() {
     "schedule",
     "fixtures",
     "draw",
-    "group stage",
-    "preview",
     "best bets",
     "tips",
+    "stocks",
+    "economy",
+    "trade",
+    "tariffs",
+    "diplomacy",
+    "war",
+    "missile",
+    "cyber",
+    "malware",
+    "defense",
+    "defence",
+    "election",
+    "parliament",
+    "president",
+    "prime minister",
+    "tourism",
+    "travel",
+    "visa",
+    "daily life",
+    "easter",
   ];
 }
 
@@ -190,8 +228,96 @@ function getBaseStrongExcludeTerms() {
     "u-23",
     "under-23",
     "olympic team",
+    "olympic squad",
     "futsal",
     "beach soccer",
+    "basketball",
+    "baseball",
+    "volleyball",
+    "handball",
+    "hockey",
+    "esports",
+  ];
+}
+
+function getBaseFootballTerms() {
+  return [
+    "football",
+    "soccer",
+    "fifa",
+    "uefa",
+    "afc",
+    "caf",
+    "concacaf",
+    "conmebol",
+    "ofc",
+    "national team",
+    "football team",
+    "national football team",
+    "soccer team",
+    "coach",
+    "manager",
+    "squad",
+    "roster",
+    "lineup",
+    "starting xi",
+    "selection",
+    "call-up",
+    "call up",
+    "callups",
+    "captain",
+    "goalkeeper",
+    "defender",
+    "midfielder",
+    "forward",
+    "striker",
+    "winger",
+    "qualifier",
+    "qualifiers",
+    "world cup qualifier",
+    "world cup qualifying",
+    "friendly",
+    "international break",
+    "training camp",
+    "injury",
+    "injured",
+    "returns",
+    "recall",
+    "match",
+    "matches",
+  ];
+}
+
+function getStrongFootballPhrases() {
+  return [
+    "national team",
+    "football team",
+    "national football team",
+    "soccer team",
+    "coach",
+    "manager",
+    "squad",
+    "roster",
+    "lineup",
+    "starting xi",
+    "call-up",
+    "call up",
+    "qualifier",
+    "qualifiers",
+    "world cup qualifier",
+    "world cup qualifying",
+    "friendly",
+    "captain",
+    "goalkeeper",
+    "defender",
+    "midfielder",
+    "forward",
+    "striker",
+    "winger",
+    "training camp",
+    "injury",
+    "injured",
+    "recall",
   ];
 }
 
@@ -203,14 +329,36 @@ function buildGoogleNewsQuery(config: {
   const mainTerms = uniq([config.teamName, ...config.aliases]).map(
     (term) => `"${term}"`
   );
+
   const playerTerms = uniq(config.players).map((term) => `"${term}"`);
 
-  const positiveParts: string[] = [];
-  if (mainTerms.length > 0) positiveParts.push(`(${mainTerms.join(" OR ")})`);
-  if (playerTerms.length > 0)
-    positiveParts.push(`(${playerTerms.join(" OR ")})`);
+  const footballTerms = [
+    '"football"',
+    '"soccer"',
+    '"national team"',
+    '"football team"',
+    '"squad"',
+    '"coach"',
+    '"lineup"',
+    '"roster"',
+    '"qualifier"',
+    '"fifa"',
+    '"friendly"',
+  ];
 
-  const freshnessParts = ["when:14d"];
+  const positiveParts: string[] = [];
+
+  if (mainTerms.length > 0) {
+    positiveParts.push(`(${mainTerms.join(" OR ")})`);
+  }
+
+  positiveParts.push(`(${footballTerms.join(" OR ")})`);
+
+  if (playerTerms.length > 0) {
+    positiveParts.push(`(${playerTerms.join(" OR ")})`);
+  }
+
+  const freshnessParts = ["when:30d"];
 
   const negativeParts = [
     "-women",
@@ -228,12 +376,26 @@ function buildGoogleNewsQuery(config: {
     '-"under-21"',
     "-u23",
     '-"under-23"',
+    "-olympic",
     "-futsal",
     '-"beach soccer"',
     "-odds",
     "-betting",
     "-prediction",
     "-fantasy",
+    "-war",
+    "-trade",
+    "-defense",
+    "-defence",
+    "-iran",
+    "-malware",
+    "-cyber",
+    "-diplomacy",
+    "-election",
+    "-tourism",
+    "-visa",
+    "-travel",
+    "-easter",
   ];
 
   return [...positiveParts, ...freshnessParts, ...negativeParts].join(" ");
@@ -274,9 +436,9 @@ function isTooOld(pubDate: string) {
   if (!timestamp) return false;
 
   const now = Date.now();
-  const fourteenDays = 14 * 24 * 60 * 60 * 1000;
+  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
 
-  return now - timestamp > fourteenDays;
+  return now - timestamp > thirtyDays;
 }
 
 function isSwedishSource(text: string) {
@@ -292,9 +454,107 @@ function isSwedishSource(text: string) {
     "svenskafans",
     "dn",
     "svd",
+    "gp.se",
+    "hd.se",
+    "bt.se",
   ];
 
   return swedishIndicators.some((term) => value.includes(term));
+}
+
+function hasFootballContext(text: string, config: TeamNewsConfig) {
+  const footballHits = countMatches(text, config.footballTerms);
+  const strongHits = countMatches(text, getStrongFootballPhrases());
+
+  return footballHits > 0 || strongHits > 0;
+}
+
+function isGeneralCountryArticle(item: NewsItem, config: TeamNewsConfig) {
+  const normalized = normalizeText(
+    `${item.title} ${item.description} ${item.source}`
+  );
+
+  const includeHits =
+    countMatches(normalized, config.includeTerms) +
+    countMatches(normalized, config.strongIncludeTerms);
+
+  const footballHits =
+    countMatches(normalized, config.footballTerms) +
+    countMatches(normalized, getStrongFootballPhrases());
+
+  const generalNewsTerms = [
+    "daily life",
+    "easter",
+    "travel",
+    "tourism",
+    "visa",
+    "war",
+    "trade",
+    "economy",
+    "security",
+    "defense",
+    "defence",
+    "diplomacy",
+    "election",
+    "president",
+    "prime minister",
+    "macron",
+    "parliament",
+    "stocks",
+    "tariffs",
+    "military",
+    "conflict",
+    "malware",
+    "cyber",
+  ];
+
+  const generalHits = countMatches(normalized, generalNewsTerms);
+
+  return includeHits > 0 && footballHits === 0 && generalHits > 0;
+}
+
+function looksLikeWrongCountryGeneralNews(
+  item: NewsItem,
+  config: TeamNewsConfig
+) {
+  const normalized = normalizeText(
+    `${item.title} ${item.description} ${item.source}`
+  );
+
+  const teamHits =
+    countMatches(normalized, config.includeTerms) +
+    countMatches(normalized, config.strongIncludeTerms);
+
+  const footballHits =
+    countMatches(normalized, config.footballTerms) +
+    countMatches(normalized, getStrongFootballPhrases());
+
+  const nonFootballSignals = [
+    "war",
+    "trade",
+    "tariff",
+    "economy",
+    "defense",
+    "defence",
+    "missile",
+    "military",
+    "cyber",
+    "malware",
+    "election",
+    "diplomacy",
+    "security",
+    "conflict",
+    "stocks",
+    "travel",
+    "tourism",
+    "visa",
+    "daily life",
+    "easter",
+  ];
+
+  const nonFootballHits = countMatches(normalized, nonFootballSignals);
+
+  return teamHits > 0 && footballHits === 0 && nonFootballHits > 0;
 }
 
 function shouldRejectItem(item: NewsItem, config: TeamNewsConfig) {
@@ -315,6 +575,18 @@ function shouldRejectItem(item: NewsItem, config: TeamNewsConfig) {
     countMatches(normalized, config.strongIncludeTerms);
 
   if (includeHits === 0) {
+    return true;
+  }
+
+  if (!hasFootballContext(normalized, config)) {
+    return true;
+  }
+
+  if (isGeneralCountryArticle(item, config)) {
+    return true;
+  }
+
+  if (looksLikeWrongCountryGeneralNews(item, config)) {
     return true;
   }
 
@@ -341,6 +613,9 @@ function scoreNewsItem(item: NewsItem, config: TeamNewsConfig) {
     config.strongIncludeTerms
   );
 
+  const footballInTitle = countMatches(title, config.footballTerms);
+  const footballInDescription = countMatches(description, config.footballTerms);
+
   const excludeInTitle = countMatches(title, config.excludeTerms);
   const excludeInDescription = countMatches(description, config.excludeTerms);
   const strongExcludeInTitle = countMatches(title, config.strongExcludeTerms);
@@ -353,6 +628,9 @@ function scoreNewsItem(item: NewsItem, config: TeamNewsConfig) {
   score += includeInDescription * 2;
   score += strongIncludeInTitle * 8;
   score += strongIncludeInDescription * 4;
+
+  score += footballInTitle * 4;
+  score += footballInDescription * 2;
 
   score -= excludeInTitle * 5;
   score -= excludeInDescription * 3;
@@ -370,16 +648,27 @@ function scoreNewsItem(item: NewsItem, config: TeamNewsConfig) {
   if (containsPhrase(title, "roster")) score += 2;
   if (containsPhrase(title, "call-up")) score += 2;
   if (containsPhrase(title, "call up")) score += 2;
-  if (containsPhrase(title, "coach")) score += 1;
+  if (containsPhrase(title, "coach")) score += 2;
   if (containsPhrase(title, "manager")) score += 1;
+  if (containsPhrase(title, "captain")) score += 1;
   if (containsPhrase(title, "injury")) score += 1;
   if (containsPhrase(title, "injured")) score += 1;
+  if (containsPhrase(title, "qualifier")) score += 2;
+  if (containsPhrase(title, "friendly")) score += 1;
 
   if (isLikelyGenericTournamentArticle(combined, config)) {
     score -= 8;
   }
 
-  if (isSwedishSource(`${item.source} ${item.title}`)) {
+  if (isGeneralCountryArticle(item, config)) {
+    score -= 20;
+  }
+
+  if (looksLikeWrongCountryGeneralNews(item, config)) {
+    score -= 20;
+  }
+
+  if (isSwedishSource(`${item.source} ${item.title} ${item.link}`)) {
     score += 5;
   }
 
@@ -430,7 +719,7 @@ function rankAndFilterItems(items: NewsItem[], config: TeamNewsConfig) {
       ...item,
       score: scoreNewsItem(item, config),
     }))
-    .filter((item) => item.score >= 4)
+    .filter((item) => item.score >= 6)
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
 
@@ -471,6 +760,8 @@ function getTeamNewsConfig(slug: string): TeamNewsConfig {
 
   const players = uniq(override?.players ?? []);
 
+  const footballTerms = uniq([...getBaseFootballTerms(), ...players]);
+
   return {
     slug: normalizedSlug,
     teamName,
@@ -484,6 +775,7 @@ function getTeamNewsConfig(slug: string): TeamNewsConfig {
     strongIncludeTerms: strongAliases,
     excludeTerms,
     strongExcludeTerms,
+    footballTerms,
     maxItems: 5,
   };
 }
