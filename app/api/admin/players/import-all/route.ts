@@ -1,0 +1,606 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+
+type TeamRow = {
+  id: string;
+  name: string;
+  wikipedia_title: string | null;
+};
+
+type ParsedPlayer = {
+  name: string;
+  position: string;
+  club: string | null;
+  age: number | null;
+  caps: number | null;
+  goals: number | null;
+  shirtNumber: number | null;
+};
+
+type WikiSection = {
+  index: string;
+  line: string;
+};
+
+type SquadTableResult = {
+  table: string | null;
+  source: "section" | "full-page-fallback" | "no-current-squad-section";
+  section: string | null;
+};
+
+function decodeHtmlEntities(text: string) {
+  return text
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function stripTags(html: string) {
+  return decodeHtmlEntities(
+    html
+      .replace(/<br\s*\/?>/gi, " ")
+      .replace(/<\/p>/gi, " ")
+      .replace(/<sup[^>]*>[\s\S]*?<\/sup>/gi, " ")
+      .replace(
+        /<span[^>]*style="[^"]*display\s*:\s*none[^"]*"[^>]*>[\s\S]*?<\/span>/gi,
+        " "
+      )
+      .replace(
+        /<span[^>]*class="[^"]*flagicon[^"]*"[^>]*>[\s\S]*?<\/span>/gi,
+        " "
+      )
+      .replace(/<img[^>]*>/gi, " ")
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\[[^\]]*\]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+}
+
+function extractTables(html: string) {
+  return Array.from(html.matchAll(/<table[^>]*>[\s\S]*?<\/table>/gi)).map(
+    (m) => m[0]
+  );
+}
+
+function extractRows(tableHtml: string) {
+  return Array.from(tableHtml.matchAll(/<tr[^>]*>[\s\S]*?<\/tr>/gi)).map(
+    (m) => m[0]
+  );
+}
+
+function extractCells(rowHtml: string) {
+  return Array.from(rowHtml.matchAll(/<t[hd][^>]*>[\s\S]*?<\/t[hd]>/gi)).map(
+    (m) => m[0]
+  );
+}
+
+function cellTag(cellHtml: string) {
+  const match = cellHtml.match(/^<\s*(t[hd])/i);
+  return match?.[1]?.toLowerCase() ?? "td";
+}
+
+function findColumnIndex(headers: string[], variants: string[]) {
+  return headers.findIndex((h) => variants.some((v) => h.includes(v)));
+}
+
+function normalizePosition(value: string) {
+  const text = value.toLowerCase().replace(/\s+/g, " ").trim();
+
+  if (
+    /\bgk\b/.test(text) ||
+    text.includes("goalkeeper") ||
+    text.includes("keeper")
+  ) {
+    return "GK";
+  }
+
+  if (
+    /\bdf\b/.test(text) ||
+    text.includes("defender") ||
+    text.includes("centre-back") ||
+    text.includes("center-back") ||
+    text.includes("full-back") ||
+    text.includes("back")
+  ) {
+    return "DF";
+  }
+
+  if (
+    /\bmf\b/.test(text) ||
+    text.includes("midfielder") ||
+    text.includes("midfield") ||
+    text.includes("winger")
+  ) {
+    return "MF";
+  }
+
+  if (
+    /\bfw\b/.test(text) ||
+    text.includes("forward") ||
+    text.includes("striker") ||
+    text.includes("attacker")
+  ) {
+    return "FW";
+  }
+
+  return "";
+}
+
+function parseNumber(value: string): number | null {
+  const match = value.replace(/,/g, "").match(/-?\d+/);
+  return match ? Number(match[0]) : null;
+}
+
+function parseShirtNumber(value: string): number | null {
+  const match = value.match(/\b\d{1,2}\b/);
+  return match ? Number(match[0]) : null;
+}
+
+function calculateAgeFromDate(dateString: string): number | null {
+  const parsed = new Date(dateString);
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  const today = new Date();
+  let age = today.getFullYear() - parsed.getFullYear();
+
+  const monthDiff = today.getMonth() - parsed.getMonth();
+  const dayDiff = today.getDate() - parsed.getDate();
+
+  if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+    age -= 1;
+  }
+
+  return age >= 0 && age <= 60 ? age : null;
+}
+
+function parseAge(textValue: string, rawHtml?: string): number | null {
+  const normalizedText = decodeHtmlEntities(textValue)
+    .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const normalizedHtml = decodeHtmlEntities(rawHtml ?? "")
+    .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ");
+
+  const agePatterns = [
+    /\(age\s*(\d{1,2})\)/i,
+    /age\s*(\d{1,2})/i,
+    /\((\d{1,2})\)/,
+  ];
+
+  for (const pattern of agePatterns) {
+    const textMatch = normalizedText.match(pattern);
+    if (textMatch) {
+      const age = Number(textMatch[1]);
+      if (age >= 15 && age <= 50) return age;
+    }
+
+    const htmlMatch = normalizedHtml.match(pattern);
+    if (htmlMatch) {
+      const age = Number(htmlMatch[1]);
+      if (age >= 15 && age <= 50) return age;
+    }
+  }
+
+  const bdayMatch = normalizedHtml.match(
+    /class=["']bday["'][^>]*>(\d{4}-\d{2}-\d{2})</i
+  );
+
+  if (bdayMatch) {
+    return calculateAgeFromDate(bdayMatch[1]);
+  }
+
+  const longDateMatch = normalizedText.match(
+    /\b(\d{1,2}\s+[A-Za-z]+\s+\d{4})\b/
+  );
+
+  if (longDateMatch) {
+    return calculateAgeFromDate(longDateMatch[1]);
+  }
+
+  return null;
+}
+
+function isRecentCallupsTable(tableHtml: string) {
+  const lower = tableHtml.toLowerCase();
+  return lower.includes("recent call");
+}
+
+function isLikelySquadTable(tableHtml: string) {
+  const lower = tableHtml.toLowerCase();
+  if (isRecentCallupsTable(tableHtml)) return false;
+
+  const rows = extractRows(tableHtml).slice(0, 10);
+
+  for (const row of rows) {
+    const cells = extractCells(row);
+    if (cells.length === 0) continue;
+
+    const texts = cells.map((cell) => stripTags(cell).toLowerCase());
+    const joined = texts.join(" | ");
+
+    const hasPlayer = /player|name/.test(joined);
+    const hasPos = /pos|position/.test(joined);
+    const hasClub = /club|team/.test(joined);
+    const hasCaps = /caps/.test(joined);
+    const hasGoals = /goals|goal|gls/.test(joined);
+    const hasAge = /date of birth|age/.test(joined);
+    const hasNumber = /\bno\b|number/.test(joined);
+
+    if (
+      hasPlayer &&
+      (hasPos || hasClub || hasCaps || hasGoals || hasAge || hasNumber)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function chooseBestTable(tables: string[]) {
+  const scored = tables
+    .filter((table) => !isRecentCallupsTable(table))
+    .map((table) => {
+      const rows = extractRows(table);
+      const rowCount = rows.length;
+
+      const previewText = rows
+        .slice(0, 6)
+        .map((row) => stripTags(row).toLowerCase())
+        .join(" | ");
+
+      let score = 0;
+
+      if (/player|name/.test(previewText)) score += 4;
+      if (/pos|position/.test(previewText)) score += 3;
+      if (/club|team/.test(previewText)) score += 2;
+      if (/caps/.test(previewText)) score += 2;
+      if (/goals|goal|gls/.test(previewText)) score += 1;
+      if (/date of birth|age/.test(previewText)) score += 1;
+      if (rowCount >= 8 && rowCount <= 40) score += 3;
+
+      return {
+        table,
+        rowCount,
+        score,
+      };
+    })
+    .sort((a, b) => b.score - a.score || a.rowCount - b.rowCount);
+
+  return scored[0]?.table ?? null;
+}
+
+function parsePlayersFromTable(tableHtml: string): ParsedPlayer[] {
+  const rows = extractRows(tableHtml);
+  let headers: string[] = [];
+  let lastKnownPosition = "";
+  const players: ParsedPlayer[] = [];
+
+  for (const row of rows) {
+    const cells = extractCells(row);
+    const texts = cells.map((cell) => stripTags(cell));
+    const lower = texts.map((text) => text.toLowerCase());
+
+    const isHeader =
+      cells.every((cell) => cellTag(cell) === "th") ||
+      (
+        lower.some((t) => t.includes("player") || t.includes("name")) &&
+        (
+          lower.some((t) => t.includes("pos")) ||
+          lower.some((t) => t.includes("position")) ||
+          lower.some((t) => t.includes("club")) ||
+          lower.some((t) => t.includes("caps"))
+        )
+      );
+
+    if (isHeader) {
+      headers = lower;
+      continue;
+    }
+
+    if (headers.length === 0) continue;
+
+    const nameIdx = findColumnIndex(headers, ["name", "player"]);
+    const posIdx = findColumnIndex(headers, ["pos", "position"]);
+    const clubIdx = findColumnIndex(headers, ["club", "team"]);
+    const ageIdx = findColumnIndex(headers, ["age", "date of birth"]);
+    const capsIdx = findColumnIndex(headers, ["caps"]);
+    const goalsIdx = findColumnIndex(headers, ["goal", "goals", "gls"]);
+    const numberIdx = findColumnIndex(headers, ["no", "number"]);
+
+    if (nameIdx === -1) continue;
+
+    const rawName = texts[nameIdx]?.trim() ?? "";
+    const rawPosition = posIdx >= 0 ? texts[posIdx] ?? "" : "";
+    const rawAgeCell = ageIdx >= 0 ? cells[ageIdx] ?? "" : "";
+    const normalizedPosition = normalizePosition(rawPosition) || lastKnownPosition;
+
+    if (normalizePosition(rawName) && texts.length <= 2) {
+      lastKnownPosition = normalizePosition(rawName);
+      continue;
+    }
+
+    if (normalizedPosition) {
+      lastKnownPosition = normalizedPosition;
+    }
+
+    if (!rawName || !normalizedPosition) continue;
+
+    if (
+      /^(player|name|pos|position|club|team|caps|goals|goal|gls|date of birth|age|no\.?|number)$/i.test(
+        rawName
+      )
+    ) {
+      continue;
+    }
+
+    players.push({
+      name: rawName,
+      position: normalizedPosition,
+      club: clubIdx >= 0 ? texts[clubIdx] ?? null : null,
+      age: ageIdx >= 0 ? parseAge(texts[ageIdx] ?? "", rawAgeCell) : null,
+      caps: capsIdx >= 0 ? parseNumber(texts[capsIdx] ?? "") : null,
+      goals: goalsIdx >= 0 ? parseNumber(texts[goalsIdx] ?? "") : null,
+      shirtNumber: numberIdx >= 0 ? parseShirtNumber(texts[numberIdx] ?? "") : null,
+    });
+  }
+
+  const unique = new Map<string, ParsedPlayer>();
+
+  for (const player of players) {
+    const key = `${player.name.toLowerCase()}-${player.position}`;
+    if (!unique.has(key)) {
+      unique.set(key, player);
+    }
+  }
+
+  return Array.from(unique.values());
+}
+
+async function fetchSections(title: string): Promise<WikiSection[]> {
+  const url = new URL("https://en.wikipedia.org/w/api.php");
+  url.searchParams.set("action", "parse");
+  url.searchParams.set("page", title);
+  url.searchParams.set("prop", "sections");
+  url.searchParams.set("format", "json");
+  url.searchParams.set("formatversion", "2");
+  url.searchParams.set("origin", "*");
+  url.searchParams.set("redirects", "1");
+
+  const res = await fetch(url.toString(), {
+    cache: "no-store",
+    headers: {
+      "User-Agent": "AddesVMTips/1.0",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Kunde inte hämta Wikipedia-sektioner");
+  }
+
+  const json = await res.json();
+  return json.parse?.sections ?? [];
+}
+
+async function fetchSectionHtml(title: string, index: string) {
+  const url = new URL("https://en.wikipedia.org/w/api.php");
+  url.searchParams.set("action", "parse");
+  url.searchParams.set("page", title);
+  url.searchParams.set("section", index);
+  url.searchParams.set("prop", "text");
+  url.searchParams.set("format", "json");
+  url.searchParams.set("formatversion", "2");
+  url.searchParams.set("origin", "*");
+  url.searchParams.set("redirects", "1");
+
+  const res = await fetch(url.toString(), {
+    cache: "no-store",
+    headers: {
+      "User-Agent": "AddesVMTips/1.0",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Kunde inte hämta Wikipedia-sektion");
+  }
+
+  const json = await res.json();
+  return json.parse?.text ?? "";
+}
+
+async function findBestSquadTable(title: string): Promise<SquadTableResult> {
+  const sections = await fetchSections(title);
+
+  const section = sections.find((s) =>
+    s.line.toLowerCase().includes("current squad")
+  );
+
+  if (!section) {
+    return {
+      table: null,
+      source: "no-current-squad-section",
+      section: null,
+    };
+  }
+
+  const html = await fetchSectionHtml(title, section.index);
+  const tables = extractTables(html).filter(isLikelySquadTable);
+  const table = chooseBestTable(tables);
+
+  if (!table) {
+    return {
+      table: null,
+      source: "section",
+      section: section.line,
+    };
+  }
+
+  return {
+    table,
+    source: "section",
+    section: section.line,
+  };
+}
+
+async function importTeamPlayers(supabase: Awaited<ReturnType<typeof createClient>>, team: TeamRow) {
+  if (!team.wikipedia_title) {
+    return {
+      ok: false as const,
+      teamId: team.id,
+      teamName: team.name,
+      count: 0,
+      error: "Ingen wikipedia_title",
+    };
+  }
+
+  const result = await findBestSquadTable(team.wikipedia_title);
+
+  if (!result.table) {
+    return {
+      ok: false as const,
+      teamId: team.id,
+      teamName: team.name,
+      count: 0,
+      error: "Ingen tabell hittades",
+      debug: {
+        source: result.source,
+        section: result.section,
+        wikipediaTitle: team.wikipedia_title,
+      },
+    };
+  }
+
+  const players = parsePlayersFromTable(result.table);
+
+  if (players.length === 0) {
+    return {
+      ok: false as const,
+      teamId: team.id,
+      teamName: team.name,
+      count: 0,
+      error: "Parsern hittade inga spelare",
+      debug: {
+        source: result.source,
+        section: result.section,
+        wikipediaTitle: team.wikipedia_title,
+      },
+    };
+  }
+
+  const { error: deleteError } = await supabase
+    .from("team_players")
+    .delete()
+    .eq("team_id", team.id);
+
+  if (deleteError) {
+    return {
+      ok: false as const,
+      teamId: team.id,
+      teamName: team.name,
+      count: 0,
+      error: deleteError.message,
+    };
+  }
+
+  const insertRows = players.map((player) => ({
+    team_id: team.id,
+    name: player.name,
+    position: player.position,
+    club: player.club,
+    age: player.age,
+    caps: player.caps,
+    goals: player.goals,
+    shirt_number: player.shirtNumber,
+    source: "wikipedia",
+  }));
+
+  const { error: insertError } = await supabase
+    .from("team_players")
+    .insert(insertRows);
+
+  if (insertError) {
+    return {
+      ok: false as const,
+      teamId: team.id,
+      teamName: team.name,
+      count: 0,
+      error: insertError.message,
+    };
+  }
+
+  return {
+    ok: true as const,
+    teamId: team.id,
+    teamName: team.name,
+    count: players.length,
+    debug: {
+      source: result.source,
+      section: result.section,
+    },
+  };
+}
+
+export async function POST() {
+  try {
+    const supabase = await createClient();
+
+    const { data: teams, error: teamsError } = await supabase
+      .from("teams")
+      .select("id, name, wikipedia_title")
+      .not("wikipedia_title", "is", null)
+      .order("name", { ascending: true });
+
+    if (teamsError) {
+      return NextResponse.json(
+        { error: teamsError.message },
+        { status: 400 }
+      );
+    }
+
+    const results = [];
+
+    for (const team of (teams ?? []) as TeamRow[]) {
+      try {
+        const result = await importTeamPlayers(supabase, team);
+        results.push(result);
+      } catch (error) {
+        results.push({
+          ok: false as const,
+          teamId: team.id,
+          teamName: team.name,
+          count: 0,
+          error:
+            error instanceof Error ? error.message : "Okänt fel vid import",
+        });
+      }
+    }
+
+    const successCount = results.filter((result) => result.ok).length;
+    const failCount = results.length - successCount;
+    const importedPlayers = results.reduce(
+      (sum, result) => sum + (result.count ?? 0),
+      0
+    );
+
+    return NextResponse.json({
+      ok: true,
+      teams: results.length,
+      successCount,
+      failCount,
+      importedPlayers,
+      results,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Okänt fel vid massimport";
+
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
