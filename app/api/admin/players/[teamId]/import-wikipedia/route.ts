@@ -1,613 +1,384 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createReadOnlyClient } from "@/lib/supabase/server-readonly";
+import {
+  getAllStaticTeamProfiles,
+  getStaticTeamsGroupedByLetter,
+} from "@/lib/teams-static";
+import type {
+  QualificationEntry,
+  TeamLineup,
+  TeamPlayer,
+  TeamProfile,
+} from "@/types/team";
 
 type TeamRow = {
   id: string;
   name: string;
+  slug: string;
+  group_letter: string;
+  fifa_rank: number | null;
+  coach: string | null;
+  confederation: string | null;
   wikipedia_title: string | null;
+  short_description: string | null;
+  qualification_summary: string | null;
+  squad_status: string | null;
+  source: string | null;
+  updated_at: string | null;
 };
 
-type ParsedPlayer = {
+type TeamPlayerRow = {
+  id: string;
+  team_id: string;
   name: string;
   position: string;
   club: string | null;
   age: number | null;
   caps: number | null;
   goals: number | null;
+  shirt_number: number | null;
+  squad_status: string | null;
+  source: string | null;
+  updated_at: string | null;
 };
 
-type WikiSection = {
-  index: string;
-  line: string;
+type QualificationRow = {
+  id: string;
+  team_id: string;
+  label: string;
+  opponent: string | null;
+  result: string | null;
+  match_date: string | null;
+  note: string | null;
+  sort_order: number | null;
 };
 
-function decodeHtmlEntities(text: string) {
-  return text
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+type TeamLineupRow = {
+  id: string;
+  team_id: string;
+  lineup_name: string;
+  formation: string;
+};
+
+type TeamLineupSlotRow = {
+  id: string;
+  lineup_id: string;
+  slot_key: string;
+  role_label: string;
+  x_pos: number | string;
+  y_pos: number | string;
+  player_id: string | null;
+};
+
+const POSITION_ORDER: Record<string, number> = {
+  GK: 1,
+  DF: 2,
+  MF: 3,
+  FW: 4,
+};
+
+function getPlayerSortValue(position: string | null | undefined) {
+  return POSITION_ORDER[position ?? ""] ?? 99;
 }
 
-function stripTags(html: string) {
-  return decodeHtmlEntities(
-    html
-      .replace(/<br\s*\/?>/gi, " ")
-      .replace(/<\/p>/gi, " ")
-      .replace(/<sup[^>]*>[\s\S]*?<\/sup>/gi, " ")
-      .replace(/<span[^>]*style="[^"]*display\s*:\s*none[^"]*"[^>]*>[\s\S]*?<\/span>/gi, " ")
-      .replace(/<span[^>]*class="[^"]*flagicon[^"]*"[^>]*>[\s\S]*?<\/span>/gi, " ")
-      .replace(/<img[^>]*>/gi, " ")
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\[[^\]]*\]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-  );
-}
+function sortPlayerRows(rows: TeamPlayerRow[]) {
+  return [...rows].sort((a, b) => {
+    const posA = getPlayerSortValue(a.position);
+    const posB = getPlayerSortValue(b.position);
 
-function extractWikiLinks(html: string) {
-  const matches = Array.from(
-    html.matchAll(/<a[^>]*title="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)
-  );
+    if (posA !== posB) return posA - posB;
 
-  return matches
-    .map((match) => stripTags(match[2]))
-    .filter(Boolean)
-    .filter(
-      (text) =>
-        !/^\d+$/.test(text) &&
-        !/^(club|caps|goals|pos|player|name|age|no\.?)$/i.test(text)
-    );
-}
+    const shirtA = a.shirt_number ?? 999;
+    const shirtB = b.shirt_number ?? 999;
 
-function removeCaptainAndNotes(name: string) {
-  return name
-    .replace(/\(captain\)/gi, "")
-    .replace(/\(vice-captain\)/gi, "")
-    .replace(/\(vc\)/gi, "")
-    .replace(/\(c\)/gi, "")
-    .replace(/\[[^\]]*\]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+    if (shirtA !== shirtB) return shirtA - shirtB;
 
-function normalizePosition(value: string) {
-  const text = value.toLowerCase().replace(/\s+/g, " ").trim();
-
-  if (
-    /\bgk\b/.test(text) ||
-    text.includes("goalkeeper") ||
-    text.includes("keeper")
-  ) {
-    return "GK";
-  }
-
-  if (
-    /\bdf\b/.test(text) ||
-    text.includes("defender") ||
-    text.includes("centre-back") ||
-    text.includes("center-back") ||
-    text.includes("full-back") ||
-    text.includes("back")
-  ) {
-    return "DF";
-  }
-
-  if (
-    /\bmf\b/.test(text) ||
-    text.includes("midfielder") ||
-    text.includes("midfield") ||
-    text.includes("winger")
-  ) {
-    return "MF";
-  }
-
-  if (
-    /\bfw\b/.test(text) ||
-    text.includes("forward") ||
-    text.includes("striker") ||
-    text.includes("attacker")
-  ) {
-    return "FW";
-  }
-
-  return "";
-}
-
-function parseNumber(value: string): number | null {
-  const match = value.replace(/,/g, "").match(/-?\d+/);
-  return match ? Number(match[0]) : null;
-}
-
-function parseAge(value: string): number | null {
-  const cleaned = value.trim();
-
-  const parenthesisAgeMatches = Array.from(cleaned.matchAll(/\((\d{1,2})\)/g));
-  if (parenthesisAgeMatches.length > 0) {
-    return Number(parenthesisAgeMatches[parenthesisAgeMatches.length - 1][1]);
-  }
-
-  const standaloneMatches = Array.from(cleaned.matchAll(/\b(\d{1,2})\b/g)).map(
-    (m) => Number(m[1])
-  );
-
-  const validAge = standaloneMatches.find((n) => n >= 15 && n <= 50);
-  return validAge ?? null;
-}
-
-function extractTables(html: string) {
-  return Array.from(html.matchAll(/<table[^>]*>[\s\S]*?<\/table>/gi)).map(
-    (match) => match[0]
-  );
-}
-
-function extractRows(tableHtml: string) {
-  return Array.from(tableHtml.matchAll(/<tr[^>]*>[\s\S]*?<\/tr>/gi)).map(
-    (match) => match[0]
-  );
-}
-
-function extractCells(rowHtml: string) {
-  return Array.from(rowHtml.matchAll(/<t[hd][^>]*>[\s\S]*?<\/t[hd]>/gi)).map(
-    (match) => match[0]
-  );
-}
-
-function cellTag(cellHtml: string) {
-  const match = cellHtml.match(/^<\s*(t[hd])/i);
-  return match?.[1]?.toLowerCase() ?? "td";
-}
-
-function findColumnIndex(headers: string[], variants: string[]) {
-  return headers.findIndex((header) =>
-    variants.some((variant) => header.includes(variant))
-  );
-}
-
-function getLikelyPlayerName(cellHtml: string, fallbackText: string) {
-  const links = extractWikiLinks(cellHtml);
-
-  const linkedName = links.find(
-    (value) =>
-      /^[A-ZÀ-ÿ][A-Za-zÀ-ÿ'´`.\- ]+$/.test(value) &&
-      value.split(" ").length >= 2 &&
-      !/^(fifa|uefa|caf|afc|concacaf|club|caps|goals)$/i.test(value)
-  );
-
-  if (linkedName) {
-    return removeCaptainAndNotes(linkedName);
-  }
-
-  return removeCaptainAndNotes(fallbackText);
-}
-
-function isRecentCallupsTable(tableHtml: string) {
-  const lower = tableHtml.toLowerCase();
-  return (
-    lower.includes("recent call-ups") ||
-    lower.includes("recent call ups") ||
-    lower.includes("recent call-up") ||
-    lower.includes("recent callup")
-  );
-}
-
-function isLikelySquadTable(tableHtml: string) {
-  if (isRecentCallupsTable(tableHtml)) return false;
-
-  const rows = extractRows(tableHtml).slice(0, 8);
-  let headerTexts: string[] = [];
-
-  for (const row of rows) {
-    const cells = extractCells(row);
-    if (cells.length === 0) continue;
-
-    const texts = cells.map((cell) => stripTags(cell).toLowerCase());
-
-    if (
-      texts.some((t) => t.includes("player") || t.includes("name")) &&
-      (
-        texts.some((t) => t === "pos" || t.includes("position")) ||
-        texts.some((t) => t.includes("club")) ||
-        texts.some((t) => t.includes("caps"))
-      )
-    ) {
-      headerTexts = texts;
-      break;
-    }
-  }
-
-  if (headerTexts.length === 0) return false;
-
-  const hasName = headerTexts.some(
-    (t) => t.includes("player") || t.includes("name")
-  );
-  const hasPos = headerTexts.some(
-    (t) => t === "pos" || t.includes("position")
-  );
-  const hasClub = headerTexts.some((t) => t.includes("club"));
-  const hasCaps = headerTexts.some((t) => t.includes("caps"));
-  const hasGoals = headerTexts.some(
-    (t) => t.includes("goals") || t === "gls"
-  );
-
-  return hasName && (hasPos || hasClub || hasCaps || hasGoals);
-}
-
-function parsePlayersFromTable(tableHtml: string): ParsedPlayer[] {
-  const rows = extractRows(tableHtml);
-  const parsed: ParsedPlayer[] = [];
-
-  let headers: string[] = [];
-  let lastKnownPosition = "";
-
-  for (const row of rows) {
-    const cells = extractCells(row);
-    if (cells.length < 2) continue;
-
-    const texts = cells.map((cell) => stripTags(cell));
-    const lowerTexts = texts.map((text) => text.toLowerCase());
-    const onlyHeaders = cells.every((cell) => cellTag(cell) === "th");
-
-    const headerLike =
-      onlyHeaders ||
-      (
-        lowerTexts.some((t) => t.includes("player") || t.includes("name")) &&
-        (
-          lowerTexts.some((t) => t === "pos" || t.includes("position")) ||
-          lowerTexts.some((t) => t.includes("club")) ||
-          lowerTexts.some((t) => t.includes("caps"))
-        )
-      );
-
-    if (headerLike) {
-      headers = lowerTexts;
-      continue;
-    }
-
-    if (headers.length === 0) continue;
-
-    const nameIndex = findColumnIndex(headers, ["name", "player"]);
-    const posIndex = findColumnIndex(headers, ["pos", "position"]);
-    const clubIndex = findColumnIndex(headers, ["club", "team"]);
-    const ageIndex = findColumnIndex(headers, ["age", "date of birth"]);
-    const capsIndex = findColumnIndex(headers, ["caps"]);
-    const goalsIndex = findColumnIndex(headers, ["goals", "goal", "gls"]);
-
-    if (nameIndex === -1) continue;
-
-    const rawNameCell = cells[nameIndex] ?? "";
-    const rawNameText = texts[nameIndex] ?? "";
-    const rawPosText = posIndex >= 0 ? texts[posIndex] ?? "" : "";
-    const rawClubText = clubIndex >= 0 ? texts[clubIndex] ?? "" : "";
-    const rawAgeText = ageIndex >= 0 ? texts[ageIndex] ?? "" : "";
-    const rawCapsText = capsIndex >= 0 ? texts[capsIndex] ?? "" : "";
-    const rawGoalsText = goalsIndex >= 0 ? texts[goalsIndex] ?? "" : "";
-
-    const possibleGroupPosition =
-      texts.length <= 2 ? normalizePosition(texts.join(" ")) : "";
-
-    if (!rawPosText && possibleGroupPosition) {
-      lastKnownPosition = possibleGroupPosition;
-      continue;
-    }
-
-    const name = getLikelyPlayerName(rawNameCell, rawNameText);
-
-    if (normalizePosition(rawNameText) && texts.length <= 2) {
-      lastKnownPosition = normalizePosition(rawNameText);
-      continue;
-    }
-
-    const normalizedPos = normalizePosition(rawPosText) || lastKnownPosition;
-
-    if (normalizedPos) {
-      lastKnownPosition = normalizedPos;
-    }
-
-    if (!name || name.length < 3) continue;
-    if (!normalizedPos) continue;
-
-    if (
-      /^(current squad|players|pos|player|name|club|caps|goals|age|no\.?)$/i.test(name)
-    ) {
-      continue;
-    }
-
-    if (/^\d+$/.test(name)) {
-      continue;
-    }
-
-    parsed.push({
-      name,
-      position: normalizedPos,
-      club: rawClubText ? rawClubText.trim() : null,
-      age: parseAge(rawAgeText),
-      caps: parseNumber(rawCapsText),
-      goals: parseNumber(rawGoalsText),
-    });
-  }
-
-  const unique = new Map<string, ParsedPlayer>();
-
-  for (const player of parsed) {
-    const key = player.name.toLowerCase();
-    if (!unique.has(key)) {
-      unique.set(key, player);
-    }
-  }
-
-  return Array.from(unique.values());
-}
-
-async function fetchWikipediaSections(title: string): Promise<WikiSection[]> {
-  const url = new URL("https://en.wikipedia.org/w/api.php");
-  url.searchParams.set("action", "parse");
-  url.searchParams.set("page", title);
-  url.searchParams.set("prop", "sections");
-  url.searchParams.set("format", "json");
-  url.searchParams.set("formatversion", "2");
-  url.searchParams.set("origin", "*");
-  url.searchParams.set("redirects", "1");
-
-  const response = await fetch(url.toString(), {
-    headers: {
-      "User-Agent": "AddesVMTips/1.0 (contact: admin@addesvmtips.se)",
-    },
-    cache: "no-store",
+    return a.name.localeCompare(b.name, "sv");
   });
-
-  if (!response.ok) {
-    throw new Error("Kunde inte hämta sektioner från Wikipedia");
-  }
-
-  const json = await response.json();
-  return (json?.parse?.sections ?? []) as WikiSection[];
 }
 
-async function fetchWikipediaSectionHtml(
-  title: string,
-  sectionIndex: string
-): Promise<string> {
-  const url = new URL("https://en.wikipedia.org/w/api.php");
-  url.searchParams.set("action", "parse");
-  url.searchParams.set("page", title);
-  url.searchParams.set("section", sectionIndex);
-  url.searchParams.set("prop", "text");
-  url.searchParams.set("format", "json");
-  url.searchParams.set("formatversion", "2");
-  url.searchParams.set("origin", "*");
-  url.searchParams.set("redirects", "1");
+function sortMappedPlayers(rows: TeamPlayer[]) {
+  return [...rows].sort((a, b) => {
+    const posA = getPlayerSortValue(a.position);
+    const posB = getPlayerSortValue(b.position);
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      "User-Agent": "AddesVMTips/1.0 (contact: admin@addesvmtips.se)",
-    },
-    cache: "no-store",
+    if (posA !== posB) return posA - posB;
+
+    const shirtA = a.shirtNumber ?? 999;
+    const shirtB = b.shirtNumber ?? 999;
+
+    if (shirtA !== shirtB) return shirtA - shirtB;
+
+    return a.name.localeCompare(b.name, "sv");
   });
-
-  if (!response.ok) {
-    throw new Error("Kunde inte hämta Current squad-sektion från Wikipedia");
-  }
-
-  const json = await response.json();
-  const html = json?.parse?.text;
-
-  if (!html || typeof html !== "string") {
-    throw new Error("Current squad-sektionen kunde inte tolkas");
-  }
-
-  return html;
 }
 
-async function fetchWikipediaHtml(title: string): Promise<string> {
-  const url = new URL("https://en.wikipedia.org/w/api.php");
-  url.searchParams.set("action", "parse");
-  url.searchParams.set("page", title);
-  url.searchParams.set("prop", "text");
-  url.searchParams.set("format", "json");
-  url.searchParams.set("formatversion", "2");
-  url.searchParams.set("origin", "*");
-  url.searchParams.set("redirects", "1");
-
-  const response = await fetch(url.toString(), {
-    headers: {
-      "User-Agent": "AddesVMTips/1.0 (contact: admin@addesvmtips.se)",
-    },
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw new Error("Kunde inte hämta data från Wikipedia");
-  }
-
-  const json = await response.json();
-  const html = json?.parse?.text;
-
-  if (!html || typeof html !== "string") {
-    throw new Error("Wikipedia-sidan kunde inte tolkas");
-  }
-
-  return html;
-}
-
-async function findBestSquadTable(title: string) {
-  const sections = await fetchWikipediaSections(title);
-
-  const currentSquadSection = sections.find((section) =>
-    section.line.toLowerCase().includes("current squad")
-  );
-
-  if (currentSquadSection) {
-    const sectionHtml = await fetchWikipediaSectionHtml(
-      title,
-      currentSquadSection.index
-    );
-
-    const sectionTables = extractTables(sectionHtml).filter(isLikelySquadTable);
-
-    if (sectionTables.length > 0) {
-      return {
-        table: sectionTables[0],
-        source: "section",
-        section: currentSquadSection.line,
-      };
-    }
-  }
-
-  const fullHtml = await fetchWikipediaHtml(title);
-  const allTables = extractTables(fullHtml).filter(isLikelySquadTable);
-
-  if (allTables.length > 0) {
-    return {
-      table: allTables[0],
-      source: "full-page-fallback",
-      section: null,
-    };
-  }
-
+function mapPlayer(row: TeamPlayerRow): TeamPlayer {
   return {
-    table: null,
-    source: currentSquadSection ? "section" : "no-current-squad-section",
-    section: currentSquadSection?.line ?? null,
+    id: row.id,
+    name: row.name,
+    position: row.position,
+    club: row.club ?? undefined,
+    age: row.age ?? undefined,
+    caps: row.caps ?? undefined,
+    goals: row.goals ?? undefined,
+    shirtNumber: row.shirt_number ?? undefined,
+    squadStatus: row.squad_status ?? undefined,
+    source: row.source ?? undefined,
+    updatedAt: row.updated_at ?? undefined,
   };
 }
 
-export async function POST(
-  _req: Request,
-  { params }: { params: Promise<{ teamId: string }> }
-) {
-  try {
-    const { teamId } = await params;
-    const supabase = await createClient();
+function mapQualification(row: QualificationRow): QualificationEntry {
+  return {
+    id: row.id,
+    label: row.label,
+    opponent: row.opponent ?? undefined,
+    result: row.result ?? undefined,
+    date: row.match_date ?? undefined,
+    note: row.note ?? undefined,
+    sortOrder: row.sort_order ?? undefined,
+  };
+}
 
-    const { data: team, error: teamError } = await supabase
-      .from("teams")
-      .select("id, name, wikipedia_title")
-      .eq("id", teamId)
-      .single<TeamRow>();
+function buildLineup(
+  lineupRow: TeamLineupRow | null,
+  slotRows: TeamLineupSlotRow[],
+  squad: TeamPlayer[]
+): TeamLineup | null {
+  if (!lineupRow) return null;
 
-    if (teamError || !team) {
-      return NextResponse.json(
-        { error: "Kunde inte hitta laget" },
-        { status: 404 }
-      );
-    }
-
-    if (!team.wikipedia_title) {
-      return NextResponse.json(
-        {
-          error:
-            "Laget saknar wikipedia_title. Lägg till Wikipedia-titel i teams-tabellen först.",
-        },
-        { status: 400 }
-      );
-    }
-
-    const squadResult = await findBestSquadTable(team.wikipedia_title);
-    const squadTable = squadResult.table;
-
-    if (!squadTable) {
-      return NextResponse.json(
-        {
-          error: "Kunde inte hitta någon läsbar spelartrupp på Wikipedia-sidan.",
-          debug: {
-            team: team.name,
-            wikipediaTitle: team.wikipedia_title,
-            source: squadResult.source,
-            section: squadResult.section,
-          },
-        },
-        { status: 400 }
-      );
-    }
-
-    const players = parsePlayersFromTable(squadTable);
-
-    if (players.length === 0) {
-      return NextResponse.json(
-        {
-          error: "Parsern hittade inga spelare i tabellen.",
-          debug: {
-            team: team.name,
-            wikipediaTitle: team.wikipedia_title,
-            source: squadResult.source,
-            section: squadResult.section,
-            tablePreview: squadTable.slice(0, 1200),
-          },
-        },
-        { status: 400 }
-      );
-    }
-
-    if (players.length > 35) {
-      return NextResponse.json(
-        {
-          error: "För många spelare hittades. Troligen valdes fel tabell.",
-          debug: {
-            team: team.name,
-            wikipediaTitle: team.wikipedia_title,
-            source: squadResult.source,
-            section: squadResult.section,
-            count: players.length,
-            names: players.slice(0, 20).map((player) => player.name),
-          },
-        },
-        { status: 400 }
-      );
-    }
-
-    const { error: deleteError } = await supabase
-      .from("team_players")
-      .delete()
-      .eq("team_id", teamId);
-
-    if (deleteError) {
-      return NextResponse.json(
-        { error: deleteError.message },
-        { status: 400 }
-      );
-    }
-
-    const rows = players.map((player) => ({
-      team_id: teamId,
-      name: player.name,
-      position: player.position,
-      club: player.club,
-      age: player.age,
-      caps: player.caps,
-      goals: player.goals,
-      source: "wikipedia",
-    }));
-
-    const { data: inserted, error: insertError } = await supabase
-      .from("team_players")
-      .insert(rows)
-      .select("*");
-
-    if (insertError) {
-      return NextResponse.json(
-        { error: insertError.message },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json({
-      ok: true,
-      team: team.name,
-      count: inserted?.length ?? rows.length,
-      players: inserted ?? [],
-      debug: {
-        source: squadResult.source,
-        section: squadResult.section,
+  const squadMap = new Map(
+    squad.map((player) => [
+      player.id,
+      {
+        id: player.id,
+        name: player.name,
+        shirtNumber: player.shirtNumber ?? null,
       },
-    });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Okänt fel vid Wikipedia-import";
+    ])
+  );
 
-    return NextResponse.json({ error: message }, { status: 500 });
+  return {
+    id: lineupRow.id,
+    formation: lineupRow.formation,
+    lineupName: lineupRow.lineup_name,
+    slots: slotRows.map((slot) => ({
+      id: slot.id,
+      slotKey: slot.slot_key,
+      roleLabel: slot.role_label,
+      xPos: Number(slot.x_pos),
+      yPos: Number(slot.y_pos),
+      playerId: slot.player_id,
+      player: slot.player_id ? squadMap.get(slot.player_id) ?? null : null,
+    })),
+  };
+}
+
+function buildTeamProfile(
+  team: TeamRow,
+  players: TeamPlayerRow[],
+  qualification: QualificationRow[],
+  lineup: TeamLineup | null = null
+): TeamProfile {
+  const mappedSquad = sortPlayerRows(players).map(mapPlayer);
+
+  return {
+    id: team.id,
+    name: team.name,
+    slug: team.slug,
+    groupLetter: team.group_letter,
+    fifaRank: team.fifa_rank ?? undefined,
+    coach: team.coach ?? undefined,
+    confederation: team.confederation ?? undefined,
+    wikipediaTitle: team.wikipedia_title ?? undefined,
+    shortDescription: team.short_description ?? "",
+    qualificationSummary: team.qualification_summary ?? "",
+    squadStatus: team.squad_status ?? undefined,
+    source: team.source ?? undefined,
+    updatedAt: team.updated_at ?? undefined,
+    squad: sortMappedPlayers(mappedSquad),
+    qualificationPath: qualification
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      .map(mapQualification),
+    lineup,
+  };
+}
+
+export async function getAllTeamProfiles(): Promise<TeamProfile[]> {
+  try {
+    const supabase = createReadOnlyClient();
+
+    const { data: teams, error: teamsError } = await supabase
+      .from("teams")
+      .select("*")
+      .order("group_letter", { ascending: true })
+      .order("name", { ascending: true });
+
+    if (teamsError) {
+      console.error("[teams] getAllTeamProfiles teamsError:", teamsError);
+      return getAllStaticTeamProfiles();
+    }
+
+    if (!teams || teams.length === 0) {
+      console.log("[teams] getAllTeamProfiles: inga lag i DB, fallback används");
+      return getAllStaticTeamProfiles();
+    }
+
+    const teamIds = teams.map((team) => team.id);
+
+    const [
+      { data: players, error: playersError },
+      { data: qualification, error: qualificationError },
+    ] = await Promise.all([
+      supabase
+        .from("team_players")
+        .select("*")
+        .in("team_id", teamIds),
+      supabase
+        .from("team_qualification_path")
+        .select("*")
+        .in("team_id", teamIds)
+        .order("sort_order", { ascending: true }),
+    ]);
+
+    if (playersError) {
+      console.error("[teams] getAllTeamProfiles playersError:", playersError);
+    }
+
+    if (qualificationError) {
+      console.error(
+        "[teams] getAllTeamProfiles qualificationError:",
+        qualificationError
+      );
+    }
+
+    return (teams as TeamRow[]).map((team) =>
+      buildTeamProfile(
+        team,
+        ((players ?? []) as TeamPlayerRow[]).filter((p) => p.team_id === team.id),
+        ((qualification ?? []) as QualificationRow[]).filter(
+          (q) => q.team_id === team.id
+        ),
+        null
+      )
+    );
+  } catch (error) {
+    console.error("[teams] getAllTeamProfiles exception:", error);
+    return getAllStaticTeamProfiles();
   }
+}
+
+export async function getTeamsGroupedByLetter(): Promise<Record<string, TeamProfile[]>> {
+  try {
+    const teams = await getAllTeamProfiles();
+
+    return teams.reduce<Record<string, TeamProfile[]>>((acc, team) => {
+      if (!acc[team.groupLetter]) {
+        acc[team.groupLetter] = [];
+      }
+
+      acc[team.groupLetter].push(team);
+      acc[team.groupLetter].sort((a, b) => a.name.localeCompare(b.name, "sv"));
+
+      return acc;
+    }, {});
+  } catch (error) {
+    console.error("[teams] getTeamsGroupedByLetter exception:", error);
+    return getStaticTeamsGroupedByLetter();
+  }
+}
+
+export async function getTeamBySlug(slug: string): Promise<TeamProfile | null> {
+  const supabase = createReadOnlyClient();
+
+  const { data: team, error } = await supabase
+    .from("teams")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  console.log("[teams] getTeamBySlug slug:", slug);
+  console.log("[teams] getTeamBySlug team:", team);
+  console.log("[teams] getTeamBySlug error:", error);
+
+  if (error) {
+    throw new Error(`[teams] Supabase team error: ${error.message}`);
+  }
+
+  if (!team) {
+    throw new Error(`[teams] No team found in Supabase for slug: ${slug}`);
+  }
+
+  const [
+    { data: players, error: playersError },
+    { data: qualification, error: qualificationError },
+    { data: lineupRow, error: lineupError },
+  ] = await Promise.all([
+    supabase.from("team_players").select("*").eq("team_id", team.id),
+    supabase
+      .from("team_qualification_path")
+      .select("*")
+      .eq("team_id", team.id)
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("team_lineups")
+      .select("id, team_id, lineup_name, formation")
+      .eq("team_id", team.id)
+      .eq("lineup_name", "Startelva")
+      .maybeSingle(),
+  ]);
+
+  console.log("[teams] getTeamBySlug players:", players);
+  console.log("[teams] getTeamBySlug playersError:", playersError);
+  console.log("[teams] getTeamBySlug qualification:", qualification);
+  console.log("[teams] getTeamBySlug qualificationError:", qualificationError);
+  console.log("[teams] getTeamBySlug lineupRow:", lineupRow);
+  console.log("[teams] getTeamBySlug lineupError:", lineupError);
+
+  if (playersError) {
+    throw new Error(`[teams] Supabase players error: ${playersError.message}`);
+  }
+
+  if (qualificationError) {
+    throw new Error(
+      `[teams] Supabase qualification error: ${qualificationError.message}`
+    );
+  }
+
+  if (lineupError) {
+    throw new Error(`[teams] Supabase lineup error: ${lineupError.message}`);
+  }
+
+  const sortedPlayers = sortPlayerRows((players ?? []) as TeamPlayerRow[]);
+
+  let lineup: TeamLineup | null = null;
+
+  if (lineupRow) {
+    const { data: slotRows, error: slotsError } = await supabase
+      .from("team_lineup_slots")
+      .select("id, lineup_id, slot_key, role_label, x_pos, y_pos, player_id")
+      .eq("lineup_id", lineupRow.id);
+
+    console.log("[teams] getTeamBySlug slotRows:", slotRows);
+    console.log("[teams] getTeamBySlug slotsError:", slotsError);
+
+    if (slotsError) {
+      throw new Error(`[teams] Supabase lineup slots error: ${slotsError.message}`);
+    }
+
+    const mappedSquad = sortedPlayers.map(mapPlayer);
+
+    lineup = buildLineup(
+      lineupRow as TeamLineupRow,
+      (slotRows ?? []) as TeamLineupSlotRow[],
+      mappedSquad
+    );
+  }
+
+  return buildTeamProfile(
+    team as TeamRow,
+    sortedPlayers,
+    (qualification ?? []) as QualificationRow[],
+    lineup
+  );
 }

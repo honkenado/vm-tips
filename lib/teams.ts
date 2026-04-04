@@ -137,9 +137,26 @@ function buildTeamProfile(
   qualification: QualificationRow[],
   lineup: TeamLineup | null = null
 ): TeamProfile {
-  const mappedSquad = players
-    .sort((a, b) => a.name.localeCompare(b.name, "sv"))
-    .map(mapPlayer);
+  const positionOrder: Record<string, number> = {
+  GK: 1,
+  DF: 2,
+  MF: 3,
+  FW: 4,
+};
+
+const mappedSquad = players
+  .sort((a, b) => {
+    const posA = positionOrder[a.position] ?? 99;
+    const posB = positionOrder[b.position] ?? 99;
+
+    if (posA !== posB) return posA - posB;
+
+    const numA = a.shirt_number ?? 999;
+    const numB = b.shirt_number ?? 999;
+
+    return numA - numB;
+  })
+  .map(mapPlayer);
 
   return {
     id: team.id,

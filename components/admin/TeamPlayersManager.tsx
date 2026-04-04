@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Player = {
   id: string;
@@ -11,7 +11,20 @@ type Player = {
   age?: number | null;
   caps?: number | null;
   goals?: number | null;
+  shirt_number?: number | null;
+  shirtNumber?: number | null;
 };
+
+const POSITION_ORDER: Record<string, number> = {
+  GK: 1,
+  DF: 2,
+  MF: 3,
+  FW: 4,
+};
+
+function getShirtNumber(player: Player) {
+  return player.shirt_number ?? player.shirtNumber ?? null;
+}
 
 export default function TeamPlayersManager({
   teamId,
@@ -45,6 +58,22 @@ export default function TeamPlayersManager({
   useEffect(() => {
     loadPlayersDirect();
   }, [teamId]);
+
+  const sortedPlayers = useMemo(() => {
+    return [...players].sort((a, b) => {
+      const posA = POSITION_ORDER[a.position] ?? 99;
+      const posB = POSITION_ORDER[b.position] ?? 99;
+
+      if (posA !== posB) return posA - posB;
+
+      const shirtA = getShirtNumber(a) ?? 999;
+      const shirtB = getShirtNumber(b) ?? 999;
+
+      if (shirtA !== shirtB) return shirtA - shirtB;
+
+      return a.name.localeCompare(b.name, "sv");
+    });
+  }, [players]);
 
   function resetForm() {
     setName("");
@@ -175,17 +204,20 @@ export default function TeamPlayersManager({
       setWikiLoading(true);
       setMessage("");
 
-      const res = await fetch(
-        `/api/admin/players/${teamId}/import-wikipedia`,
-        {
-          method: "POST",
-        }
-      );
+      const res = await fetch(`/api/admin/players/${teamId}/import-wikipedia`, {
+        method: "POST",
+      });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setMessage(data.error || "Kunde inte importera från Wikipedia");
+        const debugText = data.debug
+          ? ` | DEBUG: ${JSON.stringify(data.debug)}`
+          : "";
+
+        setMessage(
+          (data.error || "Kunde inte importera från Wikipedia") + debugText
+        );
         return;
       }
 
@@ -273,54 +305,62 @@ export default function TeamPlayersManager({
           )}
         </div>
 
-        {message && <div className="text-black">{message}</div>}
+        {message && <div className="text-black break-words">{message}</div>}
       </div>
 
       <div className="rounded-xl bg-white p-6">
         <h2 className="mb-4 text-xl font-bold text-black">Spelarlista</h2>
 
-        {players.length === 0 ? (
+        {sortedPlayers.length === 0 ? (
           <p className="text-gray-600">Inga spelare ännu.</p>
         ) : (
           <div className="space-y-3">
-            {players.map((player) => (
-              <div
-                key={player.id}
-                className="flex flex-col gap-3 rounded-lg border border-gray-200 p-3 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <div className="font-semibold text-black">{player.name}</div>
-                  <div className="text-sm text-gray-700">
-                    {player.position} • {player.club || "Ingen klubb"}
-                    {typeof player.age === "number" ? ` • ${player.age} år` : ""}
-                    {typeof player.caps === "number"
-                      ? ` • ${player.caps} landskamper`
-                      : ""}
-                    {typeof player.goals === "number"
-                      ? ` • ${player.goals} mål`
-                      : ""}
+            {sortedPlayers.map((player) => {
+              const shirtNumber = getShirtNumber(player);
+
+              return (
+                <div
+                  key={player.id}
+                  className="flex flex-col gap-3 rounded-lg border border-gray-200 p-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <div className="font-semibold text-black">
+                      {shirtNumber ? `${shirtNumber}. ` : ""}
+                      {player.name}
+                    </div>
+
+                    <div className="text-sm text-gray-700">
+                      {player.position} • {player.club || "Ingen klubb"}
+                      {typeof player.age === "number" ? ` • ${player.age} år` : ""}
+                      {typeof player.caps === "number"
+                        ? ` • ${player.caps} landskamper`
+                        : ""}
+                      {typeof player.goals === "number"
+                        ? ` • ${player.goals} mål`
+                        : ""}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(player)}
+                      className="rounded-lg border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-black hover:bg-gray-200"
+                    >
+                      Redigera
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => deletePlayer(player.id)}
+                      className="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+                    >
+                      Ta bort
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => startEdit(player)}
-                    className="rounded-lg border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-black hover:bg-gray-200"
-                  >
-                    Redigera
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => deletePlayer(player.id)}
-                    className="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
-                  >
-                    Ta bort
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
