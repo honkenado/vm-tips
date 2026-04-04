@@ -119,37 +119,71 @@ function parseAge(value: string): number | null {
   return null;
 }
 
+function isRecentCallupsTable(tableHtml: string) {
+  const lower = tableHtml.toLowerCase();
+  return lower.includes("recent call");
+}
+
 function isLikelySquadTable(tableHtml: string) {
   const lower = tableHtml.toLowerCase();
-  if (lower.includes("recent call")) return false;
+  if (isRecentCallupsTable(tableHtml)) return false;
 
-  const rows = extractRows(tableHtml).slice(0, 6);
+  const rows = extractRows(tableHtml).slice(0, 8);
 
-  return rows.some((row) => {
-    const text = stripTags(row).toLowerCase();
-    return (
-      text.includes("player") &&
-      text.includes("club") &&
-      (text.includes("pos") || text.includes("position"))
-    );
-  });
+  let headerText = "";
+
+  for (const row of rows) {
+    const cells = extractCells(row);
+    if (cells.length === 0) continue;
+
+    const texts = cells.map((cell) => stripTags(cell).toLowerCase());
+    const joined = texts.join(" | ");
+
+    const looksLikeHeader =
+      texts.some((t) => t.includes("player") || t.includes("name")) &&
+      (
+        texts.some((t) => t.includes("pos")) ||
+        texts.some((t) => t.includes("position")) ||
+        texts.some((t) => t.includes("club")) ||
+        texts.some((t) => t.includes("caps")) ||
+        texts.some((t) => t.includes("goals")) ||
+        texts.some((t) => t.includes("date of birth")) ||
+        texts.some((t) => t.includes("age"))
+      );
+
+    if (looksLikeHeader) {
+      headerText = joined;
+      break;
+    }
+  }
+
+  if (!headerText) return false;
+
+  const hasPlayer = /player|name/.test(headerText);
+  const hasPos = /pos|position/.test(headerText);
+  const hasClub = /club/.test(headerText);
+  const hasCaps = /caps/.test(headerText);
+
+  return hasPlayer && (hasPos || hasClub || hasCaps);
 }
 
 function chooseBestTable(tables: string[]) {
-  return (
-    tables
-      .map((table) => ({
-        table,
-        rows: extractRows(table).length,
-      }))
-      .filter((entry) => entry.rows >= 10 && entry.rows <= 35)
-      .sort((a, b) => a.rows - b.rows)[0]?.table ?? null
-  );
+  const candidates = tables
+    .filter((table) => !isRecentCallupsTable(table))
+    .map((table) => ({
+      table,
+      rows: extractRows(table).length,
+    }))
+    .filter((entry) => entry.rows >= 8 && entry.rows <= 35)
+    .sort((a, b) => a.rows - b.rows);
+
+  return candidates[0]?.table ?? null;
 }
 
 function parsePlayersFromTable(tableHtml: string): ParsedPlayer[] {
   const rows = extractRows(tableHtml);
   let headers: string[] = [];
+  let lastKnownPosition = "";
   const players: ParsedPlayer[] = [];
 
   for (const row of rows) {
@@ -159,9 +193,15 @@ function parsePlayersFromTable(tableHtml: string): ParsedPlayer[] {
 
     const isHeader =
       cells.every((cell) => cellTag(cell) === "th") ||
-      (lower.some((t) => t.includes("player") || t.includes("name")) &&
-        (lower.some((t) => t.includes("pos")) ||
-          lower.some((t) => t.includes("position"))));
+      (
+        lower.some((t) => t.includes("player") || t.includes("name")) &&
+        (
+          lower.some((t) => t.includes("pos")) ||
+          lower.some((t) => t.includes("position")) ||
+          lower.some((t) => t.includes("club")) ||
+          lower.some((t) => t.includes("caps"))
+        )
+      );
 
     if (isHeader) {
       headers = lower;
@@ -173,26 +213,44 @@ function parsePlayersFromTable(tableHtml: string): ParsedPlayer[] {
     const nameIdx = findColumnIndex(headers, ["name", "player"]);
     const posIdx = findColumnIndex(headers, ["pos", "position"]);
     const clubIdx = findColumnIndex(headers, ["club"]);
-    const ageIdx = findColumnIndex(headers, ["age"]);
+    const ageIdx = findColumnIndex(headers, ["age", "date of birth"]);
     const capsIdx = findColumnIndex(headers, ["caps"]);
     const goalsIdx = findColumnIndex(headers, ["goal"]);
     const numberIdx = findColumnIndex(headers, ["no"]);
 
-    if (nameIdx === -1 || posIdx === -1) continue;
+    if (nameIdx === -1) continue;
 
-    const name = texts[nameIdx]?.trim();
-    const position = normalizePosition(texts[posIdx] ?? "");
+    const rawName = texts[nameIdx]?.trim() ?? "";
+    const rawPosition = posIdx >= 0 ? texts[posIdx] ?? "" : "";
+    const normalizedPosition = normalizePosition(rawPosition) || lastKnownPosition;
 
-    if (!name || !position) continue;
+    if (normalizePosition(rawName) && texts.length <= 2) {
+      lastKnownPosition = normalizePosition(rawName);
+      continue;
+    }
+
+    if (normalizedPosition) {
+      lastKnownPosition = normalizedPosition;
+    }
+
+    if (!rawName || !normalizedPosition) continue;
+
+    if (
+      /^(player|name|pos|position|club|caps|goals|date of birth|age|no\.?)$/i.test(
+        rawName
+      )
+    ) {
+      continue;
+    }
 
     players.push({
-      name,
-      position,
-      club: texts[clubIdx] ?? null,
-      age: parseAge(texts[ageIdx] ?? ""),
-      caps: parseNumber(texts[capsIdx] ?? ""),
-      goals: parseNumber(texts[goalsIdx] ?? ""),
-      shirtNumber: parseShirtNumber(texts[numberIdx] ?? ""),
+      name: rawName,
+      position: normalizedPosition,
+      club: clubIdx >= 0 ? texts[clubIdx] ?? null : null,
+      age: ageIdx >= 0 ? parseAge(texts[ageIdx] ?? "") : null,
+      caps: capsIdx >= 0 ? parseNumber(texts[capsIdx] ?? "") : null,
+      goals: goalsIdx >= 0 ? parseNumber(texts[goalsIdx] ?? "") : null,
+      shirtNumber: numberIdx >= 0 ? parseShirtNumber(texts[numberIdx] ?? "") : null,
     });
   }
 
