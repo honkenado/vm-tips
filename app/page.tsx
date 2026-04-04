@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 
 type NewsItem = {
   id: string;
@@ -77,36 +77,31 @@ export default async function HomePage() {
     .eq("id", user.id)
     .single();
 
-  // Hämta de senaste nyheterna
   const { data: latestNews } = await supabase
-  .from("news_posts")
-  .select("id, title, excerpt, image_url, published_at, slug")
-  .order("published_at", { ascending: false })
-  .limit(3);
+    .from("news_posts")
+    .select("id, title, excerpt, image_url, published_at, slug")
+    .order("published_at", { ascending: false })
+    .limit(3);
 
   const nowIso = new Date().toISOString();
 
-const { data: upcomingMatches } = await supabase
-  .from("matches")
-  .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
-  .gte("match_date", nowIso)
-  .order("match_date", { ascending: true })
-  .limit(3);
+  const { data: upcomingMatches } = await supabase
+    .from("matches")
+    .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
+    .gte("match_date", nowIso)
+    .order("match_date", { ascending: true })
+    .limit(3);
 
-// 👇 LÄGG IN DETTA HÄR
-const latestNewsSafe = (latestNews ?? []) as NewsItem[];
-const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
+  const latestNewsSafe = (latestNews ?? []) as NewsItem[];
+  const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
 
-  // Exempel: nästa match som visas i högerspalten
-  const nextMatch = upcomingMatches?.[0] as MatchItem | undefined;
+  const nextMatch = upcomingMatchesSafe[0];
 
-  // Exempeldata tills du kopplat allt fullt ut
   const participantCount = 428;
   const referralCount = 3;
   const referralCode = profile?.payment_code || "ABC12";
   const referralEarnings = getReferralEarnings(referralCount);
 
-  // Sätt ett datum för nästa stora deadline / turneringsstart
   const tournamentStartDate = nextMatch?.match_date ?? null;
   const daysLeft = getDaysLeft(tournamentStartDate);
 
@@ -126,11 +121,9 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
   return (
     <main className="min-h-screen bg-slate-100">
       <div className="mx-auto flex min-h-screen w-full max-w-[1400px] flex-col gap-4 px-4 py-4 md:px-6 md:py-4">
-        {/* HERO / DASHBOARD-TOPP */}
         <section className="overflow-hidden rounded-[2rem] border border-slate-800 bg-[radial-gradient(circle_at_top_left,_rgba(22,163,74,0.55),_rgba(3,7,18,1)_75%)] text-white shadow-xl lg:min-h-[calc(100vh-2rem)]">
           <div className="grid gap-4 p-4 md:grid-cols-[1.35fr_0.85fr] md:p-6 lg:h-full">
-            {/* Vänster */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between md:justify-start">
                 <span className="inline-flex w-fit rounded-full border border-white/15 bg-white/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/85">
                   FIFA World Cup 2026
@@ -152,6 +145,7 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
                   <h1 className="text-3xl font-black leading-tight tracking-tight md:text-6xl">
                     Välkommen till Addes VM-tips
                   </h1>
+
                   <p className="mt-3 max-w-2xl text-sm text-white/85 md:text-xl">
                     Lägg dina tips, följ spänningen i fotbolls-VM och tävla mot
                     andra om ära, poäng och en topplacering i tabellen.
@@ -164,9 +158,7 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
                     </div>
 
                     <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-sm">
-                      <div className="text-2xl font-extrabold">
-                        {daysLeft ?? "-"}
-                      </div>
+                      <div className="text-2xl font-extrabold">{daysLeft ?? "-"}</div>
                       <div className="text-sm text-white/80">dagar kvar</div>
                     </div>
 
@@ -214,6 +206,7 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
                 <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-white/60">
                   Navigation
                 </p>
+
                 <div className="flex flex-wrap gap-2">
                   {[
                     { href: "/regler", label: "Regler" },
@@ -236,7 +229,6 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
               </div>
             </div>
 
-            {/* Höger */}
             <div className="flex flex-col gap-3">
               <div className="flex flex-col items-start gap-3 rounded-[1.75rem] border border-white/10 bg-slate-950/30 p-4 shadow-lg md:items-end">
                 <div className="text-sm text-white/80">{displayName}</div>
@@ -381,23 +373,24 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
                 </div>
               </div>
 
-              <className="rounded-[1.75rem] bg-white p-4 text-slate-900 shadow-lg">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-2xl font-black tracking-tight">
-                      Värva vänner
-                    </h2>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Tjäna 20 kr per betalande värvning. Max 500 kr.
-                    </p>
-                  </div>
-                  <Link
-                    href="/varva-medlemmar"
-                    className="rounded-full border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    Se mer
-                  </Link>
-                </div>
+              <div className="rounded-[1.75rem] bg-white p-4 text-slate-900 shadow-lg">
+  <div className="flex items-start justify-between gap-3">
+    <div>
+      <h2 className="text-2xl font-black tracking-tight">
+        Värva vänner
+      </h2>
+      <p className="mt-1 text-sm text-slate-500">
+        Tjäna 20 kr per betalande värvning. Max 500 kr.
+      </p>
+    </div>
+
+    <Link
+      href="/varva-medlemmar"
+      className="rounded-full border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+    >
+      Se mer
+    </Link>
+  </div>
 
                 <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
@@ -411,6 +404,7 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
                     <div className="text-sm text-slate-500">Värvningar</div>
                     <div className="mt-1 text-2xl font-black">{referralCount}</div>
                   </div>
+
                   <div className="rounded-2xl border border-slate-200 p-4">
                     <div className="text-sm text-slate-500">Intjänat</div>
                     <div className="mt-1 text-2xl font-black">{referralEarnings} kr</div>
@@ -422,6 +416,7 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
                     <span>Progress</span>
                     <span>{referralEarnings} / 500 kr</span>
                   </div>
+
                   <div className="h-2 overflow-hidden rounded-full bg-slate-200">
                     <div
                       className="h-full rounded-full bg-emerald-500"
@@ -447,8 +442,7 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
           </div>
         </section>
 
-        {/* INNEHÅLL UNDER HERO */}
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="grid gap-4 lg:grid-cols-[1.9fr_1fr]">
           <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between gap-3 bg-[radial-gradient(circle_at_top_left,_rgba(22,163,74,0.85),_rgba(2,6,23,1)_70%)] px-5 py-4 text-white">
               <div>
@@ -467,7 +461,7 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
             </div>
 
             <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-              {(latestNews as NewsItem[] | null)?.length ? (
+              {latestNewsSafe.length > 0 ? (
                 latestNewsSafe.map((item) => (
                   <article
                     key={item.id}
@@ -537,7 +531,7 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
             </div>
 
             <div className="mt-4 flex flex-col gap-3">
-              {(upcomingMatches as MatchItem[] | null)?.length ? (
+              {upcomingMatchesSafe.length > 0 ? (
                 upcomingMatchesSafe.map((match) => (
                   <div
                     key={match.id}
@@ -580,7 +574,6 @@ const upcomingMatchesSafe = (upcomingMatches ?? []) as MatchItem[];
           </div>
         </section>
 
-        {/* QUICK LINKS */}
         <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-3xl font-black tracking-tight text-slate-900">
             Quick links
