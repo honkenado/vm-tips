@@ -53,6 +53,7 @@ export type TeamProfile = {
   fifaRank?: number;
   coach?: string;
   confederation?: string;
+  wikipediaTitle?: string;
   shortDescription: string;
   qualificationSummary: string;
   squadStatus?: string;

@@ -8,6 +8,9 @@ type Player = {
   name: string;
   position: string;
   club: string | null;
+  age?: number | null;
+  caps?: number | null;
+  goals?: number | null;
 };
 
 export default function TeamPlayersManager({
@@ -21,6 +24,7 @@ export default function TeamPlayersManager({
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [wikiLoading, setWikiLoading] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -160,6 +164,42 @@ export default function TeamPlayersManager({
     }
   }
 
+  async function importFromWikipedia() {
+    const confirmed = window.confirm(
+      "Detta ersätter nuvarande spelarlista för laget med Current squad från Wikipedia. Fortsätta?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setWikiLoading(true);
+      setMessage("");
+
+      const res = await fetch(
+        `/api/admin/players/${teamId}/import-wikipedia`,
+        {
+          method: "POST",
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessage(data.error || "Kunde inte importera från Wikipedia");
+        return;
+      }
+
+      setEditingId(null);
+      resetForm();
+      setMessage(`Wikipedia-import klar. Importerade ${data.count} spelare.`);
+      loadPlayersDirect();
+    } catch {
+      setMessage("Något gick fel vid Wikipedia-import");
+    } finally {
+      setWikiLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="space-y-4 rounded-xl bg-white p-6">
@@ -167,10 +207,19 @@ export default function TeamPlayersManager({
           <button
             type="button"
             onClick={generatePlayers}
-            disabled={aiLoading}
+            disabled={aiLoading || wikiLoading}
             className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {aiLoading ? "Genererar..." : "Generera trupp (AI)"}
+          </button>
+
+          <button
+            type="button"
+            onClick={importFromWikipedia}
+            disabled={wikiLoading || aiLoading}
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {wikiLoading ? "Importerar..." : "Importera från Wikipedia"}
           </button>
         </div>
 
@@ -243,6 +292,13 @@ export default function TeamPlayersManager({
                   <div className="font-semibold text-black">{player.name}</div>
                   <div className="text-sm text-gray-700">
                     {player.position} • {player.club || "Ingen klubb"}
+                    {typeof player.age === "number" ? ` • ${player.age} år` : ""}
+                    {typeof player.caps === "number"
+                      ? ` • ${player.caps} landskamper`
+                      : ""}
+                    {typeof player.goals === "number"
+                      ? ` • ${player.goals} mål`
+                      : ""}
                   </div>
                 </div>
 

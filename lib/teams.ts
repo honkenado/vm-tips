@@ -18,6 +18,7 @@ type TeamRow = {
   fifa_rank: number | null;
   coach: string | null;
   confederation: string | null;
+  wikipedia_title: string | null;
   short_description: string | null;
   qualification_summary: string | null;
   squad_status: string | null;
@@ -148,6 +149,7 @@ function buildTeamProfile(
     fifaRank: team.fifa_rank ?? undefined,
     coach: team.coach ?? undefined,
     confederation: team.confederation ?? undefined,
+    wikipediaTitle: team.wikipedia_title ?? undefined,
     shortDescription: team.short_description ?? "",
     qualificationSummary: team.qualification_summary ?? "",
     squadStatus: team.squad_status ?? undefined,
