@@ -160,6 +160,20 @@ const FORMATIONS: Record<
   ],
 };
 
+const POSITION_ORDER: Record<string, number> = {
+  GK: 1,
+  DF: 2,
+  MF: 3,
+  FW: 4,
+};
+
+const POSITION_LABELS: Record<string, string> = {
+  GK: "Målvakter",
+  DF: "Försvarare",
+  MF: "Mittfältare",
+  FW: "Anfallare",
+};
+
 function makeBaseSlots(formation: string): Slot[] {
   return (FORMATIONS[formation] ?? FORMATIONS["4-3-3"]).map((slot) => ({
     ...slot,
@@ -185,6 +199,22 @@ function mergeSlots(formation: string, savedSlots: Slot[]): Slot[] {
   });
 }
 
+function sortPlayers(players: Player[]) {
+  return [...players].sort((a, b) => {
+    const posA = POSITION_ORDER[a.position] ?? 99;
+    const posB = POSITION_ORDER[b.position] ?? 99;
+
+    if (posA !== posB) return posA - posB;
+
+    const numberA = a.shirt_number ?? 999;
+    const numberB = b.shirt_number ?? 999;
+
+    if (numberA !== numberB) return numberA - numberB;
+
+    return a.name.localeCompare(b.name, "sv");
+  });
+}
+
 export default function LineupEditor({
   teamId,
   players,
@@ -207,6 +237,33 @@ export default function LineupEditor({
     () => Object.fromEntries(players.map((player) => [player.id, player])),
     [players]
   );
+
+  const sortedPlayers = useMemo(() => sortPlayers(players), [players]);
+
+  const groupedPlayers = useMemo(() => {
+    return [
+      {
+        key: "GK",
+        title: POSITION_LABELS.GK,
+        players: sortedPlayers.filter((player) => player.position === "GK"),
+      },
+      {
+        key: "DF",
+        title: POSITION_LABELS.DF,
+        players: sortedPlayers.filter((player) => player.position === "DF"),
+      },
+      {
+        key: "MF",
+        title: POSITION_LABELS.MF,
+        players: sortedPlayers.filter((player) => player.position === "MF"),
+      },
+      {
+        key: "FW",
+        title: POSITION_LABELS.FW,
+        players: sortedPlayers.filter((player) => player.position === "FW"),
+      },
+    ].filter((group) => group.players.length > 0);
+  }, [sortedPlayers]);
 
   function applyFormation(newFormation: string) {
     setFormation(newFormation);
@@ -304,60 +361,66 @@ export default function LineupEditor({
         )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[340px_1fr] lg:items-start">
         <div className="rounded-2xl border border-gray-300 bg-white p-4">
           <h2 className="mb-4 text-lg font-semibold text-black">Spelare</h2>
 
-          <div className="space-y-2">
-            {players.map((player) => (
-              <div
-                key={player.id}
-                draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.setData("text/plain", player.id);
-                }}
-                className="cursor-grab rounded-xl border border-gray-300 bg-gray-50 p-3 text-black shadow-sm"
-              >
-                <div className="font-medium">
-                  {player.shirt_number ? `${player.shirt_number}. ` : ""}
-                  {player.name}
-                </div>
-                <div className="text-sm text-gray-600">{player.position}</div>
-              </div>
-            ))}
+          <div className="max-h-[720px] overflow-y-auto pr-1">
+            <div className="space-y-4">
+              {groupedPlayers.map((group) => (
+                <section key={group.key}>
+                  <div className="mb-2 flex items-center justify-between">
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-gray-700">
+                      {group.title}
+                    </h3>
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
+                      {group.players.length}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {group.players.map((player) => (
+                      <div
+                        key={player.id}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", player.id);
+                        }}
+                        className="cursor-grab rounded-xl border border-gray-300 bg-gray-50 p-3 text-black shadow-sm transition hover:bg-gray-100"
+                      >
+                        <div className="font-medium">
+                          {player.shirt_number ? `${player.shirt_number}. ` : ""}
+                          {player.name}
+                        </div>
+                        <div className="text-sm text-gray-600">{player.position}</div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-gray-300 bg-[#10212b] p-4">
+        <div className="rounded-2xl border border-gray-300 bg-[#10212b] p-4 lg:sticky lg:top-4">
           <div className="relative mx-auto aspect-[3/4] w-full max-w-[520px] overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-[#1f6a3d] via-[#175433] to-[#103a24] shadow-inner">
-            {/* Mjuk grässtruktur */}
             <div className="absolute inset-0 opacity-[0.08]">
               <div className="h-full w-full bg-[linear-gradient(to_bottom,transparent_0%,rgba(255,255,255,0.35)_50%,transparent_100%)] bg-[length:100%_74px]" />
             </div>
 
-            {/* Yttre planlinje */}
             <div className="absolute inset-3 rounded-[1.25rem] border border-white/20" />
-
-            {/* Mittlinje */}
             <div className="absolute left-3 right-3 top-1/2 h-px -translate-y-1/2 bg-white/20" />
-
-            {/* Mittcirkel */}
             <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/20" />
-
-            {/* Mittpunkt */}
             <div className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70" />
 
-            {/* Övre straffområde */}
             <div className="absolute left-1/2 top-3 h-[112px] w-[220px] -translate-x-1/2 border-x border-b border-white/20" />
             <div className="absolute left-1/2 top-3 h-[50px] w-[92px] -translate-x-1/2 border-x border-b border-white/20" />
             <div className="absolute left-1/2 top-[86px] h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-white/70" />
 
-            {/* Nedre straffområde */}
             <div className="absolute bottom-3 left-1/2 h-[112px] w-[220px] -translate-x-1/2 border-x border-t border-white/20" />
             <div className="absolute bottom-3 left-1/2 h-[50px] w-[92px] -translate-x-1/2 border-x border-t border-white/20" />
             <div className="absolute bottom-[86px] left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-white/70" />
 
-            {/* Mål */}
             <div className="absolute left-1/2 top-0 h-3 w-[84px] -translate-x-1/2 rounded-b-md border-x border-b border-white/20 bg-white/5" />
             <div className="absolute bottom-0 left-1/2 h-3 w-[84px] -translate-x-1/2 rounded-t-md border-x border-t border-white/20 bg-white/5" />
 
