@@ -141,12 +141,68 @@ function parseShirtNumber(value: string): number | null {
   return match ? Number(match[0]) : null;
 }
 
-function parseAge(value: string): number | null {
-  const ageMatch = value.match(/\(age\s*(\d{1,2})\)/i);
-  if (ageMatch) return Number(ageMatch[1]);
+function calculateAgeFromDate(dateString: string): number | null {
+  const parsed = new Date(dateString);
+  if (Number.isNaN(parsed.getTime())) return null;
 
-  const fallback = value.match(/\((\d{1,2})\)/);
-  if (fallback) return Number(fallback[1]);
+  const today = new Date();
+  let age = today.getFullYear() - parsed.getFullYear();
+
+  const monthDiff = today.getMonth() - parsed.getMonth();
+  const dayDiff = today.getDate() - parsed.getDate();
+
+  if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+    age -= 1;
+  }
+
+  return age >= 0 && age <= 60 ? age : null;
+}
+
+function parseAge(textValue: string, rawHtml?: string): number | null {
+  const normalizedText = decodeHtmlEntities(textValue)
+    .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const normalizedHtml = decodeHtmlEntities(rawHtml ?? "")
+    .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ");
+
+  const agePatterns = [
+    /\(age\s*(\d{1,2})\)/i,
+    /age\s*(\d{1,2})/i,
+    /\((\d{1,2})\)/,
+  ];
+
+  for (const pattern of agePatterns) {
+    const textMatch = normalizedText.match(pattern);
+    if (textMatch) {
+      const age = Number(textMatch[1]);
+      if (age >= 15 && age <= 50) return age;
+    }
+
+    const htmlMatch = normalizedHtml.match(pattern);
+    if (htmlMatch) {
+      const age = Number(htmlMatch[1]);
+      if (age >= 15 && age <= 50) return age;
+    }
+  }
+
+  const bdayMatch = normalizedHtml.match(
+    /class=["']bday["'][^>]*>(\d{4}-\d{2}-\d{2})</i
+  );
+
+  if (bdayMatch) {
+    return calculateAgeFromDate(bdayMatch[1]);
+  }
+
+  const longDateMatch = normalizedText.match(
+    /\b(\d{1,2}\s+[A-Za-z]+\s+\d{4})\b/
+  );
+
+  if (longDateMatch) {
+    return calculateAgeFromDate(longDateMatch[1]);
+  }
 
   return null;
 }
@@ -263,6 +319,7 @@ function parsePlayersFromTable(tableHtml: string): ParsedPlayer[] {
 
     const rawName = texts[nameIdx]?.trim() ?? "";
     const rawPosition = posIdx >= 0 ? texts[posIdx] ?? "" : "";
+    const rawAgeCell = ageIdx >= 0 ? cells[ageIdx] ?? "" : "";
     const normalizedPosition = normalizePosition(rawPosition) || lastKnownPosition;
 
     if (normalizePosition(rawName) && texts.length <= 2) {
@@ -288,7 +345,7 @@ function parsePlayersFromTable(tableHtml: string): ParsedPlayer[] {
       name: rawName,
       position: normalizedPosition,
       club: clubIdx >= 0 ? texts[clubIdx] ?? null : null,
-      age: ageIdx >= 0 ? parseAge(texts[ageIdx] ?? "") : null,
+      age: ageIdx >= 0 ? parseAge(texts[ageIdx] ?? "", rawAgeCell) : null,
       caps: capsIdx >= 0 ? parseNumber(texts[capsIdx] ?? "") : null,
       goals: goalsIdx >= 0 ? parseNumber(texts[goalsIdx] ?? "") : null,
       shirtNumber: numberIdx >= 0 ? parseShirtNumber(texts[numberIdx] ?? "") : null,
