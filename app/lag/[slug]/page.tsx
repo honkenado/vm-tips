@@ -1,6 +1,7 @@
 import Link from "next/link";
 import TeamHero from "@/components/teams/TeamHero";
 import TeamLineup from "@/components/teams/TeamLineup";
+import TeamNews from "@/components/teams/TeamNews";
 import TeamSquadTable from "@/components/teams/TeamSquadTable";
 import { getTeamBySlug } from "@/lib/teams";
 import { notFound } from "next/navigation";
@@ -37,6 +38,8 @@ export default async function TeamPage({
           formation={team.lineup?.formation ?? null}
           slots={team.lineup?.slots ?? []}
         />
+
+        {slug === "mexiko" ? <TeamNews slug={slug} /> : null}
 
         <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-3">
