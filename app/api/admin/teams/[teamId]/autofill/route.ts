@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { autofillTeamInfo } from "@/lib/team-import/autofill-team";
 
+type RouteContext = {
+  params: Promise<{ teamId: string }>;
+};
+
 async function checkAdmin() {
   const supabase = await createClient();
 
@@ -31,11 +35,8 @@ async function checkAdmin() {
   return { ok: true as const, supabase };
 }
 
-export async function POST(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+export async function POST(_req: Request, context: RouteContext) {
+  const { teamId } = await context.params;
   const auth = await checkAdmin();
 
   if (!auth.ok) {
@@ -57,7 +58,7 @@ export async function POST(
       formation,
       key_players
     `)
-    .eq("id", id)
+    .eq("id", teamId)
     .single();
 
   if (teamError || !team) {
@@ -90,7 +91,7 @@ export async function POST(
       short_description: nextShortDescription,
       source: nextSource,
     })
-    .eq("id", id);
+    .eq("id", teamId);
 
   if (updateError) {
     return NextResponse.json(

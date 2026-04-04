@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+type RouteContext = {
+  params: Promise<{ playerId: string }>;
+};
+
+export async function PATCH(req: Request, context: RouteContext) {
+  const { playerId } = await context.params;
   const supabase = await createClient();
   const body = await req.json();
 
@@ -16,7 +17,7 @@ export async function PATCH(
       position: body.position,
       club: body.club,
     })
-    .eq("id", id)
+    .eq("id", playerId)
     .select("*")
     .single();
 
@@ -27,14 +28,14 @@ export async function PATCH(
   return NextResponse.json({ ok: true, player: data });
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+export async function DELETE(_req: Request, context: RouteContext) {
+  const { playerId } = await context.params;
   const supabase = await createClient();
 
-  const { error } = await supabase.from("team_players").delete().eq("id", id);
+  const { error } = await supabase
+    .from("team_players")
+    .delete()
+    .eq("id", playerId);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });

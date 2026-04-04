@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+type RouteContext = {
+  params: Promise<{ teamId: string }>;
+};
+
 async function checkAdmin() {
   const supabase = await createClient();
 
@@ -38,11 +42,8 @@ async function checkAdmin() {
   };
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+export async function PATCH(req: Request, context: RouteContext) {
+  const { teamId } = await context.params;
   const auth = await checkAdmin();
 
   if (!auth.ok) {
@@ -69,13 +70,13 @@ export async function PATCH(
   const { error } = await auth.supabase
     .from("teams")
     .update(payload)
-    .eq("id", id);
+    .eq("id", teamId);
 
   if (error) {
     return NextResponse.json(
       {
         error: error.message,
-        debug: { id, payload },
+        debug: { teamId, payload },
       },
       { status: 400 }
     );
@@ -87,18 +88,18 @@ export async function PATCH(
   });
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+export async function DELETE(_req: Request, context: RouteContext) {
+  const { teamId } = await context.params;
   const auth = await checkAdmin();
 
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  const { error } = await auth.supabase.from("teams").delete().eq("id", id);
+  const { error } = await auth.supabase
+    .from("teams")
+    .delete()
+    .eq("id", teamId);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
