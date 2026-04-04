@@ -36,9 +36,9 @@ type TeamApiRow = {
 };
 
 export default function EditTeamPage() {
-  const params = useParams<{ id: string }>();
+  const params = useParams<{ teamId: string }>();
   const router = useRouter();
-  const id = params.id;
+  const teamId = params.teamId;
 
   const [form, setForm] = useState<TeamFormState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,7 +70,7 @@ export default function EditTeamPage() {
     };
   }
 
-  async function reloadTeam(teamId: string) {
+  async function reloadTeam(currentTeamId: string) {
     const res = await fetch("/api/admin/teams", { cache: "no-store" });
     const data = await res.json();
 
@@ -79,7 +79,7 @@ export default function EditTeamPage() {
     }
 
     const team = (data.teams ?? []).find(
-      (item: TeamApiRow) => item.id === teamId
+      (item: TeamApiRow) => item.id === currentTeamId
     );
 
     if (!team) {
@@ -94,7 +94,7 @@ export default function EditTeamPage() {
       try {
         setLoading(true);
         setMessage(null);
-        await reloadTeam(id);
+        await reloadTeam(teamId);
       } catch (error) {
         setMessage(
           error instanceof Error
@@ -106,8 +106,10 @@ export default function EditTeamPage() {
       }
     }
 
-    loadTeam();
-  }, [id]);
+    if (teamId) {
+      loadTeam();
+    }
+  }, [teamId]);
 
   async function handleAutofill() {
     if (!form) return;
