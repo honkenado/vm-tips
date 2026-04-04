@@ -1,4 +1,7 @@
+// app/api/team-news/[slug]/route.ts
+
 import { NextResponse } from "next/server";
+import { TEAM_NEWS_OVERRIDES } from "@/lib/team-news-config";
 
 export const revalidate = 3600;
 
@@ -33,96 +36,6 @@ type TeamNewsConfig = {
   maxItems: number;
 };
 
-type TeamNewsOverride = {
-  teamName?: string;
-  aliases?: string[];
-  strongAliases?: string[];
-  players?: string[];
-  extraExcludeTerms?: string[];
-  extraStrongExcludeTerms?: string[];
-  hl?: string;
-  gl?: string;
-  ceid?: string;
-};
-
-const TEAM_NEWS_OVERRIDES: Record<string, TeamNewsOverride> = {
-  mexiko: {
-    teamName: "Mexico",
-    aliases: [
-      "Mexico national team",
-      "Mexico football team",
-      "Mexican national team",
-      "El Tri",
-      "Selección Mexicana",
-      "Seleccion Mexicana",
-    ],
-    strongAliases: [
-      "Mexico national team",
-      "Mexican national team",
-      "El Tri",
-      "Selección Mexicana",
-      "Seleccion Mexicana",
-    ],
-    players: [
-      "Santiago Gimenez",
-      "Edson Alvarez",
-      "Edson Álvarez",
-      "Raul Jimenez",
-      "Raúl Jiménez",
-      "Javier Aguirre",
-    ],
-    extraExcludeTerms: [
-      "Club America",
-      "Club América",
-      "Chivas",
-      "Tigres",
-      "Monterrey",
-      "Liga MX",
-    ],
-  },
-
-  sydafrika: {
-    teamName: "South Africa",
-    aliases: [
-      "South Africa national team",
-      "South Africa football team",
-      "Bafana Bafana",
-    ],
-    strongAliases: [
-      "South Africa national team",
-      "Bafana Bafana",
-    ],
-  },
-
-  sydkorea: {
-    teamName: "South Korea",
-    aliases: [
-      "South Korea national team",
-      "South Korea football team",
-      "Korea Republic",
-      "Korea Republic national team",
-    ],
-    strongAliases: [
-      "South Korea national team",
-      "Korea Republic national team",
-    ],
-  },
-
-  tjeckien: {
-    teamName: "Czech Republic",
-    aliases: [
-      "Czech Republic national team",
-      "Czech Republic football team",
-      "Czechia national team",
-      "Czechia football team",
-    ],
-    strongAliases: [
-      "Czech Republic national team",
-      "Czechia national team",
-    ],
-  },
-};
-
 function decodeHtmlEntities(text: string) {
   return text
     .replace(/&amp;/g, "&")
@@ -133,16 +46,11 @@ function decodeHtmlEntities(text: string) {
 }
 
 function stripCdata(text: string) {
-  return text
-    .replace(/^<!\[CDATA\[/, "")
-    .replace(/\]\]>$/, "")
-    .trim();
+  return text.replace(/^<!\[CDATA\[/, "").replace(/\]\]>$/, "").trim();
 }
 
 function stripHtml(text: string) {
-  return decodeHtmlEntities(
-    text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
-  );
+  return decodeHtmlEntities(text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim());
 }
 
 function extractTag(content: string, tag: string) {
@@ -222,6 +130,10 @@ function slugToTeamName(slug: string) {
     .join(" ");
 }
 
+function uniq(values: string[]) {
+  return [...new Set(values.filter(Boolean))];
+}
+
 function getGenericAliases(teamName: string) {
   return [
     teamName,
@@ -252,7 +164,7 @@ function getBaseExcludeTerms() {
     "fixtures",
     "draw",
     "group stage",
-    "world cup odds",
+    "preview",
     "best bets",
     "tips",
   ];
@@ -268,6 +180,9 @@ function getBaseStrongExcludeTerms() {
     "u17",
     "u-17",
     "under-17",
+    "u19",
+    "u-19",
+    "under-19",
     "u20",
     "u-20",
     "under-20",
@@ -283,31 +198,21 @@ function getBaseStrongExcludeTerms() {
   ];
 }
 
-function uniq(values: string[]) {
-  return [...new Set(values.filter(Boolean))];
-}
-
 function buildGoogleNewsQuery(config: {
   teamName: string;
   aliases: string[];
   players: string[];
 }) {
-  const mainTerms = uniq([
-    config.teamName,
-    ...config.aliases,
-  ]).map((term) => `"${term}"`);
-
+  const mainTerms = uniq([config.teamName, ...config.aliases]).map((term) => `"${term}"`);
   const playerTerms = uniq(config.players).map((term) => `"${term}"`);
 
   const positiveParts: string[] = [];
+  if (mainTerms.length > 0) positiveParts.push(`(${mainTerms.join(" OR ")})`);
+  if (playerTerms.length > 0) positiveParts.push(`(${playerTerms.join(" OR ")})`);
 
-  if (mainTerms.length > 0) {
-    positiveParts.push(`(${mainTerms.join(" OR ")})`);
-  }
-
-  if (playerTerms.length > 0) {
-    positiveParts.push(`(${playerTerms.join(" OR ")})`);
-  }
+  const freshnessParts = [
+    "when:14d",
+  ];
 
   const negativeParts = [
     "-women",
@@ -317,6 +222,8 @@ function buildGoogleNewsQuery(config: {
     "-girls",
     "-u17",
     '-"under-17"',
+    "-u19",
+    '-"under-19"',
     "-u20",
     '-"under-20"',
     "-u21",
@@ -331,7 +238,7 @@ function buildGoogleNewsQuery(config: {
     "-fantasy",
   ];
 
-  return [...positiveParts, ...negativeParts].join(" ");
+  return [...positiveParts, ...freshnessParts, ...negativeParts].join(" ");
 }
 
 function isLikelyGenericTournamentArticle(text: string, config: TeamNewsConfig) {
@@ -354,17 +261,29 @@ function isLikelyGenericTournamentArticle(text: string, config: TeamNewsConfig) 
   ];
 
   const genericHits = countMatches(text, genericTerms);
-
   const teamHits =
-    countMatches(text, config.includeTerms) +
-    countMatches(text, config.strongIncludeTerms);
+    countMatches(text, config.includeTerms) + countMatches(text, config.strongIncludeTerms);
 
   return genericHits >= 2 && teamHits <= 1;
+}
+
+function isTooOld(pubDate: string) {
+  const timestamp = Date.parse(pubDate || "");
+  if (!timestamp) return false;
+
+  const now = Date.now();
+  const fourteenDays = 14 * 24 * 60 * 60 * 1000;
+
+  return now - timestamp > fourteenDays;
 }
 
 function shouldRejectItem(item: NewsItem, config: TeamNewsConfig) {
   const combined = `${item.title} ${item.description} ${item.source}`;
   const normalized = normalizeText(combined);
+
+  if (isTooOld(item.pubDate)) {
+    return true;
+  }
 
   const strongExcludeHits = countMatches(normalized, config.strongExcludeTerms);
   if (strongExcludeHits > 0) {
@@ -397,21 +316,12 @@ function scoreNewsItem(item: NewsItem, config: TeamNewsConfig) {
   const includeInTitle = countMatches(title, config.includeTerms);
   const includeInDescription = countMatches(description, config.includeTerms);
   const strongIncludeInTitle = countMatches(title, config.strongIncludeTerms);
-  const strongIncludeInDescription = countMatches(
-    description,
-    config.strongIncludeTerms
-  );
+  const strongIncludeInDescription = countMatches(description, config.strongIncludeTerms);
 
   const excludeInTitle = countMatches(title, config.excludeTerms);
   const excludeInDescription = countMatches(description, config.excludeTerms);
-  const strongExcludeInTitle = countMatches(
-    title,
-    config.strongExcludeTerms
-  );
-  const strongExcludeInDescription = countMatches(
-    description,
-    config.strongExcludeTerms
-  );
+  const strongExcludeInTitle = countMatches(title, config.strongExcludeTerms);
+  const strongExcludeInDescription = countMatches(description, config.strongExcludeTerms);
 
   score += includeInTitle * 4;
   score += includeInDescription * 2;
@@ -443,6 +353,14 @@ function scoreNewsItem(item: NewsItem, config: TeamNewsConfig) {
     score -= 8;
   }
 
+  const timestamp = Date.parse(item.pubDate || "");
+  if (timestamp) {
+    const ageDays = Math.floor((Date.now() - timestamp) / (24 * 60 * 60 * 1000));
+    if (ageDays <= 2) score += 4;
+    else if (ageDays <= 5) score += 2;
+    else if (ageDays <= 10) score += 1;
+  }
+
   return score;
 }
 
@@ -450,21 +368,11 @@ function dedupeItems(items: RankedNewsItem[]) {
   const seen = new Set<string>();
 
   return items.filter((item) => {
-    const normalizedTitle = normalizeText(item.title)
-      .replace(/\s*-\s*[^-]+$/, "")
-      .trim();
-
-    const normalizedLink = item.link
-      .replace(/^https?:\/\//, "")
-      .replace(/\/$/, "")
-      .trim();
-
+    const normalizedTitle = normalizeText(item.title).replace(/\s*-\s*[^-]+$/, "").trim();
+    const normalizedLink = item.link.replace(/^https?:\/\//, "").replace(/\/$/, "").trim();
     const key = `${normalizedTitle}::${normalizedLink}`;
 
-    if (seen.has(key)) {
-      return false;
-    }
-
+    if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
@@ -502,26 +410,13 @@ function getTeamNewsConfig(slug: string): TeamNewsConfig {
   const fallbackTeamName = slugToTeamName(normalizedSlug);
   const teamName = override?.teamName ?? fallbackTeamName;
 
-  const aliases = uniq([
-    ...getGenericAliases(teamName),
-    ...(override?.aliases ?? []),
-  ]);
-
-  const strongAliases = uniq([
-    ...getGenericStrongAliases(teamName),
-    ...(override?.strongAliases ?? []),
-  ]);
-
-  const excludeTerms = uniq([
-    ...getBaseExcludeTerms(),
-    ...(override?.extraExcludeTerms ?? []),
-  ]);
-
+  const aliases = uniq([...getGenericAliases(teamName), ...(override?.aliases ?? [])]);
+  const strongAliases = uniq([...getGenericStrongAliases(teamName), ...(override?.strongAliases ?? [])]);
+  const excludeTerms = uniq([...getBaseExcludeTerms(), ...(override?.extraExcludeTerms ?? [])]);
   const strongExcludeTerms = uniq([
     ...getBaseStrongExcludeTerms(),
     ...(override?.extraStrongExcludeTerms ?? []),
   ]);
-
   const players = uniq(override?.players ?? []);
 
   return {
