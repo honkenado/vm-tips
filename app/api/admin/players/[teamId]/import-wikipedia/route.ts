@@ -37,6 +37,7 @@ function stripTags(html: string) {
       .replace(/<br\s*\/?>/gi, " ")
       .replace(/<\/p>/gi, " ")
       .replace(/<sup[^>]*>[\s\S]*?<\/sup>/gi, " ")
+      .replace(/<span[^>]*style="[^"]*display\s*:\s*none[^"]*"[^>]*>[\s\S]*?<\/span>/gi, " ")
       .replace(/<span[^>]*class="[^"]*flagicon[^"]*"[^>]*>[\s\S]*?<\/span>/gi, " ")
       .replace(/<img[^>]*>/gi, " ")
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
@@ -74,10 +75,10 @@ function removeCaptainAndNotes(name: string) {
 }
 
 function normalizePosition(value: string) {
-  const text = value.toLowerCase().trim();
+  const text = value.toLowerCase().replace(/\s+/g, " ").trim();
 
   if (
-    text === "gk" ||
+    /\bgk\b/.test(text) ||
     text.includes("goalkeeper") ||
     text.includes("keeper")
   ) {
@@ -85,7 +86,7 @@ function normalizePosition(value: string) {
   }
 
   if (
-    text === "df" ||
+    /\bdf\b/.test(text) ||
     text.includes("defender") ||
     text.includes("centre-back") ||
     text.includes("center-back") ||
@@ -96,7 +97,7 @@ function normalizePosition(value: string) {
   }
 
   if (
-    text === "mf" ||
+    /\bmf\b/.test(text) ||
     text.includes("midfielder") ||
     text.includes("midfield") ||
     text.includes("winger")
@@ -105,7 +106,7 @@ function normalizePosition(value: string) {
   }
 
   if (
-    text === "fw" ||
+    /\bfw\b/.test(text) ||
     text.includes("forward") ||
     text.includes("striker") ||
     text.includes("attacker")
