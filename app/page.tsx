@@ -55,12 +55,21 @@ function formatTime(dateString: string | null) {
   }).format(new Date(dateString));
 }
 
-function getDaysLeftToDeadline() {
+function getDeadlineDate() {
   const now = new Date();
   const year = now.getFullYear();
-  const deadline = new Date(year, 5, 10, 23, 59, 59);
+  return new Date(year, 5, 10, 23, 59, 59);
+}
+
+function getDaysLeftToDeadline() {
+  const now = new Date();
+  const deadline = getDeadlineDate();
   const diff = deadline.getTime() - now.getTime();
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+}
+
+function isBeforeDeadline() {
+  return new Date().getTime() <= getDeadlineDate().getTime();
 }
 
 function countGroupProgress(
@@ -172,12 +181,19 @@ export default async function HomePage() {
 
   const nowIso = new Date().toISOString();
 
-  const { data: upcomingMatches } = await readOnlySupabase
-    .from("matches")
-    .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
-    .gt("match_date", nowIso)
-    .order("match_date", { ascending: true })
-    .limit(1);
+  const [{ data: upcomingMatches }, { data: openingMatches }] = await Promise.all([
+    readOnlySupabase
+      .from("matches")
+      .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
+      .gt("match_date", nowIso)
+      .order("match_date", { ascending: true })
+      .limit(1),
+    readOnlySupabase
+      .from("matches")
+      .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
+      .order("match_date", { ascending: true })
+      .limit(1),
+  ]);
 
   let registeredCount = 0;
 
@@ -200,9 +216,13 @@ export default async function HomePage() {
     console.error("Kunde inte hämta members count", error);
   }
 
-  const nextMatch = ((upcomingMatches ?? [])[0] ?? null) as MatchItem | null;
+  const nextMatch =
+    ((upcomingMatches ?? [])[0] ?? null) ||
+    ((openingMatches ?? [])[0] ?? null) ||
+    null;
 
   const daysLeft = getDaysLeftToDeadline();
+  const beforeDeadline = isBeforeDeadline();
 
   const displayName =
     [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
@@ -292,10 +312,12 @@ export default async function HomePage() {
                     </div>
 
                     <div className="min-w-[110px] rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
-                      <div className="text-3xl font-black">
+                      <div className="text-lg font-black">
                         {nextMatch ? formatShortDate(nextMatch.match_date) : "-"}
                       </div>
-                      <div className="text-sm text-white/75">nästa match</div>
+                      <div className="text-sm text-white/75">
+                        {beforeDeadline ? "öppningsmatch" : "nästa match"}
+                      </div>
                     </div>
                   </div>
 
@@ -415,7 +437,9 @@ export default async function HomePage() {
 
               <div className="rounded-[1.6rem] border border-white/10 bg-white/8 p-4 text-white shadow-lg backdrop-blur-sm">
                 <div className="mb-2 flex items-center justify-between">
-                  <h2 className="text-xl font-black text-white">Nästa match</h2>
+                  <h2 className="text-xl font-black text-white">
+                    {beforeDeadline ? "Öppningsmatch" : "Nästa match"}
+                  </h2>
 
                   <Link
                     href="/matcher-idag"
@@ -454,7 +478,7 @@ export default async function HomePage() {
                 </Link>
               </div>
 
-              {isLoggedIn ? (
+              {isLoggedIn && beforeDeadline ? (
                 <>
                   <div className="rounded-[1.6rem] border border-white/10 bg-white/8 p-4 text-white shadow-lg backdrop-blur-sm">
                     <h2 className="text-lg font-black text-white">Din status</h2>
