@@ -62,8 +62,8 @@ export default function LeaguePage() {
         setErrorMessage(null);
 
         const [leagueRes, leaderboardRes] = await Promise.all([
-          fetch(`/api/leagues/${leagueId}`),
-          fetch("/api/leaderboard"),
+          fetch(`/api/leagues/${leagueId}`, { cache: "no-store" }),
+          fetch("/api/leaderboard", { cache: "no-store" }),
         ]);
 
         const leagueData = await leagueRes.json();
@@ -184,7 +184,7 @@ export default function LeaguePage() {
           <div className="rounded-[1.5rem] border border-red-200 bg-white p-4 shadow-sm sm:rounded-[1.75rem] sm:p-6">
             <button
               type="button"
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/league")}
               className="mb-4 rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800"
             >
               Tillbaka
@@ -207,7 +207,7 @@ export default function LeaguePage() {
             <div>
               <button
                 type="button"
-                onClick={() => router.push("/")}
+                onClick={() => router.push("/league")}
                 className="mb-4 rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800"
               >
                 Tillbaka
