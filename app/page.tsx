@@ -20,6 +20,21 @@ type MatchItem = {
   tv_stream?: string | null;
 };
 
+type PredictionResponse = {
+  prediction?: {
+    group_stage?: Array<{
+      name: string;
+      matches: Array<{
+        id: number;
+        homeGoals: string;
+        awayGoals: string;
+      }>;
+    }>;
+    knockout?: Record<string, string>;
+    golden_boot?: string | null;
+  } | null;
+};
+
 function formatShortDate(dateString: string | null) {
   if (!dateString) return "";
   return new Intl.DateTimeFormat("sv-SE", {
@@ -48,6 +63,74 @@ function getReferralEarnings(referralCount: number) {
   return Math.min(referralCount * 20, 500);
 }
 
+function countGroupProgress(
+  groupStage:
+    | Array<{
+        name: string;
+        matches: Array<{ id: number; homeGoals: string; awayGoals: string }>;
+      }>
+    | undefined
+    | null
+) {
+  if (!groupStage?.length) {
+    return { total: 72, completed: 0 };
+  }
+
+  const total = groupStage.reduce((sum, group) => sum + group.matches.length, 0);
+  const completed = groupStage.reduce(
+    (sum, group) =>
+      sum +
+      group.matches.filter(
+        (match) => match.homeGoals !== "" && match.awayGoals !== ""
+      ).length,
+    0
+  );
+
+  return { total, completed };
+}
+
+function countKnockoutProgress(knockout: Record<string, string> | undefined | null) {
+  const completed = knockout
+    ? Object.values(knockout).filter(
+        (winner) => typeof winner === "string" && winner.trim() !== ""
+      ).length
+    : 0;
+
+  return { total: 32, completed };
+}
+
+function buildStatusText(params: {
+  groupCompleted: number;
+  groupTotal: number;
+  knockoutCompleted: number;
+  knockoutTotal: number;
+  goldenBootDone: number;
+}) {
+  const {
+    groupCompleted,
+    groupTotal,
+    knockoutCompleted,
+    knockoutTotal,
+    goldenBootDone,
+  } = params;
+
+  if (groupCompleted < groupTotal) {
+    const left = groupTotal - groupCompleted;
+    return `Du har ${left} gruppmatcher kvar att fylla i.`;
+  }
+
+  if (knockoutCompleted < knockoutTotal) {
+    const left = knockoutTotal - knockoutCompleted;
+    return `Du har ${left} slutspelsval kvar att fylla i.`;
+  }
+
+  if (!goldenBootDone) {
+    return "Du saknar fortfarande skyttekung.";
+  }
+
+  return "Ditt tips ser komplett ut.";
+}
+
 export default async function HomePage() {
   const supabase = await createClient();
 
@@ -66,6 +149,8 @@ export default async function HomePage() {
       }
     | null = null;
 
+  let prediction: PredictionResponse["prediction"] = null;
+
   if (user) {
     const { data } = await supabase
       .from("profiles")
@@ -74,6 +159,31 @@ export default async function HomePage() {
       .single();
 
     profile = data;
+
+    const cookieHeader = (await supabase.auth.getSession()).data.session?.access_token;
+
+    try {
+      const baseUrl =
+        process.env.NEXT_PUBLIC_SITE_URL ||
+        process.env.NEXT_PUBLIC_APP_URL ||
+        "http://localhost:3000";
+
+      const res = await fetch(`${baseUrl}/api/prediction`, {
+        headers: cookieHeader
+          ? {
+              Authorization: `Bearer ${cookieHeader}`,
+            }
+          : undefined,
+        cache: "no-store",
+      });
+
+      if (res.ok) {
+        const data = (await res.json()) as PredictionResponse;
+        prediction = data.prediction ?? null;
+      }
+    } catch (error) {
+      console.error("Kunde inte läsa prediction på startsidan", error);
+    }
   }
 
   const nowIso = new Date().toISOString();
@@ -91,10 +201,15 @@ export default async function HomePage() {
     .order("published_at", { ascending: false })
     .limit(2);
 
+  const { count: participantCountRaw } = await supabase
+    .from("profiles")
+    .select("*", { count: "exact", head: true });
+
   const nextMatch = ((upcomingMatches ?? [])[0] ?? null) as MatchItem | null;
   const latestNewsSafe = (latestNews ?? []) as NewsItem[];
 
-  const participantCount = 428;
+  const participantCount = participantCountRaw ?? 0;
+
   const referralCount = 3;
   const referralCode = profile?.payment_code || "ABC12";
   const referralEarnings = getReferralEarnings(referralCount);
@@ -107,6 +222,29 @@ export default async function HomePage() {
 
   const isLoggedIn = !!user;
   const isPaid = profile?.payment_status === "paid";
+
+  const groupProgress = countGroupProgress(prediction?.group_stage);
+  const knockoutProgress = countKnockoutProgress(prediction?.knockout);
+  const goldenBootDone = prediction?.golden_boot?.trim() ? 1 : 0;
+
+  const totalProgressItems =
+    groupProgress.total + knockoutProgress.total + 1;
+
+  const completedProgressItems =
+    groupProgress.completed + knockoutProgress.completed + goldenBootDone;
+
+  const progressPercent =
+    totalProgressItems > 0
+      ? Math.round((completedProgressItems / totalProgressItems) * 100)
+      : 0;
+
+  const statusText = buildStatusText({
+    groupCompleted: groupProgress.completed,
+    groupTotal: groupProgress.total,
+    knockoutCompleted: knockoutProgress.completed,
+    knockoutTotal: knockoutProgress.total,
+    goldenBootDone,
+  });
 
   return (
     <main className="min-h-screen bg-slate-100">
@@ -170,7 +308,7 @@ export default async function HomePage() {
                         href="/tips"
                         className="inline-flex items-center justify-center rounded-2xl bg-emerald-500 px-6 py-3 text-base font-bold text-white transition hover:bg-emerald-400"
                       >
-                        Fortsätt tippa
+                        Gå till tipset
                       </Link>
                     ) : (
                       <Link
@@ -362,14 +500,17 @@ export default async function HomePage() {
                     <h2 className="text-lg font-black">Din status</h2>
 
                     <div className="mt-2 text-xs text-slate-500">
-                      Ditt tips är inte färdigt
+                      {statusText}
                     </div>
 
                     <div className="mt-2 h-2 rounded-full bg-slate-200">
-                      <div className="h-full w-[45%] rounded-full bg-emerald-500" />
+                      <div
+                        className="h-full rounded-full bg-emerald-500"
+                        style={{ width: `${progressPercent}%` }}
+                      />
                     </div>
 
-                    <div className="mt-1 text-xs font-semibold">45%</div>
+                    <div className="mt-1 text-xs font-semibold">{progressPercent}%</div>
 
                     <div className="mt-3 flex flex-col gap-2">
                       <Link
