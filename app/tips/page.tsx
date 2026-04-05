@@ -292,66 +292,26 @@ export default function TipsPage() {
   }
 
   function runAddeBoy() {
-    const randomGroups: GroupData[] = initialGroups.map((group) => ({
-      ...group,
-      matches: group.matches.map((match) => {
-        const score = generateRandomScore(match.homeTeam, match.awayTeam);
-        return {
-          ...match,
-          homeGoals: score.homeGoals,
-          awayGoals: score.awayGoals,
-        };
-      }),
-    }));
+  const randomGroups: GroupData[] = initialGroups.map((group) => ({
+    ...group,
+    matches: group.matches.map((match) => {
+      const score = generateRandomScore(match.homeTeam, match.awayTeam);
+      return {
+        ...match,
+        homeGoals: score.homeGoals,
+        awayGoals: score.awayGoals,
+      };
+    }),
+  }));
 
-    const { round32 } = getKnockoutSeedData(randomGroups);
-    const winners: Record<string, string> = {};
-
-    round32.forEach((m) => {
-      winners[m.id] = pickRandomWinner(m.home, m.away);
-    });
-
-    const r16 = buildNextRound(round32, winners, "r16", "Åttondelsfinal");
-    r16.forEach((m) => {
-      winners[m.id] = pickRandomWinner(m.home, m.away);
-    });
-
-    const qf = buildNextRound(r16, winners, "qf", "Kvartsfinal");
-    qf.forEach((m) => {
-      winners[m.id] = pickRandomWinner(m.home, m.away);
-    });
-
-    const sf = buildNextRound(qf, winners, "sf", "Semifinal");
-    sf.forEach((m) => {
-      winners[m.id] = pickRandomWinner(m.home, m.away);
-    });
-
-    const finalMatch = buildNextRound(sf, winners, "final", "Final");
-    finalMatch.forEach((m) => {
-      winners[m.id] = pickRandomWinner(m.home, m.away);
-    });
-
-    const bronze: KnockoutMatch[] = [
-      {
-        id: "bronze-1",
-        label: "Bronsmatch",
-        home: sf[0] ? getLoser(sf[0], winners) : "",
-        away: sf[1] ? getLoser(sf[1], winners) : "",
-      },
-    ];
-
-    bronze.forEach((m) => {
-      winners[m.id] = pickRandomWinner(m.home, m.away);
-    });
-
-    setGroups(randomGroups);
-    setKnockoutWinners(winners);
-    setGoldenBoot("");
-    setViewMode("all");
-    setActiveGroupLetter("A");
-    setHasUnsavedChanges(true);
-    setSaveMessage(null);
-  }
+  setGroups(randomGroups);
+  setKnockoutWinners({});
+  setGoldenBoot("");
+  setViewMode("all");
+  setActiveGroupLetter("A");
+  setHasUnsavedChanges(true);
+  setSaveMessage(null);
+}
 
   function resetKnockout() {
     setKnockoutWinners({});
