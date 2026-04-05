@@ -84,26 +84,17 @@ function isMatchFilled(homeGoals: string, awayGoals: string) {
   return homeGoals !== "" && awayGoals !== "";
 }
 
-function isRealKnockoutTeam(team: string | undefined | null) {
+function isKnownTeam(team: string | undefined | null, validTeamNames: Set<string>) {
   if (!team) return false;
-
-  const normalized = team.trim().toLowerCase();
-
-  if (!normalized) return false;
-  if (normalized === "väntar...") return false;
-  if (normalized === "vantar...") return false;
-  if (normalized.includes("väntar")) return false;
-  if (normalized.includes("winner")) return false;
-  if (normalized.includes("loser")) return false;
-  if (normalized.includes("vinnare")) return false;
-  if (normalized.includes("förlorare")) return false;
-  if (normalized.includes("forlorare")) return false;
-
-  return true;
+  return validTeamNames.has(team.trim());
 }
 
-function isPlayableKnockoutMatch(match: { home: string; away: string }) {
-  return isRealKnockoutTeam(match.home) && isRealKnockoutTeam(match.away);
+function countCompletedKnockoutSelections(
+  winners: Record<string, string>,
+  validTeamNames: Set<string>
+) {
+  return Object.values(winners).filter((winner) => isKnownTeam(winner, validTeamNames))
+    .length;
 }
 
 export default function TipsPage() {
@@ -444,6 +435,19 @@ export default function TipsPage() {
 
   const deadlinePassed = isDeadlinePassed();
 
+  const validTeamNames = useMemo(() => {
+    const names = new Set<string>();
+
+    groups.forEach((group) => {
+      group.matches.forEach((match) => {
+        if (match.homeTeam) names.add(match.homeTeam.trim());
+        if (match.awayTeam) names.add(match.awayTeam.trim());
+      });
+    });
+
+    return names;
+  }, [groups]);
+
   const groupProgress = useMemo(() => {
     const total = groups.reduce((sum, group) => sum + group.matches.length, 0);
     const completed = groups.reduce(
@@ -465,68 +469,14 @@ export default function TipsPage() {
   }, [groups]);
 
   const knockoutProgress = useMemo(() => {
-    const seed = getKnockoutSeedData(groups);
-    const round32 = seed.round32 ?? [];
-
-    const usableRound32 = round32.filter((m) =>
-      isPlayableKnockoutMatch({ home: m.home, away: m.away })
-    );
-
-    const r16 = buildNextRound(round32, knockoutWinners, "r16", "Åttondelsfinal");
-    const usableR16 = r16.filter((m) =>
-      isPlayableKnockoutMatch({ home: m.home, away: m.away })
-    );
-
-    const qf = buildNextRound(r16, knockoutWinners, "qf", "Kvartsfinal");
-    const usableQf = qf.filter((m) =>
-      isPlayableKnockoutMatch({ home: m.home, away: m.away })
-    );
-
-    const sf = buildNextRound(qf, knockoutWinners, "sf", "Semifinal");
-    const usableSf = sf.filter((m) =>
-      isPlayableKnockoutMatch({ home: m.home, away: m.away })
-    );
-
-    const finalMatch = buildNextRound(sf, knockoutWinners, "final", "Final");
-    const usableFinal = finalMatch.filter((m) =>
-      isPlayableKnockoutMatch({ home: m.home, away: m.away })
-    );
-
-    const bronze: KnockoutMatch[] =
-      sf.length >= 2
-        ? [
-            {
-              id: "bronze-1",
-              label: "Bronsmatch",
-              home: sf[0] ? getLoser(sf[0], knockoutWinners) : "",
-              away: sf[1] ? getLoser(sf[1], knockoutWinners) : "",
-            },
-          ]
-        : [];
-
-    const usableBronze = bronze.filter((m) =>
-      isPlayableKnockoutMatch({ home: m.home, away: m.away })
-    );
-
-    const allMatches = [
-      ...usableRound32,
-      ...usableR16,
-      ...usableQf,
-      ...usableSf,
-      ...usableFinal,
-      ...usableBronze,
-    ];
-
-    const completed = allMatches.filter((m) => {
-      const winner = knockoutWinners[m.id];
-      return !!winner && isRealKnockoutTeam(winner);
-    }).length;
+    const total = countCompletedKnockoutSelections(knockoutWinners, validTeamNames);
+    const completed = total;
 
     return {
-      total: allMatches.length,
+      total,
       completed,
     };
-  }, [groups, knockoutWinners]);
+  }, [knockoutWinners, validTeamNames]);
 
   const goldenBootDone = goldenBoot.trim().length > 0 ? 1 : 0;
 
@@ -555,12 +505,6 @@ export default function TipsPage() {
       return `Du har ${remainingGroupMatches} gruppmatcher kvar. Börja i ${groupProgress.incompleteGroupName ?? "nästa ofullständiga grupp"}.`;
     }
 
-    const remainingKnockoutMatches =
-      knockoutProgress.total - knockoutProgress.completed;
-    if (remainingKnockoutMatches > 0) {
-      return `Gruppspelet är klart. Du har ${remainingKnockoutMatches} slutspelsval kvar att fylla i.`;
-    }
-
     if (!goldenBoot.trim()) {
       return "Du saknar fortfarande skyttekung.";
     }
@@ -570,13 +514,7 @@ export default function TipsPage() {
     }
 
     return "Allt ser komplett ut. Snyggt jobbat.";
-  }, [
-    deadlinePassed,
-    groupProgress,
-    knockoutProgress,
-    goldenBoot,
-    hasUnsavedChanges,
-  ]);
+  }, [deadlinePassed, groupProgress, goldenBoot, hasUnsavedChanges]);
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_#ecfdf5_0%,_#f8fafc_35%,_#f1f5f9_68%,_#e2e8f0_100%)] px-3 py-3 pb-24 sm:px-4 sm:py-4 sm:pb-6 md:px-6 md:py-8 md:pb-8">
@@ -742,19 +680,23 @@ export default function TipsPage() {
                 Visa del av tipset
               </p>
               <div className="flex flex-wrap gap-2 xl:justify-end">
-                {viewModeItems.map((item) => (
-                  <button
-                    key={item.key}
-                    onClick={() => setViewMode(item.key)}
-                    className={`h-9 rounded-full px-3 py-1.5 text-[13px] font-bold transition ${
-                      viewMode === item.key
-                        ? "bg-white text-slate-900 shadow-md"
-                        : "border border-white/10 bg-white/10 text-white hover:bg-white/20"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
+                {viewModeItems.map((item) => {
+                  const active = viewMode === item.key;
+
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={() => setViewMode(item.key)}
+                      className={`h-9 rounded-full px-3 py-1.5 text-[13px] font-bold transition ${
+                        active
+                          ? "bg-white text-slate-900 shadow-md"
+                          : "border border-white/10 bg-white/10 text-white hover:bg-white/20"
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
