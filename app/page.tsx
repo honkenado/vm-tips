@@ -22,10 +22,6 @@ type MatchItem = {
   tv_stream?: string | null;
 };
 
-type ProfileRow = {
-  id: string;
-  payment_status: string | null;
-};
 type MembersResponse = {
   members?: Array<{
     id: string;
@@ -199,24 +195,24 @@ export default async function HomePage() {
 
   let registeredCount = 0;
 
-try {
-  const headerStore = await headers();
-  const host = headerStore.get("host");
-  const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
+  try {
+    const headerStore = await headers();
+    const host = headerStore.get("host");
+    const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
 
-  if (host) {
-    const membersRes = await fetch(`${protocol}://${host}/api/members`, {
-      cache: "no-store",
-    });
+    if (host) {
+      const membersRes = await fetch(`${protocol}://${host}/api/members`, {
+        cache: "no-store",
+      });
 
-    if (membersRes.ok) {
-      const membersData = (await membersRes.json()) as MembersResponse;
-      registeredCount = membersData.members?.length ?? 0;
+      if (membersRes.ok) {
+        const membersData = (await membersRes.json()) as MembersResponse;
+        registeredCount = membersData.members?.length ?? 0;
+      }
     }
+  } catch (error) {
+    console.error("Kunde inte hämta members count", error);
   }
-} catch (error) {
-  console.error("Kunde inte hämta members count", error);
-}
 
   const nextMatch = ((upcomingMatches ?? [])[0] ?? null) as MatchItem | null;
   const latestNewsSafe = (latestNews ?? []) as NewsItem[];
@@ -308,8 +304,6 @@ try {
                     </div>
                   </div>
 
-                 
-
                   <div className="mt-6 flex flex-wrap gap-3">
                     {isLoggedIn ? (
                       <Link
@@ -335,7 +329,7 @@ try {
                     </Link>
 
                     <Link
-                      href="/regler"
+                      href="/rules"
                       className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-6 py-3 text-base font-bold text-white transition hover:bg-white/15"
                     >
                       Se regler
@@ -343,7 +337,7 @@ try {
 
                     {isLoggedIn ? (
                       <Link
-                        href="/varva-medlemmar"
+                        href="/varva"
                         className="inline-flex items-center justify-center rounded-2xl border border-emerald-300/30 bg-emerald-500/20 px-6 py-3 text-base font-bold text-emerald-100 transition hover:bg-emerald-500/30"
                       >
                         Värva vänner
@@ -360,10 +354,9 @@ try {
 
                 <div className="flex flex-wrap gap-2">
                   {[
-                    { href: "/regler", label: "Regler" },
-                    { href: "/hjälp", label: "Hjälp" },
+                    { href: "/rules", label: "Regler" },
+                    { href: "/help", label: "Hjälp" },
                     { href: "/medlemmar", label: "Medlemmar" },
-                    { href: "/tv-guide", label: "TV-guide" },
                     { href: "/lag", label: "Lag & spelare" },
                   ].map((item) => (
                     <Link
@@ -384,7 +377,7 @@ try {
                         Mitt resultat
                       </Link>
                       <Link
-                        href="/varva-medlemmar"
+                        href="/varva"
                         className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/15"
                       >
                         Värva medlemmar
@@ -466,7 +459,7 @@ try {
                   <h2 className="text-xl font-black">Nästa match</h2>
 
                   <Link
-                    href="/matcher"
+                    href="/matcher-idag"
                     className="text-xs font-semibold text-slate-600 hover:underline"
                   >
                     Se allt
@@ -495,7 +488,7 @@ try {
                 )}
 
                 <Link
-                  href="/matcher"
+                  href="/matcher-idag"
                   className="mt-3 block w-full rounded-xl bg-slate-900 py-2 text-center text-sm font-bold text-white transition hover:bg-slate-800"
                 >
                   Matchschema
@@ -529,10 +522,10 @@ try {
                       </Link>
 
                       <Link
-                        href="/leaderboard"
+                        href="/medlemmar"
                         className="rounded-xl bg-slate-900 py-2 text-center text-sm font-bold text-white transition hover:bg-slate-800"
                       >
-                        Leaderboard
+                        Medlemmar
                       </Link>
                     </div>
                   </div>
@@ -542,7 +535,7 @@ try {
                       <h2 className="text-lg font-black">Värva</h2>
 
                       <Link
-                        href="/varva-medlemmar"
+                        href="/varva"
                         className="text-xs text-slate-600 hover:underline"
                       >
                         Mer
@@ -554,7 +547,7 @@ try {
                     </p>
 
                     <Link
-                      href="/varva-medlemmar"
+                      href="/varva"
                       className="mt-4 block w-full rounded-xl bg-emerald-500 py-2 text-center text-sm font-bold text-white transition hover:bg-emerald-400"
                     >
                       Öppna värvarsidan
@@ -577,7 +570,7 @@ try {
               </div>
 
               <Link
-                href="/nyheter"
+                href="/news"
                 className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
               >
                 Alla nyheter
@@ -615,7 +608,7 @@ try {
                       </p>
 
                       <Link
-                        href={item.slug ? `/nyheter/${item.slug}` : "/nyheter"}
+                        href={item.slug ? `/news/${item.slug}` : "/news"}
                         className="mt-3 inline-flex text-sm font-bold text-emerald-700 transition hover:text-emerald-600"
                       >
                         Läs mer →
@@ -638,19 +631,19 @@ try {
 
             <div className="mt-4 grid gap-3">
               <Link
-                href="/matcher"
+                href="/matcher-idag"
                 className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base font-bold text-slate-900 transition hover:-translate-y-0.5 hover:bg-slate-100"
               >
                 <span className="text-xl">⚽</span>
-                <span>Matcher</span>
+                <span>Matcher idag</span>
               </Link>
 
               <Link
-                href="/leaderboard"
+                href="/medlemmar"
                 className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base font-bold text-slate-900 transition hover:-translate-y-0.5 hover:bg-slate-100"
               >
-                <span className="text-xl">🏆</span>
-                <span>Leaderboard</span>
+                <span className="text-xl">👥</span>
+                <span>Medlemmar</span>
               </Link>
 
               <Link

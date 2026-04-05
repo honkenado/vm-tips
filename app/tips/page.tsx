@@ -13,16 +13,12 @@ import { useEffect, useMemo, useState } from "react";
 import { isDeadlinePassed } from "@/lib/config";
 import {
   clearDependentKnockoutSelections,
-  buildNextRound,
   generateRandomScore,
-  getKnockoutSeedData,
-  getLoser,
   initialGroups,
   isGroupComplete,
   isTournamentGroupStageComplete,
-  pickRandomWinner,
 } from "@/lib/tournament";
-import type { GroupData, KnockoutMatch } from "@/types/tournament";
+import type { GroupData } from "@/types/tournament";
 
 type AppViewMode =
   | "all"
@@ -82,21 +78,6 @@ function slugifyTeamName(teamName: string) {
 
 function isMatchFilled(homeGoals: string, awayGoals: string) {
   return homeGoals !== "" && awayGoals !== "";
-}
-
-function isKnownTeam(team: string | undefined | null, validTeamNames: Set<string>) {
-  if (!team) return false;
-  return validTeamNames.has(team.trim());
-}
-
-function isPlayableKnockoutMatch(
-  match: { id: string; home: string; away: string },
-  validTeamNames: Set<string>
-) {
-  return (
-    isKnownTeam(match.home, validTeamNames) &&
-    isKnownTeam(match.away, validTeamNames)
-  );
 }
 
 export default function TipsPage() {
@@ -292,26 +273,26 @@ export default function TipsPage() {
   }
 
   function runAddeBoy() {
-  const randomGroups: GroupData[] = initialGroups.map((group) => ({
-    ...group,
-    matches: group.matches.map((match) => {
-      const score = generateRandomScore(match.homeTeam, match.awayTeam);
-      return {
-        ...match,
-        homeGoals: score.homeGoals,
-        awayGoals: score.awayGoals,
-      };
-    }),
-  }));
+    const randomGroups: GroupData[] = initialGroups.map((group) => ({
+      ...group,
+      matches: group.matches.map((match) => {
+        const score = generateRandomScore(match.homeTeam, match.awayTeam);
+        return {
+          ...match,
+          homeGoals: score.homeGoals,
+          awayGoals: score.awayGoals,
+        };
+      }),
+    }));
 
-  setGroups(randomGroups);
-  setKnockoutWinners({});
-  setGoldenBoot("");
-  setViewMode("all");
-  setActiveGroupLetter("A");
-  setHasUnsavedChanges(true);
-  setSaveMessage(null);
-}
+    setGroups(randomGroups);
+    setKnockoutWinners({});
+    setGoldenBoot("");
+    setViewMode("all");
+    setActiveGroupLetter("A");
+    setHasUnsavedChanges(true);
+    setSaveMessage(null);
+  }
 
   function resetKnockout() {
     setKnockoutWinners({});
@@ -397,19 +378,6 @@ export default function TipsPage() {
 
   const deadlinePassed = isDeadlinePassed();
 
-  const validTeamNames = useMemo(() => {
-    const names = new Set<string>();
-
-    groups.forEach((group) => {
-      group.matches.forEach((match) => {
-        if (match.homeTeam) names.add(match.homeTeam.trim());
-        if (match.awayTeam) names.add(match.awayTeam.trim());
-      });
-    });
-
-    return names;
-  }, [groups]);
-
   const groupProgress = useMemo(() => {
     const total = groups.reduce((sum, group) => sum + group.matches.length, 0);
     const completed = groups.reduce(
@@ -431,15 +399,15 @@ export default function TipsPage() {
   }, [groups]);
 
   const knockoutProgress = useMemo(() => {
-  const completed = Object.values(knockoutWinners).filter(
-    (winner) => typeof winner === "string" && winner.trim() !== ""
-  ).length;
+    const completed = Object.values(knockoutWinners).filter(
+      (winner) => typeof winner === "string" && winner.trim() !== ""
+    ).length;
 
-  return {
-    total: 32,
-    completed,
-  };
-}, [knockoutWinners]);
+    return {
+      total: 32,
+      completed,
+    };
+  }, [knockoutWinners]);
 
   const goldenBootDone = goldenBoot.trim().length > 0 ? 1 : 0;
 
@@ -546,10 +514,10 @@ export default function TipsPage() {
                     Navigation
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <Link href="/regler" className={navLinkClassName()}>
+                    <Link href="/rules" className={navLinkClassName()}>
                       Regler
                     </Link>
-                    <Link href="/hjälp" className={navLinkClassName()}>
+                    <Link href="/help" className={navLinkClassName()}>
                       Hjälp
                     </Link>
                     <Link href="/medlemmar" className={navLinkClassName()}>
@@ -558,13 +526,10 @@ export default function TipsPage() {
                     <Link href="/mitt-resultat" className={navLinkClassName()}>
                       Mitt resultat
                     </Link>
-                    <Link href="/tv-guide" className={navLinkClassName()}>
-                      TV-guide
-                    </Link>
                     <Link href="/lag" className={navLinkClassName()}>
                       Lag & spelare
                     </Link>
-                    <Link href="/varva-medlemmar" className={navLinkClassName()}>
+                    <Link href="/varva" className={navLinkClassName()}>
                       Värva medlemmar
                     </Link>
                   </div>
