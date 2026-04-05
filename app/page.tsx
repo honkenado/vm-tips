@@ -2,15 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createReadOnlyClient } from "@/lib/supabase/server-readonly";
-
-type NewsItem = {
-  id: string;
-  title: string;
-  excerpt: string | null;
-  image_url: string | null;
-  published_at: string | null;
-  slug: string | null;
-};
+import NewsPreview from "@/components/NewsPreview";
 
 type MatchItem = {
   id: string;
@@ -187,12 +179,6 @@ export default async function HomePage() {
     .order("match_date", { ascending: true })
     .limit(1);
 
-  const { data: latestNews } = await readOnlySupabase
-    .from("news_posts")
-    .select("id, title, excerpt, image_url, published_at, slug")
-    .order("published_at", { ascending: false })
-    .limit(3);
-
   let registeredCount = 0;
 
   try {
@@ -215,7 +201,6 @@ export default async function HomePage() {
   }
 
   const nextMatch = ((upcomingMatches ?? [])[0] ?? null) as MatchItem | null;
-  const latestNewsSafe = (latestNews ?? []) as NewsItem[];
 
   const daysLeft = getDaysLeftToDeadline();
 
@@ -478,9 +463,7 @@ export default async function HomePage() {
                   <div className="rounded-[1.5rem] bg-white p-4 text-slate-900 shadow-lg">
                     <h2 className="text-lg font-black">Din status</h2>
 
-                    <div className="mt-2 text-xs text-slate-500">
-                      {statusText}
-                    </div>
+                    <div className="mt-2 text-xs text-slate-500">{statusText}</div>
 
                     <div className="mt-2 h-2 rounded-full bg-slate-200">
                       <div
@@ -537,77 +520,17 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="mt-4 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-          <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between gap-3 bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.85),_rgba(2,6,23,1)_70%)] px-5 py-4 text-white">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/70">
-                  Kommunikation
-                </p>
-                <h2 className="text-3xl font-black tracking-tight">Senaste nytt</h2>
-              </div>
+        <div className="mt-4">
+          <NewsPreview />
+        </div>
 
-              <Link
-                href="/news"
-                className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
-              >
-                Alla nyheter
-              </Link>
-            </div>
-
-            <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-              {latestNewsSafe.length > 0 ? (
-                latestNewsSafe.map((item) => (
-                  <article
-                    key={item.id}
-                    className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-50 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-                  >
-                    <div className="aspect-[16/10] bg-slate-200">
-                      {item.image_url ? (
-                        <img
-                          src={item.image_url}
-                          alt={item.title}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-sm text-slate-400">
-                          Ingen bild
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="p-4">
-                      <h3 className="line-clamp-2 text-xl font-black leading-tight text-slate-900">
-                        {item.title}
-                      </h3>
-
-                      <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
-                        {item.excerpt || "Läs mer om den senaste uppdateringen."}
-                      </p>
-
-                      <Link
-                        href={item.slug ? `/news/${item.slug}` : "/news"}
-                        className="mt-3 inline-flex text-sm font-bold text-emerald-700 transition hover:text-emerald-600"
-                      >
-                        Läs mer →
-                      </Link>
-                    </div>
-                  </article>
-                ))
-              ) : (
-                <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
-                  Inga nyheter publicerade ännu.
-                </div>
-              )}
-            </div>
-          </div>
-
+        <section className="mt-4 grid gap-4 lg:grid-cols-[1fr]">
           <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-3xl font-black tracking-tight text-slate-900">
               Snabblänkar
             </h2>
 
-            <div className="mt-4 grid gap-3">
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
               <Link
                 href="/matcher-idag"
                 className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base font-bold text-slate-900 transition hover:-translate-y-0.5 hover:bg-slate-100"

@@ -18,9 +18,13 @@ export async function GET(
       return NextResponse.json({ error: "Inte inloggad" }, { status: 401 });
     }
 
-    const leagueParam = id;
+    const leagueParam = id?.trim();
 
-    if (leagueParam === "main") {
+    if (!leagueParam) {
+      return NextResponse.json({ error: "Ogiltig liga" }, { status: 400 });
+    }
+
+    if (leagueParam.toLowerCase() === "main") {
       return NextResponse.json({
         league: {
           id: "main",
@@ -34,13 +38,43 @@ export async function GET(
       });
     }
 
-    const { data: league, error: leagueError } = await supabase
+    let league: {
+      id: string;
+      name: string;
+      join_code: string;
+      created_by: string | null;
+      created_at: string | null;
+    } | null = null;
+
+    const { data: leagueById, error: leagueByIdError } = await supabase
       .from("leagues")
       .select("id, name, join_code, created_by, created_at")
-      .eq("join_code", leagueParam.toUpperCase())
-      .single();
+      .eq("id", leagueParam)
+      .maybeSingle();
 
-    if (leagueError || !league) {
+    if (leagueByIdError) {
+      console.error("Fel vid lookup på league id:", leagueByIdError);
+    }
+
+    if (leagueById) {
+      league = leagueById;
+    } else {
+      const { data: leagueByCode, error: leagueByCodeError } = await supabase
+        .from("leagues")
+        .select("id, name, join_code, created_by, created_at")
+        .eq("join_code", leagueParam.toUpperCase())
+        .maybeSingle();
+
+      if (leagueByCodeError) {
+        console.error("Fel vid lookup på join_code:", leagueByCodeError);
+      }
+
+      if (leagueByCode) {
+        league = leagueByCode;
+      }
+    }
+
+    if (!league) {
       return NextResponse.json({ error: "Liga hittades inte" }, { status: 404 });
     }
 
@@ -52,6 +86,7 @@ export async function GET(
       .maybeSingle();
 
     if (membershipError) {
+      console.error("Fel vid medlemskapskontroll:", membershipError);
       return NextResponse.json(
         { error: "Kunde inte verifiera ligamedlemskap" },
         { status: 500 }
@@ -83,6 +118,7 @@ export async function GET(
       .eq("league_id", league.id);
 
     if (membersError) {
+      console.error("Fel vid hämtning av ligamedlemmar:", membersError);
       return NextResponse.json(
         { error: "Kunde inte hämta ligamedlemmar" },
         { status: 500 }
@@ -91,7 +127,7 @@ export async function GET(
 
     const members = (memberRows ?? [])
       .map((row: any) => {
-        const profile = row.profiles;
+        const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
         if (!profile) return null;
 
         return {
