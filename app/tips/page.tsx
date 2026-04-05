@@ -80,6 +80,10 @@ function slugifyTeamName(teamName: string) {
     .replace(/-+/g, "-");
 }
 
+function isMatchFilled(homeGoals: string, awayGoals: string) {
+  return homeGoals !== "" && awayGoals !== "";
+}
+
 export default function TipsPage() {
   const router = useRouter();
 
@@ -418,6 +422,127 @@ export default function TipsPage() {
 
   const deadlinePassed = isDeadlinePassed();
 
+  const groupProgress = useMemo(() => {
+    const total = groups.reduce((sum, group) => sum + group.matches.length, 0);
+    const completed = groups.reduce(
+      (sum, group) =>
+        sum +
+        group.matches.filter((match) =>
+          isMatchFilled(match.homeGoals, match.awayGoals)
+        ).length,
+      0
+    );
+
+    const incompleteGroup = groups.find((group) => !isGroupComplete(group));
+
+    return {
+      total,
+      completed,
+      incompleteGroupName: incompleteGroup?.name ?? null,
+    };
+  }, [groups]);
+
+  const knockoutProgress = useMemo(() => {
+    const seed = getKnockoutSeedData(groups);
+    const round32 = seed.round32 ?? [];
+
+    const usableRound32 = round32.filter((m) => m.home && m.away);
+    const r16 = buildNextRound(round32, knockoutWinners, "r16", "Åttondelsfinal");
+    const usableR16 = r16.filter((m) => m.home && m.away);
+
+    const qf = buildNextRound(r16, knockoutWinners, "qf", "Kvartsfinal");
+    const usableQf = qf.filter((m) => m.home && m.away);
+
+    const sf = buildNextRound(qf, knockoutWinners, "sf", "Semifinal");
+    const usableSf = sf.filter((m) => m.home && m.away);
+
+    const finalMatch = buildNextRound(sf, knockoutWinners, "final", "Final");
+    const usableFinal = finalMatch.filter((m) => m.home && m.away);
+
+    const bronze: KnockoutMatch[] =
+      sf.length >= 2
+        ? [
+            {
+              id: "bronze-1",
+              label: "Bronsmatch",
+              home: sf[0] ? getLoser(sf[0], knockoutWinners) : "",
+              away: sf[1] ? getLoser(sf[1], knockoutWinners) : "",
+            },
+          ]
+        : [];
+
+    const usableBronze = bronze.filter((m) => m.home && m.away);
+
+    const allMatches = [
+      ...usableRound32,
+      ...usableR16,
+      ...usableQf,
+      ...usableSf,
+      ...usableFinal,
+      ...usableBronze,
+    ];
+
+    const completed = allMatches.filter((m) => !!knockoutWinners[m.id]).length;
+
+    return {
+      total: allMatches.length,
+      completed,
+    };
+  }, [groups, knockoutWinners]);
+
+  const goldenBootDone = goldenBoot.trim().length > 0 ? 1 : 0;
+
+  const overallProgress = useMemo(() => {
+    const total =
+      groupProgress.total + knockoutProgress.total + 1;
+
+    const completed =
+      groupProgress.completed + knockoutProgress.completed + goldenBootDone;
+
+    const percent =
+      total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    return {
+      total,
+      completed,
+      percent,
+      remaining: Math.max(0, total - completed),
+    };
+  }, [groupProgress, knockoutProgress, goldenBootDone]);
+
+  const smartStatus = useMemo(() => {
+    if (deadlinePassed) {
+      return "Deadline har passerat. Tipset är låst.";
+    }
+
+    const remainingGroupMatches = groupProgress.total - groupProgress.completed;
+    if (remainingGroupMatches > 0) {
+      return `Du har ${remainingGroupMatches} gruppmatcher kvar. Börja i ${groupProgress.incompleteGroupName ?? "nästa ofullständiga grupp"}.`;
+    }
+
+    const remainingKnockoutMatches =
+      knockoutProgress.total - knockoutProgress.completed;
+    if (remainingKnockoutMatches > 0) {
+      return `Gruppspelet är klart. Du har ${remainingKnockoutMatches} slutspelsval kvar att fylla i.`;
+    }
+
+    if (!goldenBoot.trim()) {
+      return "Du saknar fortfarande skyttekung.";
+    }
+
+    if (hasUnsavedChanges) {
+      return "Allt är ifyllt. Glöm inte att spara tipset.";
+    }
+
+    return "Allt ser komplett ut. Snyggt jobbat.";
+  }, [
+    deadlinePassed,
+    groupProgress,
+    knockoutProgress,
+    goldenBoot,
+    hasUnsavedChanges,
+  ]);
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_#ecfdf5_0%,_#f8fafc_35%,_#f1f5f9_68%,_#e2e8f0_100%)] px-3 py-3 pb-24 sm:px-4 sm:py-4 sm:pb-6 md:px-6 md:py-8 md:pb-8">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
@@ -466,115 +591,153 @@ export default function TipsPage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/70">
-                      Navigation
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <Link href="/regler" className={navLinkClassName()}>
-                        Regler
-                      </Link>
-                      <Link href="/hjälp" className={navLinkClassName()}>
-                        Hjälp
-                      </Link>
-                      <Link href="/medlemmar" className={navLinkClassName()}>
-                        Medlemmar
-                      </Link>
-                      <Link href="/mitt-resultat" className={navLinkClassName()}>
-                        Mitt resultat
-                      </Link>
-                      <Link href="/tv-guide" className={navLinkClassName()}>
-                        TV-guide
-                      </Link>
-                      <Link href="/lag" className={navLinkClassName()}>
-                        Lag & spelare
-                      </Link>
-                      <Link href="/varva-medlemmar" className={navLinkClassName()}>
-                        Värva medlemmar
-                      </Link>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/70">
-                      Åtgärder
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={savePredictionToDatabase}
-                        disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
-                        className={primaryButtonClassName()}
-                      >
-                        {deadlinePassed
-                          ? "Deadline passerad"
-                          : isSaving
-                          ? "Sparar..."
-                          : "Spara tips"}
-                      </button>
-
-                      <button
-                        onClick={runAddeBoy}
-                        className={accentButtonClassName()}
-                        title="Slumpar ett komplett tips"
-                      >
-                        Adde Boy
-                      </button>
-
-                      <button
-                        onClick={resetAll}
-                        className={secondaryButtonClassName()}
-                      >
-                        Nollställ
-                      </button>
-                    </div>
+            <div className="grid gap-4 xl:grid-cols-[1fr_auto] xl:items-start">
+              <div className="flex flex-col gap-4">
+                <div>
+                  <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/70">
+                    Navigation
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Link href="/regler" className={navLinkClassName()}>
+                      Regler
+                    </Link>
+                    <Link href="/hjälp" className={navLinkClassName()}>
+                      Hjälp
+                    </Link>
+                    <Link href="/medlemmar" className={navLinkClassName()}>
+                      Medlemmar
+                    </Link>
+                    <Link href="/mitt-resultat" className={navLinkClassName()}>
+                      Mitt resultat
+                    </Link>
+                    <Link href="/tv-guide" className={navLinkClassName()}>
+                      TV-guide
+                    </Link>
+                    <Link href="/lag" className={navLinkClassName()}>
+                      Lag & spelare
+                    </Link>
+                    <Link href="/varva-medlemmar" className={navLinkClassName()}>
+                      Värva medlemmar
+                    </Link>
                   </div>
                 </div>
 
-                <div className="hidden md:block xl:max-w-[420px]">
-                  <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/70 xl:text-right">
-                    Visa del av tipset
+                <div>
+                  <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/70">
+                    Åtgärder
                   </p>
-                  <div className="flex flex-wrap gap-2 xl:justify-end">
-                    {viewModeItems.map((item) => (
-                      <button
-                        key={item.key}
-                        onClick={() => setViewMode(item.key)}
-                        className={`h-9 rounded-full px-3 py-1.5 text-[13px] font-bold transition ${
-                          viewMode === item.key
-                            ? "bg-white text-slate-900 shadow-md"
-                            : "border border-white/10 bg-white/10 text-white hover:bg-white/20"
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={savePredictionToDatabase}
+                      disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
+                      className={primaryButtonClassName()}
+                    >
+                      {deadlinePassed
+                        ? "Deadline passerad"
+                        : isSaving
+                        ? "Sparar..."
+                        : "Spara tips"}
+                    </button>
+
+                    <button
+                      onClick={runAddeBoy}
+                      className={accentButtonClassName()}
+                      title="Slumpar ett komplett tips"
+                    >
+                      Adde Boy
+                    </button>
+
+                    <button
+                      onClick={resetAll}
+                      className={secondaryButtonClassName()}
+                    >
+                      Nollställ
+                    </button>
                   </div>
                 </div>
               </div>
 
-              {(deadlinePassed || saveMessage || hasUnsavedChanges) && (
-                <div className="flex flex-col gap-2">
-                  {deadlinePassed && (
-                    <p className="text-sm font-semibold text-amber-300">
-                      Deadline har passerat. Tipset är nu låst.
+              <div className="rounded-[1.5rem] border border-white/10 bg-white/10 p-4 xl:min-w-[340px]">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/70">
+                      Din status
                     </p>
-                  )}
-
-                  {!deadlinePassed && hasUnsavedChanges && !saveMessage && (
-                    <p className="text-sm text-white/80">
-                      Du har osparade ändringar.
-                    </p>
-                  )}
-
-                  {saveMessage && (
-                    <p className="text-sm text-white/80">{saveMessage}</p>
-                  )}
+                    <h2 className="mt-1 text-xl font-black text-white">
+                      {overallProgress.percent}% klart
+                    </h2>
+                  </div>
+                  <div className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white">
+                    {overallProgress.completed}/{overallProgress.total}
+                  </div>
                 </div>
-              )}
+
+                <div className="mt-3 h-2.5 rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-emerald-400"
+                    style={{ width: `${overallProgress.percent}%` }}
+                  />
+                </div>
+
+                <p className="mt-3 text-sm text-slate-200">{smartStatus}</p>
+
+                <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="rounded-xl bg-white/10 p-2">
+                    <div className="font-black text-white">{groupProgress.completed}/{groupProgress.total}</div>
+                    <div className="mt-1 text-white/70">Grupper</div>
+                  </div>
+                  <div className="rounded-xl bg-white/10 p-2">
+                    <div className="font-black text-white">{knockoutProgress.completed}/{knockoutProgress.total}</div>
+                    <div className="mt-1 text-white/70">Slutspel</div>
+                  </div>
+                  <div className="rounded-xl bg-white/10 p-2">
+                    <div className="font-black text-white">{goldenBootDone}/1</div>
+                    <div className="mt-1 text-white/70">Skytt</div>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            <div className="mt-4 hidden md:block xl:max-w-[420px] xl:ml-auto">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/70 xl:text-right">
+                Visa del av tipset
+              </p>
+              <div className="flex flex-wrap gap-2 xl:justify-end">
+                {viewModeItems.map((item) => (
+                  <button
+                    key={item.key}
+                    onClick={() => setViewMode(item.key)}
+                    className={`h-9 rounded-full px-3 py-1.5 text-[13px] font-bold transition ${
+                      viewMode === item.key
+                        ? "bg-white text-slate-900 shadow-md"
+                        : "border border-white/10 bg-white/10 text-white hover:bg-white/20"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {(deadlinePassed || saveMessage || hasUnsavedChanges) && (
+              <div className="mt-4 flex flex-col gap-2">
+                {deadlinePassed && (
+                  <p className="text-sm font-semibold text-amber-300">
+                    Deadline har passerat. Tipset är nu låst.
+                  </p>
+                )}
+
+                {!deadlinePassed && hasUnsavedChanges && !saveMessage && (
+                  <p className="text-sm text-white/80">
+                    Du har osparade ändringar.
+                  </p>
+                )}
+
+                {saveMessage && (
+                  <p className="text-sm text-white/80">{saveMessage}</p>
+                )}
+              </div>
+            )}
           </div>
         </header>
 
