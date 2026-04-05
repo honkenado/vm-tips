@@ -21,19 +21,22 @@ type MatchItem = {
   tv_stream?: string | null;
 };
 
-type PredictionResponse = {
-  prediction?: {
-    group_stage?: Array<{
-      name: string;
-      matches: Array<{
-        id: number;
-        homeGoals: string;
-        awayGoals: string;
-      }>;
+type ProfileRow = {
+  id: string;
+  payment_status: string | null;
+};
+
+type PredictionRow = {
+  group_stage?: Array<{
+    name: string;
+    matches: Array<{
+      id: number;
+      homeGoals: string;
+      awayGoals: string;
     }>;
-    knockout?: Record<string, string>;
-    golden_boot?: string | null;
-  } | null;
+  }> | null;
+  knockout?: Record<string, string> | null;
+  golden_boot?: string | null;
 };
 
 function formatShortDate(dateString: string | null) {
@@ -147,7 +150,7 @@ export default async function HomePage() {
       }
     | null = null;
 
-  let prediction: PredictionResponse["prediction"] = null;
+  let prediction: PredictionRow | null = null;
 
   if (user) {
     const { data } = await supabase
@@ -158,26 +161,13 @@ export default async function HomePage() {
 
     profile = data;
 
-    try {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_SITE_URL ||
-        process.env.NEXT_PUBLIC_APP_URL ||
-        "http://localhost:3000";
+    const { data: predictionData } = await supabase
+      .from("predictions")
+      .select("group_stage, knockout, golden_boot")
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-      const res = await fetch(`${baseUrl}/api/prediction`, {
-        cache: "no-store",
-        headers: {
-          Cookie: "",
-        },
-      });
-
-      if (res.ok) {
-        const data = (await res.json()) as PredictionResponse;
-        prediction = data.prediction ?? null;
-      }
-    } catch (error) {
-      console.error("Kunde inte läsa prediction på startsidan", error);
-    }
+    prediction = (predictionData as PredictionRow | null) ?? null;
   }
 
   const nowIso = new Date().toISOString();
@@ -195,14 +185,19 @@ export default async function HomePage() {
     .order("published_at", { ascending: false })
     .limit(2);
 
-  const { count: registeredCount } = await readOnlySupabase
+  const { data: profiles } = await readOnlySupabase
     .from("profiles")
-    .select("*", { count: "exact", head: true });
+    .select("id, payment_status");
+
+  const profileRows = (profiles ?? []) as ProfileRow[];
+  const registeredCount = profileRows.length;
+  const paidCount = profileRows.filter(
+    (row) => row.payment_status === "paid"
+  ).length;
 
   const nextMatch = ((upcomingMatches ?? [])[0] ?? null) as MatchItem | null;
   const latestNewsSafe = (latestNews ?? []) as NewsItem[];
 
-  const participantCount = registeredCount ?? 0;
   const daysLeft = getDaysLeft(nextMatch?.match_date ?? null);
 
   const displayName =
@@ -273,7 +268,7 @@ export default async function HomePage() {
 
                   <div className="mt-5 flex flex-wrap gap-3">
                     <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-sm">
-                      <div className="text-2xl font-extrabold">{participantCount}</div>
+                      <div className="text-2xl font-extrabold">{registeredCount}</div>
                       <div className="text-sm text-white/80">registrerade</div>
                     </div>
 
@@ -288,6 +283,10 @@ export default async function HomePage() {
                       </div>
                       <div className="text-sm text-white/80">nästa match</div>
                     </div>
+                  </div>
+
+                  <div className="mt-2 text-xs text-white/70">
+                    {paidCount} betalande deltagare
                   </div>
 
                   <div className="mt-6 flex flex-wrap gap-3">
