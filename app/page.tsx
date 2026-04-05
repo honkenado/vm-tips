@@ -181,19 +181,30 @@ export default async function HomePage() {
 
   const nowIso = new Date().toISOString();
 
-  const [{ data: upcomingMatches }, { data: openingMatches }] = await Promise.all([
-    readOnlySupabase
-      .from("matches")
-      .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
-      .gt("match_date", nowIso)
-      .order("match_date", { ascending: true })
-      .limit(1),
-    readOnlySupabase
-      .from("matches")
-      .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
-      .order("match_date", { ascending: true })
-      .limit(1),
-  ]);
+  const [
+  { data: upcomingMatches, error: upcomingMatchesError },
+  { data: openingMatches, error: openingMatchesError },
+] = await Promise.all([
+  supabase
+    .from("matches")
+    .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
+    .gt("match_date", nowIso)
+    .order("match_date", { ascending: true })
+    .limit(1),
+  supabase
+    .from("matches")
+    .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
+    .order("match_date", { ascending: true })
+    .limit(1),
+]);
+
+if (upcomingMatchesError) {
+  console.error("Fel vid hämtning av kommande match:", upcomingMatchesError);
+}
+
+if (openingMatchesError) {
+  console.error("Fel vid hämtning av öppningsmatch:", openingMatchesError);
+}
 
   let registeredCount = 0;
 
