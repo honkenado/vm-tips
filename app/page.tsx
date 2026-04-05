@@ -63,11 +63,11 @@ function formatTime(dateString: string | null) {
   }).format(new Date(dateString));
 }
 
-function getDaysLeft(targetDate: string | null) {
-  if (!targetDate) return null;
+function getDaysLeftToDeadline() {
   const now = new Date();
-  const target = new Date(targetDate);
-  const diff = target.getTime() - now.getTime();
+  const year = now.getFullYear();
+  const deadline = new Date(year, 5, 10, 23, 59, 59);
+  const diff = deadline.getTime() - now.getTime();
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
@@ -183,7 +183,7 @@ export default async function HomePage() {
   const { data: upcomingMatches } = await readOnlySupabase
     .from("matches")
     .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
-    .gte("match_date", nowIso)
+    .gt("match_date", nowIso)
     .order("match_date", { ascending: true })
     .limit(1);
 
@@ -191,7 +191,7 @@ export default async function HomePage() {
     .from("news_posts")
     .select("id, title, excerpt, image_url, published_at, slug")
     .order("published_at", { ascending: false })
-    .limit(2);
+    .limit(3);
 
   let registeredCount = 0;
 
@@ -217,7 +217,7 @@ export default async function HomePage() {
   const nextMatch = ((upcomingMatches ?? [])[0] ?? null) as MatchItem | null;
   const latestNewsSafe = (latestNews ?? []) as NewsItem[];
 
-  const daysLeft = getDaysLeft(nextMatch?.match_date ?? null);
+  const daysLeft = getDaysLeftToDeadline();
 
   const displayName =
     [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
@@ -292,7 +292,7 @@ export default async function HomePage() {
                     </div>
 
                     <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-sm">
-                      <div className="text-2xl font-extrabold">{daysLeft ?? "-"}</div>
+                      <div className="text-2xl font-extrabold">{daysLeft}</div>
                       <div className="text-sm text-white/80">dagar kvar</div>
                     </div>
 
@@ -304,45 +304,22 @@ export default async function HomePage() {
                     </div>
                   </div>
 
-                  <div className="mt-6 flex flex-wrap gap-3">
+                  <div className="mt-6">
                     {isLoggedIn ? (
                       <Link
                         href="/tips"
-                        className="inline-flex items-center justify-center rounded-2xl bg-emerald-500 px-6 py-3 text-base font-bold text-white transition hover:bg-emerald-400"
+                        className="inline-flex min-w-[220px] items-center justify-center rounded-2xl bg-emerald-500 px-8 py-3 text-base font-bold text-white transition hover:bg-emerald-400"
                       >
                         Gå till tipset
                       </Link>
                     ) : (
                       <Link
                         href="/login"
-                        className="inline-flex items-center justify-center rounded-2xl bg-emerald-500 px-6 py-3 text-base font-bold text-white transition hover:bg-emerald-400"
+                        className="inline-flex min-w-[220px] items-center justify-center rounded-2xl bg-emerald-500 px-8 py-3 text-base font-bold text-white transition hover:bg-emerald-400"
                       >
                         Logga in
                       </Link>
                     )}
-
-                    <Link
-                      href="/tv-guide"
-                      className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-base font-bold text-slate-900 transition hover:bg-slate-100"
-                    >
-                      TV-guide
-                    </Link>
-
-                    <Link
-                      href="/rules"
-                      className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-6 py-3 text-base font-bold text-white transition hover:bg-white/15"
-                    >
-                      Se regler
-                    </Link>
-
-                    {isLoggedIn ? (
-                      <Link
-                        href="/varva"
-                        className="inline-flex items-center justify-center rounded-2xl border border-emerald-300/30 bg-emerald-500/20 px-6 py-3 text-base font-bold text-emerald-100 transition hover:bg-emerald-500/30"
-                      >
-                        Värva vänner
-                      </Link>
-                    ) : null}
                   </div>
                 </div>
               </div>
@@ -357,6 +334,7 @@ export default async function HomePage() {
                     { href: "/rules", label: "Regler" },
                     { href: "/help", label: "Hjälp" },
                     { href: "/medlemmar", label: "Medlemmar" },
+                    { href: "/league", label: "Ligor" },
                     { href: "/lag", label: "Lag & spelare" },
                   ].map((item) => (
                     <Link
@@ -522,10 +500,10 @@ export default async function HomePage() {
                       </Link>
 
                       <Link
-                        href="/medlemmar"
+                        href="/league"
                         className="rounded-xl bg-slate-900 py-2 text-center text-sm font-bold text-white transition hover:bg-slate-800"
                       >
-                        Medlemmar
+                        Ligor
                       </Link>
                     </div>
                   </div>
@@ -577,7 +555,7 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            <div className="grid gap-4 p-5 md:grid-cols-2">
+            <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
               {latestNewsSafe.length > 0 ? (
                 latestNewsSafe.map((item) => (
                   <article
@@ -626,7 +604,7 @@ export default async function HomePage() {
 
           <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-3xl font-black tracking-tight text-slate-900">
-              Quick links
+              Snabblänkar
             </h2>
 
             <div className="mt-4 grid gap-3">
@@ -644,6 +622,14 @@ export default async function HomePage() {
               >
                 <span className="text-xl">👥</span>
                 <span>Medlemmar</span>
+              </Link>
+
+              <Link
+                href="/league"
+                className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base font-bold text-slate-900 transition hover:-translate-y-0.5 hover:bg-slate-100"
+              >
+                <span className="text-xl">🏆</span>
+                <span>Ligor</span>
               </Link>
 
               <Link
