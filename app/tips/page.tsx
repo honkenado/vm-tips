@@ -84,6 +84,28 @@ function isMatchFilled(homeGoals: string, awayGoals: string) {
   return homeGoals !== "" && awayGoals !== "";
 }
 
+function isRealKnockoutTeam(team: string | undefined | null) {
+  if (!team) return false;
+
+  const normalized = team.trim().toLowerCase();
+
+  if (!normalized) return false;
+  if (normalized === "väntar...") return false;
+  if (normalized === "vantar...") return false;
+  if (normalized.includes("väntar")) return false;
+  if (normalized.includes("winner")) return false;
+  if (normalized.includes("loser")) return false;
+  if (normalized.includes("vinnare")) return false;
+  if (normalized.includes("förlorare")) return false;
+  if (normalized.includes("forlorare")) return false;
+
+  return true;
+}
+
+function isPlayableKnockoutMatch(match: { home: string; away: string }) {
+  return isRealKnockoutTeam(match.home) && isRealKnockoutTeam(match.away);
+}
+
 export default function TipsPage() {
   const router = useRouter();
 
@@ -446,18 +468,29 @@ export default function TipsPage() {
     const seed = getKnockoutSeedData(groups);
     const round32 = seed.round32 ?? [];
 
-    const usableRound32 = round32.filter((m) => m.home && m.away);
+    const usableRound32 = round32.filter((m) =>
+      isPlayableKnockoutMatch({ home: m.home, away: m.away })
+    );
+
     const r16 = buildNextRound(round32, knockoutWinners, "r16", "Åttondelsfinal");
-    const usableR16 = r16.filter((m) => m.home && m.away);
+    const usableR16 = r16.filter((m) =>
+      isPlayableKnockoutMatch({ home: m.home, away: m.away })
+    );
 
     const qf = buildNextRound(r16, knockoutWinners, "qf", "Kvartsfinal");
-    const usableQf = qf.filter((m) => m.home && m.away);
+    const usableQf = qf.filter((m) =>
+      isPlayableKnockoutMatch({ home: m.home, away: m.away })
+    );
 
     const sf = buildNextRound(qf, knockoutWinners, "sf", "Semifinal");
-    const usableSf = sf.filter((m) => m.home && m.away);
+    const usableSf = sf.filter((m) =>
+      isPlayableKnockoutMatch({ home: m.home, away: m.away })
+    );
 
     const finalMatch = buildNextRound(sf, knockoutWinners, "final", "Final");
-    const usableFinal = finalMatch.filter((m) => m.home && m.away);
+    const usableFinal = finalMatch.filter((m) =>
+      isPlayableKnockoutMatch({ home: m.home, away: m.away })
+    );
 
     const bronze: KnockoutMatch[] =
       sf.length >= 2
@@ -471,7 +504,9 @@ export default function TipsPage() {
           ]
         : [];
 
-    const usableBronze = bronze.filter((m) => m.home && m.away);
+    const usableBronze = bronze.filter((m) =>
+      isPlayableKnockoutMatch({ home: m.home, away: m.away })
+    );
 
     const allMatches = [
       ...usableRound32,
@@ -482,7 +517,10 @@ export default function TipsPage() {
       ...usableBronze,
     ];
 
-    const completed = allMatches.filter((m) => !!knockoutWinners[m.id]).length;
+    const completed = allMatches.filter((m) => {
+      const winner = knockoutWinners[m.id];
+      return !!winner && isRealKnockoutTeam(winner);
+    }).length;
 
     return {
       total: allMatches.length,
@@ -493,14 +531,11 @@ export default function TipsPage() {
   const goldenBootDone = goldenBoot.trim().length > 0 ? 1 : 0;
 
   const overallProgress = useMemo(() => {
-    const total =
-      groupProgress.total + knockoutProgress.total + 1;
-
+    const total = groupProgress.total + knockoutProgress.total + 1;
     const completed =
       groupProgress.completed + knockoutProgress.completed + goldenBootDone;
 
-    const percent =
-      total > 0 ? Math.round((completed / total) * 100) : 0;
+    const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
     return {
       total,
@@ -683,11 +718,15 @@ export default function TipsPage() {
 
                 <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
                   <div className="rounded-xl bg-white/10 p-2">
-                    <div className="font-black text-white">{groupProgress.completed}/{groupProgress.total}</div>
+                    <div className="font-black text-white">
+                      {groupProgress.completed}/{groupProgress.total}
+                    </div>
                     <div className="mt-1 text-white/70">Grupper</div>
                   </div>
                   <div className="rounded-xl bg-white/10 p-2">
-                    <div className="font-black text-white">{knockoutProgress.completed}/{knockoutProgress.total}</div>
+                    <div className="font-black text-white">
+                      {knockoutProgress.completed}/{knockoutProgress.total}
+                    </div>
                     <div className="mt-1 text-white/70">Slutspel</div>
                   </div>
                   <div className="rounded-xl bg-white/10 p-2">
