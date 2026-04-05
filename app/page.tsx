@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createReadOnlyClient } from "@/lib/supabase/server-readonly";
 
@@ -24,6 +25,17 @@ type MatchItem = {
 type ProfileRow = {
   id: string;
   payment_status: string | null;
+};
+type MembersResponse = {
+  members?: Array<{
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    role: string | null;
+    display_name: string;
+    member_number: number;
+  }>;
+  error?: string;
 };
 
 type PredictionRow = {
@@ -185,15 +197,26 @@ export default async function HomePage() {
     .order("published_at", { ascending: false })
     .limit(2);
 
-  const { data: profiles } = await readOnlySupabase
-    .from("profiles")
-    .select("id, payment_status");
+  let registeredCount = 0;
 
-  const profileRows = (profiles ?? []) as ProfileRow[];
-  const registeredCount = profileRows.length;
-  const paidCount = profileRows.filter(
-    (row) => row.payment_status === "paid"
-  ).length;
+try {
+  const headerStore = await headers();
+  const host = headerStore.get("host");
+  const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
+
+  if (host) {
+    const membersRes = await fetch(`${protocol}://${host}/api/members`, {
+      cache: "no-store",
+    });
+
+    if (membersRes.ok) {
+      const membersData = (await membersRes.json()) as MembersResponse;
+      registeredCount = membersData.members?.length ?? 0;
+    }
+  }
+} catch (error) {
+  console.error("Kunde inte hämta members count", error);
+}
 
   const nextMatch = ((upcomingMatches ?? [])[0] ?? null) as MatchItem | null;
   const latestNewsSafe = (latestNews ?? []) as NewsItem[];
@@ -285,9 +308,7 @@ export default async function HomePage() {
                     </div>
                   </div>
 
-                  <div className="mt-2 text-xs text-white/70">
-                    {paidCount} betalande deltagare
-                  </div>
+                 
 
                   <div className="mt-6 flex flex-wrap gap-3">
                     {isLoggedIn ? (
