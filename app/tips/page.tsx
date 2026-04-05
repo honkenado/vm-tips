@@ -84,6 +84,21 @@ function isMatchFilled(homeGoals: string, awayGoals: string) {
   return homeGoals !== "" && awayGoals !== "";
 }
 
+function isKnownTeam(team: string | undefined | null, validTeamNames: Set<string>) {
+  if (!team) return false;
+  return validTeamNames.has(team.trim());
+}
+
+function isPlayableKnockoutMatch(
+  match: { home: string; away: string },
+  validTeamNames: Set<string>
+) {
+  return (
+    isKnownTeam(match.home, validTeamNames) &&
+    isKnownTeam(match.away, validTeamNames)
+  );
+}
+
 export default function TipsPage() {
   const router = useRouter();
 
@@ -422,6 +437,19 @@ export default function TipsPage() {
 
   const deadlinePassed = isDeadlinePassed();
 
+  const validTeamNames = useMemo(() => {
+    const names = new Set<string>();
+
+    groups.forEach((group) => {
+      group.matches.forEach((match) => {
+        if (match.homeTeam) names.add(match.homeTeam.trim());
+        if (match.awayTeam) names.add(match.awayTeam.trim());
+      });
+    });
+
+    return names;
+  }, [groups]);
+
   const groupProgress = useMemo(() => {
     const total = groups.reduce((sum, group) => sum + group.matches.length, 0);
     const completed = groups.reduce(
@@ -443,17 +471,68 @@ export default function TipsPage() {
   }, [groups]);
 
   const knockoutProgress = useMemo(() => {
-    const selectedWinners = Object.values(knockoutWinners).filter(
-      (winner) => typeof winner === "string" && winner.trim() !== ""
-    ).length;
+    const seed = getKnockoutSeedData(groups);
+    const round32 = seed.round32 ?? [];
 
-    const capped = Math.min(selectedWinners, 16);
+    const playableRound32 = round32.filter((m) =>
+      isPlayableKnockoutMatch({ home: m.home, away: m.away }, validTeamNames)
+    );
+
+    const r16 = buildNextRound(round32, knockoutWinners, "r16", "Åttondelsfinal");
+    const playableR16 = r16.filter((m) =>
+      isPlayableKnockoutMatch({ home: m.home, away: m.away }, validTeamNames)
+    );
+
+    const qf = buildNextRound(r16, knockoutWinners, "qf", "Kvartsfinal");
+    const playableQf = qf.filter((m) =>
+      isPlayableKnockoutMatch({ home: m.home, away: m.away }, validTeamNames)
+    );
+
+    const sf = buildNextRound(qf, knockoutWinners, "sf", "Semifinal");
+    const playableSf = sf.filter((m) =>
+      isPlayableKnockoutMatch({ home: m.home, away: m.away }, validTeamNames)
+    );
+
+    const finalMatch = buildNextRound(sf, knockoutWinners, "final", "Final");
+    const playableFinal = finalMatch.filter((m) =>
+      isPlayableKnockoutMatch({ home: m.home, away: m.away }, validTeamNames)
+    );
+
+    const bronze: KnockoutMatch[] =
+      sf.length >= 2
+        ? [
+            {
+              id: "bronze-1",
+              label: "Bronsmatch",
+              home: sf[0] ? getLoser(sf[0], knockoutWinners) : "",
+              away: sf[1] ? getLoser(sf[1], knockoutWinners) : "",
+            },
+          ]
+        : [];
+
+    const playableBronze = bronze.filter((m) =>
+      isPlayableKnockoutMatch({ home: m.home, away: m.away }, validTeamNames)
+    );
+
+    const playableMatches = [
+      ...playableRound32,
+      ...playableR16,
+      ...playableQf,
+      ...playableSf,
+      ...playableFinal,
+      ...playableBronze,
+    ];
+
+    const completed = playableMatches.filter((m) => {
+      const winner = knockoutWinners[m.id];
+      return !!winner && (winner === m.home || winner === m.away);
+    }).length;
 
     return {
-      total: 16,
-      completed: capped,
+      total: playableMatches.length,
+      completed,
     };
-  }, [knockoutWinners]);
+  }, [groups, knockoutWinners, validTeamNames]);
 
   const goldenBootDone = goldenBoot.trim().length > 0 ? 1 : 0;
 
