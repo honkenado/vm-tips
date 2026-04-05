@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { createReadOnlyClient } from "@/lib/supabase/server-readonly";
 
 type NewsItem = {
   id: string;
@@ -57,10 +58,6 @@ function getDaysLeft(targetDate: string | null) {
   const target = new Date(targetDate);
   const diff = target.getTime() - now.getTime();
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-}
-
-function getReferralEarnings(referralCount: number) {
-  return Math.min(referralCount * 20, 500);
 }
 
 function countGroupProgress(
@@ -133,6 +130,7 @@ function buildStatusText(params: {
 
 export default async function HomePage() {
   const supabase = await createClient();
+  const readOnlySupabase = await createReadOnlyClient();
 
   const {
     data: { user },
@@ -160,8 +158,6 @@ export default async function HomePage() {
 
     profile = data;
 
-    const cookieHeader = (await supabase.auth.getSession()).data.session?.access_token;
-
     try {
       const baseUrl =
         process.env.NEXT_PUBLIC_SITE_URL ||
@@ -169,12 +165,10 @@ export default async function HomePage() {
         "http://localhost:3000";
 
       const res = await fetch(`${baseUrl}/api/prediction`, {
-        headers: cookieHeader
-          ? {
-              Authorization: `Bearer ${cookieHeader}`,
-            }
-          : undefined,
         cache: "no-store",
+        headers: {
+          Cookie: "",
+        },
       });
 
       if (res.ok) {
@@ -188,31 +182,27 @@ export default async function HomePage() {
 
   const nowIso = new Date().toISOString();
 
-  const { data: upcomingMatches } = await supabase
+  const { data: upcomingMatches } = await readOnlySupabase
     .from("matches")
     .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
     .gte("match_date", nowIso)
     .order("match_date", { ascending: true })
     .limit(1);
 
-  const { data: latestNews } = await supabase
+  const { data: latestNews } = await readOnlySupabase
     .from("news_posts")
     .select("id, title, excerpt, image_url, published_at, slug")
     .order("published_at", { ascending: false })
     .limit(2);
 
-  const { count: participantCountRaw } = await supabase
+  const { count: registeredCount } = await readOnlySupabase
     .from("profiles")
     .select("*", { count: "exact", head: true });
 
   const nextMatch = ((upcomingMatches ?? [])[0] ?? null) as MatchItem | null;
   const latestNewsSafe = (latestNews ?? []) as NewsItem[];
 
-  const participantCount = participantCountRaw ?? 0;
-
-  const referralCount = 3;
-  const referralCode = profile?.payment_code || "ABC12";
-  const referralEarnings = getReferralEarnings(referralCount);
+  const participantCount = registeredCount ?? 0;
   const daysLeft = getDaysLeft(nextMatch?.match_date ?? null);
 
   const displayName =
@@ -227,9 +217,7 @@ export default async function HomePage() {
   const knockoutProgress = countKnockoutProgress(prediction?.knockout);
   const goldenBootDone = prediction?.golden_boot?.trim() ? 1 : 0;
 
-  const totalProgressItems =
-    groupProgress.total + knockoutProgress.total + 1;
-
+  const totalProgressItems = groupProgress.total + knockoutProgress.total + 1;
   const completedProgressItems =
     groupProgress.completed + knockoutProgress.completed + goldenBootDone;
 
@@ -286,7 +274,7 @@ export default async function HomePage() {
                   <div className="mt-5 flex flex-wrap gap-3">
                     <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-sm">
                       <div className="text-2xl font-extrabold">{participantCount}</div>
-                      <div className="text-sm text-white/80">deltagare</div>
+                      <div className="text-sm text-white/80">registrerade</div>
                     </div>
 
                     <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-sm">
@@ -541,24 +529,15 @@ export default async function HomePage() {
                       </Link>
                     </div>
 
-                    <div className="mt-2 rounded-xl border bg-slate-50 p-3 text-center text-lg font-black">
-                      {referralCode}
-                    </div>
-
-                    <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                      <div className="rounded-xl border p-2 text-center">
-                        {referralCount} st
-                      </div>
-                      <div className="rounded-xl border p-2 text-center">
-                        {referralEarnings} kr
-                      </div>
-                    </div>
+                    <p className="mt-2 text-sm text-slate-500">
+                      Dela din värvlänk och bjud in fler till ligan.
+                    </p>
 
                     <Link
                       href="/varva-medlemmar"
-                      className="mt-3 block w-full rounded-xl bg-emerald-500 py-2 text-center text-sm font-bold text-white transition hover:bg-emerald-400"
+                      className="mt-4 block w-full rounded-xl bg-emerald-500 py-2 text-center text-sm font-bold text-white transition hover:bg-emerald-400"
                     >
-                      Dela länk
+                      Öppna värvarsidan
                     </Link>
                   </div>
                 </>
