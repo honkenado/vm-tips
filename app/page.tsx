@@ -336,20 +336,12 @@ export default async function HomePage() {
                   ))}
 
                   {isLoggedIn ? (
-                    <>
-                      <Link
-                        href="/mitt-resultat"
-                        className="rounded-full border border-white/10 bg-white/8 px-4 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm transition hover:border-white/20 hover:bg-white/15"
-                      >
-                        Mitt resultat
-                      </Link>
-                      <Link
-                        href="/varva"
-                        className="rounded-full border border-white/10 bg-white/8 px-4 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm transition hover:border-white/20 hover:bg-white/15"
-                      >
-                        Värva medlemmar
-                      </Link>
-                    </>
+                    <Link
+                      href="/mitt-resultat"
+                      className="rounded-full border border-white/10 bg-white/8 px-4 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm transition hover:border-white/20 hover:bg-white/15"
+                    >
+                      Mitt resultat
+                    </Link>
                   ) : null}
                 </div>
               </div>
@@ -421,42 +413,42 @@ export default async function HomePage() {
                 </div>
               )}
 
-              <div className="rounded-[1.6rem] border border-slate-200/80 bg-white p-4 text-slate-900 shadow-lg">
+              <div className="rounded-[1.6rem] border border-white/10 bg-white/8 p-4 text-white shadow-lg backdrop-blur-sm">
                 <div className="mb-2 flex items-center justify-between">
-                  <h2 className="text-xl font-black">Nästa match</h2>
+                  <h2 className="text-xl font-black text-white">Nästa match</h2>
 
                   <Link
                     href="/matcher-idag"
-                    className="text-xs font-semibold text-slate-600 hover:underline"
+                    className="text-xs font-semibold text-white/70 hover:text-white hover:underline"
                   >
                     Se allt
                   </Link>
                 </div>
 
                 {nextMatch ? (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <div className="text-base font-black">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="text-base font-black text-white">
                       {nextMatch.home_team} - {nextMatch.away_team}
                     </div>
 
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-white/65">
                       {formatShortDate(nextMatch.match_date)} ·{" "}
                       {formatTime(nextMatch.match_date)}
                     </div>
 
-                    <div className="mt-1 text-xs text-slate-600">
+                    <div className="mt-1 text-xs text-white/70">
                       {nextMatch.tv_channel || "TBA"}
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/65">
                     Inga matcher just nu
                   </div>
                 )}
 
                 <Link
                   href="/matcher-idag"
-                  className="mt-3 block w-full rounded-xl bg-slate-900 py-2.5 text-center text-sm font-bold text-white transition hover:bg-slate-800"
+                  className="mt-3 block w-full rounded-xl bg-white/10 py-2.5 text-center text-sm font-bold text-white transition hover:bg-white/15"
                 >
                   Matchschema
                 </Link>
@@ -464,59 +456,48 @@ export default async function HomePage() {
 
               {isLoggedIn ? (
                 <>
-                  <div className="rounded-[1.6rem] border border-slate-200/80 bg-white p-4 text-slate-900 shadow-lg">
-                    <h2 className="text-lg font-black">Din status</h2>
+                  <div className="rounded-[1.6rem] border border-white/10 bg-white/8 p-4 text-white shadow-lg backdrop-blur-sm">
+                    <h2 className="text-lg font-black text-white">Din status</h2>
 
-                    <div className="mt-2 text-xs text-slate-500">{statusText}</div>
+                    <div className="mt-2 text-xs text-white/70">{statusText}</div>
 
-                    <div className="mt-3 h-2 rounded-full bg-slate-200">
+                    <div className="mt-3 h-2 rounded-full bg-white/10">
                       <div
                         className="h-full rounded-full bg-emerald-500"
                         style={{ width: `${progressPercent}%` }}
                       />
                     </div>
 
-                    <div className="mt-1 text-xs font-semibold">{progressPercent}%</div>
+                    <div className="mt-1 text-xs font-semibold text-white/85">
+                      {progressPercent}%
+                    </div>
 
-                    <div className="mt-4 flex flex-col gap-2">
+                    <div className="mt-4">
                       <Link
                         href="/tips"
-                        className="rounded-xl bg-emerald-500 py-2.5 text-center text-sm font-bold text-white transition hover:bg-emerald-400"
+                        className="block rounded-xl bg-emerald-500 py-2.5 text-center text-sm font-bold text-white transition hover:bg-emerald-400"
                       >
                         Gå till tipset
-                      </Link>
-
-                      <Link
-                        href="/league"
-                        className="rounded-xl bg-slate-900 py-2.5 text-center text-sm font-bold text-white transition hover:bg-slate-800"
-                      >
-                        Ligor
                       </Link>
                     </div>
                   </div>
 
-                  <div className="rounded-[1.6rem] border border-slate-200/80 bg-white p-4 text-slate-900 shadow-lg">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-lg font-black">Värva</h2>
+                  <div className="rounded-[1.35rem] border border-white/10 bg-white/5 p-3 text-white/90 shadow-md backdrop-blur-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h2 className="text-sm font-black text-white">Värva</h2>
+                        <p className="mt-1 text-xs text-white/65">
+                          Bjud in fler till ligan före deadline.
+                        </p>
+                      </div>
 
                       <Link
                         href="/varva"
-                        className="text-xs text-slate-600 hover:underline"
+                        className="rounded-xl bg-emerald-500 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-400"
                       >
-                        Mer
+                        Öppna
                       </Link>
                     </div>
-
-                    <p className="mt-2 text-sm text-slate-500">
-                      Dela din värvlänk och bjud in fler till ligan.
-                    </p>
-
-                    <Link
-                      href="/varva"
-                      className="mt-4 block w-full rounded-xl bg-emerald-500 py-2.5 text-center text-sm font-bold text-white transition hover:bg-emerald-400"
-                    >
-                      Öppna värvarsidan
-                    </Link>
                   </div>
                 </>
               ) : null}
