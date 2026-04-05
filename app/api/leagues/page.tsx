@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type League = {
   id: string;
   name: string;
   join_code: string;
-  created_by: string;
-  created_at: string;
+  created_by: string | null;
+  created_at: string | null;
 };
 
 type MyLeaguesResponse = {
@@ -17,6 +18,8 @@ type MyLeaguesResponse = {
 };
 
 export default function LeagueHubPage() {
+  const router = useRouter();
+
   const [myLeagues, setMyLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -25,6 +28,7 @@ export default function LeagueHubPage() {
 
   async function loadMyLeagues() {
     try {
+      setLoading(true);
       setErrorMessage(null);
 
       const res = await fetch("/api/leagues/my", {
@@ -34,13 +38,22 @@ export default function LeagueHubPage() {
       const data: MyLeaguesResponse = await res.json();
 
       if (!res.ok) {
+        setMyLeagues([]);
         setErrorMessage(data.error || "Kunde inte hämta ligor");
         return;
       }
 
-      setMyLeagues((data.leagues ?? []) as League[]);
+      const leagues = Array.isArray(data.leagues) ? data.leagues : [];
+
+      // Vi visar huvudligan separat högre upp, så filtrera bort den här.
+      const filteredLeagues = leagues.filter(
+        (league) => league.id !== "main" && league.join_code !== "MAIN"
+      );
+
+      setMyLeagues(filteredLeagues);
     } catch (error) {
       console.error("Fel vid hämtning av ligor", error);
+      setMyLeagues([]);
       setErrorMessage("Kunde inte hämta ligor");
     } finally {
       setLoading(false);
@@ -53,7 +66,7 @@ export default function LeagueHubPage() {
 
   async function handleCreateLeague() {
     const name = prompt("Vad ska ligan heta?");
-    if (!name) return;
+    if (!name?.trim()) return;
 
     try {
       setCreating(true);
@@ -63,7 +76,7 @@ export default function LeagueHubPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name: name.trim() }),
       });
 
       const data = await res.json();
@@ -75,12 +88,22 @@ export default function LeagueHubPage() {
 
       await loadMyLeagues();
 
+      const leagueId = data.league?.id;
       const joinCode = data.league?.join_code;
+
       if (joinCode) {
         alert(`Liga skapad! Kod: ${joinCode}`);
-        window.location.href = `/league/${joinCode}`;
       } else {
-        alert("Liga skapad");
+        alert("Liga skapad!");
+      }
+
+      if (leagueId) {
+        router.push(`/league/${leagueId}`);
+        return;
+      }
+
+      if (joinCode) {
+        router.push(`/league/${joinCode}`);
       }
     } catch (error) {
       console.error("Fel vid skapande av liga", error);
@@ -91,7 +114,9 @@ export default function LeagueHubPage() {
   }
 
   async function handleJoinLeague() {
-    const joinCode = prompt("Ange ligakod");
+    const rawJoinCode = prompt("Ange ligakod");
+    const joinCode = rawJoinCode?.trim();
+
     if (!joinCode) return;
 
     try {
@@ -114,9 +139,17 @@ export default function LeagueHubPage() {
 
       await loadMyLeagues();
 
+      const leagueId = data.league?.id;
       const nextCode = data.league?.join_code || joinCode.toUpperCase();
+
       alert(`Du gick med i ligan: ${data.league?.name || nextCode}`);
-      window.location.href = `/league/${nextCode}`;
+
+      if (leagueId) {
+        router.push(`/league/${leagueId}`);
+        return;
+      }
+
+      router.push(`/league/${nextCode}`);
     } catch (error) {
       console.error("Fel vid join league", error);
       alert("Något gick fel när du skulle gå med i ligan");
@@ -215,7 +248,7 @@ export default function LeagueHubPage() {
               {myLeagues.map((league) => (
                 <Link
                   key={league.id}
-                  href={`/league/${league.join_code}`}
+                  href={`/league/${league.id}`}
                   className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-sm"
                 >
                   <div className="min-w-0">
