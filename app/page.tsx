@@ -233,21 +233,29 @@ export default async function HomePage() {
     goldenBootDone,
   });
 
+  const navItems = [
+    { href: "/rules", label: "Regler" },
+    { href: "/help", label: "Hjälp" },
+    { href: "/medlemmar", label: "Medlemmar" },
+    { href: "/league", label: "Ligor" },
+    { href: "/lag", label: "Lag & spelare" },
+  ];
+
   return (
     <main className="min-h-screen bg-slate-100">
       <div className="mx-auto w-full max-w-[1400px] px-4 py-4 md:px-6">
-        <section className="overflow-hidden rounded-[2rem] border border-slate-800 bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.45),_rgba(15,23,42,1)_75%)] text-white shadow-xl">
-          <div className="grid gap-4 p-5 md:grid-cols-[1.35fr_0.85fr] md:p-6">
-            <div className="flex flex-col gap-4">
+        <section className="overflow-hidden rounded-[2rem] border border-slate-800/80 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.35),_rgba(5,10,30,0.97)_45%,_rgba(2,6,23,1)_100%)] text-white shadow-[0_20px_60px_rgba(2,6,23,0.35)]">
+          <div className="grid gap-5 p-5 md:grid-cols-[1.4fr_0.9fr] md:p-6 xl:p-8">
+            <div className="flex flex-col gap-5">
               <div>
-                <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/85">
+                <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/80">
                   FIFA World Cup 2026
                 </span>
               </div>
 
               <div className="flex flex-col gap-4 md:flex-row md:items-start">
                 <div className="shrink-0">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-lg md:h-24 md:w-24">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-white/10 shadow-xl backdrop-blur-sm md:h-24 md:w-24">
                     <img
                       src="/logo.png"
                       alt="Addes VM-tips"
@@ -257,50 +265,52 @@ export default async function HomePage() {
                 </div>
 
                 <div className="max-w-3xl">
-                  <h1 className="text-4xl font-black leading-tight tracking-tight md:text-6xl">
-                    Välkommen till Addes VM-tips
+                  <h1 className="text-4xl font-black leading-[0.95] tracking-tight text-white md:text-6xl xl:text-7xl">
+                    Välkommen till
+                    <br />
+                    Addes VM-tips
                   </h1>
 
-                  <p className="mt-3 max-w-2xl text-sm text-white/85 md:text-lg">
+                  <p className="mt-4 max-w-2xl text-sm leading-7 text-white/85 md:text-lg">
                     Lägg dina tips, följ spänningen i fotbolls-VM och tävla mot
                     andra om ära, poäng och topplaceringar i tabellen.
                   </p>
 
-                  <p className="mt-2 text-sm text-white/70">
+                  <p className="mt-2 text-sm text-white/65">
                     Tippa gruppspel, slutspel och hela vägen fram till världsmästaren.
                   </p>
 
-                  <div className="mt-5 flex flex-wrap gap-3">
-                    <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-sm">
-                      <div className="text-2xl font-extrabold">{registeredCount}</div>
-                      <div className="text-sm text-white/80">registrerade</div>
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <div className="min-w-[110px] rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
+                      <div className="text-3xl font-black">{registeredCount}</div>
+                      <div className="text-sm text-white/75">registrerade</div>
                     </div>
 
-                    <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-sm">
-                      <div className="text-2xl font-extrabold">{daysLeft}</div>
-                      <div className="text-sm text-white/80">dagar kvar</div>
+                    <div className="min-w-[110px] rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
+                      <div className="text-3xl font-black">{daysLeft}</div>
+                      <div className="text-sm text-white/75">dagar kvar</div>
                     </div>
 
-                    <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-sm">
-                      <div className="text-2xl font-extrabold">
+                    <div className="min-w-[110px] rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
+                      <div className="text-3xl font-black">
                         {nextMatch ? formatShortDate(nextMatch.match_date) : "-"}
                       </div>
-                      <div className="text-sm text-white/80">nästa match</div>
+                      <div className="text-sm text-white/75">nästa match</div>
                     </div>
                   </div>
 
-                  <div className="mt-6">
+                  <div className="mt-7">
                     {isLoggedIn ? (
                       <Link
                         href="/tips"
-                        className="inline-flex min-w-[220px] items-center justify-center rounded-2xl bg-emerald-500 px-8 py-3 text-base font-bold text-white transition hover:bg-emerald-400"
+                        className="inline-flex min-w-[240px] items-center justify-center rounded-2xl bg-emerald-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-400"
                       >
                         Gå till tipset
                       </Link>
                     ) : (
                       <Link
                         href="/login"
-                        className="inline-flex min-w-[220px] items-center justify-center rounded-2xl bg-emerald-500 px-8 py-3 text-base font-bold text-white transition hover:bg-emerald-400"
+                        className="inline-flex min-w-[240px] items-center justify-center rounded-2xl bg-emerald-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-400"
                       >
                         Logga in
                       </Link>
@@ -309,23 +319,17 @@ export default async function HomePage() {
                 </div>
               </div>
 
-              <div>
-                <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-white/60">
+              <div className="pt-2">
+                <p className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-white/55">
                   Navigation
                 </p>
 
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { href: "/rules", label: "Regler" },
-                    { href: "/help", label: "Hjälp" },
-                    { href: "/medlemmar", label: "Medlemmar" },
-                    { href: "/league", label: "Ligor" },
-                    { href: "/lag", label: "Lag & spelare" },
-                  ].map((item) => (
+                <div className="flex flex-wrap gap-2.5">
+                  {navItems.map((item) => (
                     <Link
                       key={item.href}
                       href={item.href}
-                      className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/15"
+                      className="rounded-full border border-white/10 bg-white/8 px-4 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm transition hover:border-white/20 hover:bg-white/15"
                     >
                       {item.label}
                     </Link>
@@ -335,13 +339,13 @@ export default async function HomePage() {
                     <>
                       <Link
                         href="/mitt-resultat"
-                        className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/15"
+                        className="rounded-full border border-white/10 bg-white/8 px-4 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm transition hover:border-white/20 hover:bg-white/15"
                       >
                         Mitt resultat
                       </Link>
                       <Link
                         href="/varva"
-                        className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/15"
+                        className="rounded-full border border-white/10 bg-white/8 px-4 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm transition hover:border-white/20 hover:bg-white/15"
                       >
                         Värva medlemmar
                       </Link>
@@ -351,9 +355,9 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               {isLoggedIn ? (
-                <div className="flex flex-col items-start gap-2 rounded-[1.5rem] border border-white/10 bg-slate-950/30 p-4 shadow-lg md:items-end">
+                <div className="flex flex-col items-start gap-2 rounded-[1.6rem] border border-white/10 bg-slate-950/40 p-4 shadow-xl backdrop-blur-sm md:items-end">
                   <div className="text-xs text-white/80">{displayName}</div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -400,7 +404,7 @@ export default async function HomePage() {
                   </div>
                 </div>
               ) : (
-                <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/30 p-4 shadow-lg">
+                <div className="rounded-[1.6rem] border border-white/10 bg-slate-950/40 p-4 shadow-xl backdrop-blur-sm">
                   <h2 className="text-lg font-black text-white">Redo att vara med?</h2>
                   <p className="mt-2 text-sm text-white/75">
                     Logga in för att lägga ditt tips, följa ditt resultat och värva
@@ -417,7 +421,7 @@ export default async function HomePage() {
                 </div>
               )}
 
-              <div className="rounded-[1.5rem] bg-white p-4 text-slate-900 shadow-lg">
+              <div className="rounded-[1.6rem] border border-slate-200/80 bg-white p-4 text-slate-900 shadow-lg">
                 <div className="mb-2 flex items-center justify-between">
                   <h2 className="text-xl font-black">Nästa match</h2>
 
@@ -452,7 +456,7 @@ export default async function HomePage() {
 
                 <Link
                   href="/matcher-idag"
-                  className="mt-3 block w-full rounded-xl bg-slate-900 py-2 text-center text-sm font-bold text-white transition hover:bg-slate-800"
+                  className="mt-3 block w-full rounded-xl bg-slate-900 py-2.5 text-center text-sm font-bold text-white transition hover:bg-slate-800"
                 >
                   Matchschema
                 </Link>
@@ -460,12 +464,12 @@ export default async function HomePage() {
 
               {isLoggedIn ? (
                 <>
-                  <div className="rounded-[1.5rem] bg-white p-4 text-slate-900 shadow-lg">
+                  <div className="rounded-[1.6rem] border border-slate-200/80 bg-white p-4 text-slate-900 shadow-lg">
                     <h2 className="text-lg font-black">Din status</h2>
 
                     <div className="mt-2 text-xs text-slate-500">{statusText}</div>
 
-                    <div className="mt-2 h-2 rounded-full bg-slate-200">
+                    <div className="mt-3 h-2 rounded-full bg-slate-200">
                       <div
                         className="h-full rounded-full bg-emerald-500"
                         style={{ width: `${progressPercent}%` }}
@@ -474,24 +478,24 @@ export default async function HomePage() {
 
                     <div className="mt-1 text-xs font-semibold">{progressPercent}%</div>
 
-                    <div className="mt-3 flex flex-col gap-2">
+                    <div className="mt-4 flex flex-col gap-2">
                       <Link
                         href="/tips"
-                        className="rounded-xl bg-emerald-500 py-2 text-center text-sm font-bold text-white transition hover:bg-emerald-400"
+                        className="rounded-xl bg-emerald-500 py-2.5 text-center text-sm font-bold text-white transition hover:bg-emerald-400"
                       >
                         Gå till tipset
                       </Link>
 
                       <Link
                         href="/league"
-                        className="rounded-xl bg-slate-900 py-2 text-center text-sm font-bold text-white transition hover:bg-slate-800"
+                        className="rounded-xl bg-slate-900 py-2.5 text-center text-sm font-bold text-white transition hover:bg-slate-800"
                       >
                         Ligor
                       </Link>
                     </div>
                   </div>
 
-                  <div className="rounded-[1.5rem] bg-white p-4 text-slate-900 shadow-lg">
+                  <div className="rounded-[1.6rem] border border-slate-200/80 bg-white p-4 text-slate-900 shadow-lg">
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-black">Värva</h2>
 
@@ -509,7 +513,7 @@ export default async function HomePage() {
 
                     <Link
                       href="/varva"
-                      className="mt-4 block w-full rounded-xl bg-emerald-500 py-2 text-center text-sm font-bold text-white transition hover:bg-emerald-400"
+                      className="mt-4 block w-full rounded-xl bg-emerald-500 py-2.5 text-center text-sm font-bold text-white transition hover:bg-emerald-400"
                     >
                       Öppna värvarsidan
                     </Link>
@@ -523,56 +527,6 @@ export default async function HomePage() {
         <div className="mt-4">
           <NewsPreview />
         </div>
-
-        <section className="mt-4 grid gap-4 lg:grid-cols-[1fr]">
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-3xl font-black tracking-tight text-slate-900">
-              Snabblänkar
-            </h2>
-
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-              <Link
-                href="/matcher-idag"
-                className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base font-bold text-slate-900 transition hover:-translate-y-0.5 hover:bg-slate-100"
-              >
-                <span className="text-xl">⚽</span>
-                <span>Matcher idag</span>
-              </Link>
-
-              <Link
-                href="/medlemmar"
-                className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base font-bold text-slate-900 transition hover:-translate-y-0.5 hover:bg-slate-100"
-              >
-                <span className="text-xl">👥</span>
-                <span>Medlemmar</span>
-              </Link>
-
-              <Link
-                href="/league"
-                className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base font-bold text-slate-900 transition hover:-translate-y-0.5 hover:bg-slate-100"
-              >
-                <span className="text-xl">🏆</span>
-                <span>Ligor</span>
-              </Link>
-
-              <Link
-                href="/lag"
-                className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base font-bold text-slate-900 transition hover:-translate-y-0.5 hover:bg-slate-100"
-              >
-                <span className="text-xl">🧠</span>
-                <span>Lag & spelare</span>
-              </Link>
-
-              <Link
-                href="/tv-guide"
-                className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base font-bold text-slate-900 transition hover:-translate-y-0.5 hover:bg-slate-100"
-              >
-                <span className="text-xl">📺</span>
-                <span>TV-guide</span>
-              </Link>
-            </div>
-          </div>
-        </section>
       </div>
     </main>
   );
