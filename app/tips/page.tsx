@@ -1,16 +1,13 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthStatus from "@/components/auth-status";
 import BestThirdsSection from "@/components/BestThirdsSection";
 import GoldenBootSection from "@/components/GoldenBootSection";
 import GroupSection from "@/components/GroupSection";
-import HomeMatchesTodayWidget from "@/components/matches/HomeMatchesTodayWidget";
 import KnockoutFullSection from "@/components/KnockoutFullSection";
 import LeaguesSection from "@/components/leagues-section";
-import NewsPreview from "@/components/NewsPreview";
 import SectionCard from "@/components/SectionCard";
 import { useEffect, useMemo, useState } from "react";
 import { isDeadlinePassed } from "@/lib/config";
@@ -83,7 +80,7 @@ function slugifyTeamName(teamName: string) {
     .replace(/-+/g, "-");
 }
 
-export default function HomePage() {
+export default function TipsPage() {
   const router = useRouter();
 
   const [groups, setGroups] = useState<GroupData[]>(initialGroups);
@@ -438,24 +435,30 @@ export default function HomePage() {
             <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0 flex flex-col gap-3">
                 <div className="mb-1 inline-flex w-fit rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-100 sm:text-[11px]">
-                  FIFA World Cup 2026
+                  Tipsläge
                 </div>
 
-                <div className="flex items-center justify-center md:justify-start">
-                  <Image
-                    src="/logo.png"
-                    alt="Addes VM tips"
-                    width={220}
-                    height={220}
-                    priority
-                    className="h-auto w-[140px] sm:w-[170px] md:w-[210px] drop-shadow-[0_8px_20px_rgba(0,0,0,0.35)]"
-                  />
+                <div>
+                  <h1 className="text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
+                    Lägg ditt tips
+                  </h1>
+                  <p className="mt-2 max-w-2xl text-sm leading-5 text-slate-200 md:text-sm">
+                    Här fokuserar du bara på tippningen. Översikt, nyheter och övriga
+                    genvägar finns kvar på startsidan.
+                  </p>
                 </div>
 
-                <p className="max-w-2xl text-sm leading-5 text-slate-200 md:text-sm">
-                  Tippa grupper, följ de bästa treorna och spela hela slutspelet
-                  fram till världsmästaren.
-                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/" className={primaryButtonClassName()}>
+                    Till översikt
+                  </Link>
+                  <Link href="/tv-guide" className={secondaryButtonClassName()}>
+                    TV-guide
+                  </Link>
+                  <Link href="/lag" className={secondaryButtonClassName()}>
+                    Lag & spelare
+                  </Link>
+                </div>
               </div>
 
               <div className="flex justify-start lg:justify-end">
@@ -471,10 +474,10 @@ export default function HomePage() {
                       Navigation
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      <Link href="/rules" className={navLinkClassName()}>
+                      <Link href="/regler" className={navLinkClassName()}>
                         Regler
                       </Link>
-                      <Link href="/help" className={navLinkClassName()}>
+                      <Link href="/hjälp" className={navLinkClassName()}>
                         Hjälp
                       </Link>
                       <Link href="/medlemmar" className={navLinkClassName()}>
@@ -489,7 +492,7 @@ export default function HomePage() {
                       <Link href="/lag" className={navLinkClassName()}>
                         Lag & spelare
                       </Link>
-                      <Link href="/varva" className={navLinkClassName()}>
+                      <Link href="/varva-medlemmar" className={navLinkClassName()}>
                         Värva medlemmar
                       </Link>
                     </div>
@@ -574,16 +577,6 @@ export default function HomePage() {
             </div>
           </div>
         </header>
-
-        <div className="mb-4 grid gap-4 md:mb-6 md:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.85fr)] md:items-start">
-          <div className="min-w-0">
-            <NewsPreview />
-          </div>
-
-          <div className="min-w-0">
-            <HomeMatchesTodayWidget />
-          </div>
-        </div>
 
         <div className="grid gap-4 sm:gap-6 md:gap-8">
           {(viewMode === "all" || viewMode === "groups") && (
