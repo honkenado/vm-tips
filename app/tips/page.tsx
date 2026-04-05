@@ -84,19 +84,6 @@ function isMatchFilled(homeGoals: string, awayGoals: string) {
   return homeGoals !== "" && awayGoals !== "";
 }
 
-function isKnownTeam(team: string | undefined | null, validTeamNames: Set<string>) {
-  if (!team) return false;
-  return validTeamNames.has(team.trim());
-}
-
-function countCompletedKnockoutSelections(
-  winners: Record<string, string>,
-  validTeamNames: Set<string>
-) {
-  return Object.values(winners).filter((winner) => isKnownTeam(winner, validTeamNames))
-    .length;
-}
-
 export default function TipsPage() {
   const router = useRouter();
 
@@ -435,19 +422,6 @@ export default function TipsPage() {
 
   const deadlinePassed = isDeadlinePassed();
 
-  const validTeamNames = useMemo(() => {
-    const names = new Set<string>();
-
-    groups.forEach((group) => {
-      group.matches.forEach((match) => {
-        if (match.homeTeam) names.add(match.homeTeam.trim());
-        if (match.awayTeam) names.add(match.awayTeam.trim());
-      });
-    });
-
-    return names;
-  }, [groups]);
-
   const groupProgress = useMemo(() => {
     const total = groups.reduce((sum, group) => sum + group.matches.length, 0);
     const completed = groups.reduce(
@@ -469,14 +443,17 @@ export default function TipsPage() {
   }, [groups]);
 
   const knockoutProgress = useMemo(() => {
-    const total = countCompletedKnockoutSelections(knockoutWinners, validTeamNames);
-    const completed = total;
+    const selectedWinners = Object.values(knockoutWinners).filter(
+      (winner) => typeof winner === "string" && winner.trim() !== ""
+    ).length;
+
+    const capped = Math.min(selectedWinners, 16);
 
     return {
-      total,
-      completed,
+      total: 16,
+      completed: capped,
     };
-  }, [knockoutWinners, validTeamNames]);
+  }, [knockoutWinners]);
 
   const goldenBootDone = goldenBoot.trim().length > 0 ? 1 : 0;
 
@@ -505,6 +482,12 @@ export default function TipsPage() {
       return `Du har ${remainingGroupMatches} gruppmatcher kvar. Börja i ${groupProgress.incompleteGroupName ?? "nästa ofullständiga grupp"}.`;
     }
 
+    const remainingKnockoutMatches =
+      knockoutProgress.total - knockoutProgress.completed;
+    if (remainingKnockoutMatches > 0) {
+      return `Gruppspelet är klart. Du har ${remainingKnockoutMatches} slutspelsval kvar att fylla i.`;
+    }
+
     if (!goldenBoot.trim()) {
       return "Du saknar fortfarande skyttekung.";
     }
@@ -514,7 +497,13 @@ export default function TipsPage() {
     }
 
     return "Allt ser komplett ut. Snyggt jobbat.";
-  }, [deadlinePassed, groupProgress, goldenBoot, hasUnsavedChanges]);
+  }, [
+    deadlinePassed,
+    groupProgress,
+    knockoutProgress,
+    goldenBoot,
+    hasUnsavedChanges,
+  ]);
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_#ecfdf5_0%,_#f8fafc_35%,_#f1f5f9_68%,_#e2e8f0_100%)] px-3 py-3 pb-24 sm:px-4 sm:py-4 sm:pb-6 md:px-6 md:py-8 md:pb-8">
