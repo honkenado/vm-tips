@@ -90,7 +90,7 @@ function isKnownTeam(team: string | undefined | null, validTeamNames: Set<string
 }
 
 function isPlayableKnockoutMatch(
-  match: { home: string; away: string },
+  match: { id: string; home: string; away: string },
   validTeamNames: Set<string>
 ) {
   return (
@@ -474,45 +474,80 @@ export default function TipsPage() {
     const seed = getKnockoutSeedData(groups);
     const round32 = seed.round32 ?? [];
 
+    const progressiveWinners: Record<string, string> = {};
+
+    function addValidWinners(matches: { id: string; home: string; away: string }[]) {
+      matches.forEach((match) => {
+        const winner = knockoutWinners[match.id];
+        if (winner && (winner === match.home || winner === match.away)) {
+          progressiveWinners[match.id] = winner;
+        }
+      });
+    }
+
     const playableRound32 = round32.filter((m) =>
-      isPlayableKnockoutMatch({ home: m.home, away: m.away }, validTeamNames)
+      isPlayableKnockoutMatch(
+        { id: m.id, home: m.home, away: m.away },
+        validTeamNames
+      )
     );
+    addValidWinners(playableRound32);
 
-    const r16 = buildNextRound(round32, knockoutWinners, "r16", "Åttondelsfinal");
+    const r16 = buildNextRound(round32, progressiveWinners, "r16", "Åttondelsfinal");
     const playableR16 = r16.filter((m) =>
-      isPlayableKnockoutMatch({ home: m.home, away: m.away }, validTeamNames)
+      isPlayableKnockoutMatch(
+        { id: m.id, home: m.home, away: m.away },
+        validTeamNames
+      )
     );
+    addValidWinners(playableR16);
 
-    const qf = buildNextRound(r16, knockoutWinners, "qf", "Kvartsfinal");
+    const qf = buildNextRound(r16, progressiveWinners, "qf", "Kvartsfinal");
     const playableQf = qf.filter((m) =>
-      isPlayableKnockoutMatch({ home: m.home, away: m.away }, validTeamNames)
+      isPlayableKnockoutMatch(
+        { id: m.id, home: m.home, away: m.away },
+        validTeamNames
+      )
     );
+    addValidWinners(playableQf);
 
-    const sf = buildNextRound(qf, knockoutWinners, "sf", "Semifinal");
+    const sf = buildNextRound(qf, progressiveWinners, "sf", "Semifinal");
     const playableSf = sf.filter((m) =>
-      isPlayableKnockoutMatch({ home: m.home, away: m.away }, validTeamNames)
+      isPlayableKnockoutMatch(
+        { id: m.id, home: m.home, away: m.away },
+        validTeamNames
+      )
     );
+    addValidWinners(playableSf);
 
-    const finalMatch = buildNextRound(sf, knockoutWinners, "final", "Final");
+    const finalMatch = buildNextRound(sf, progressiveWinners, "final", "Final");
     const playableFinal = finalMatch.filter((m) =>
-      isPlayableKnockoutMatch({ home: m.home, away: m.away }, validTeamNames)
+      isPlayableKnockoutMatch(
+        { id: m.id, home: m.home, away: m.away },
+        validTeamNames
+      )
     );
+    addValidWinners(playableFinal);
 
     const bronze: KnockoutMatch[] =
-      sf.length >= 2
+      playableSf.length >= 2
         ? [
             {
               id: "bronze-1",
               label: "Bronsmatch",
-              home: sf[0] ? getLoser(sf[0], knockoutWinners) : "",
-              away: sf[1] ? getLoser(sf[1], knockoutWinners) : "",
+              home: getLoser(playableSf[0], progressiveWinners),
+              away: getLoser(playableSf[1], progressiveWinners),
             },
           ]
         : [];
 
     const playableBronze = bronze.filter((m) =>
-      isPlayableKnockoutMatch({ home: m.home, away: m.away }, validTeamNames)
+      isPlayableKnockoutMatch(
+        { id: m.id, home: m.home, away: m.away },
+        validTeamNames
+      )
     );
+    addValidWinners(playableBronze);
 
     const playableMatches = [
       ...playableRound32,
@@ -523,14 +558,9 @@ export default function TipsPage() {
       ...playableBronze,
     ];
 
-    const completed = playableMatches.filter((m) => {
-      const winner = knockoutWinners[m.id];
-      return !!winner && (winner === m.home || winner === m.away);
-    }).length;
-
     return {
       total: playableMatches.length,
-      completed,
+      completed: Object.keys(progressiveWinners).length,
     };
   }, [groups, knockoutWinners, validTeamNames]);
 
