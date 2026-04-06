@@ -152,7 +152,7 @@ export default function NewsPreview() {
             <Link
               key={post.id}
               href={`/news/${post.id}`}
-              className="group block overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.04] shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.06]"
+              className="group block overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.04] shadow-[0_10px_30px_rgba(234,179,8,0.25)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.06]"
             >
               {post.image_url ? (
                 <img
