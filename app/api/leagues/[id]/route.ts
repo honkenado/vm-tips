@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function GET(
   _req: Request,
@@ -91,21 +92,10 @@ export async function GET(
       );
     }
 
+    // Hämta ligamedlemmar
     const { data: memberRows, error: membersError } = await supabase
       .from("league_members")
-      .select(
-        `
-          user_id,
-          joined_at,
-          profiles (
-            id,
-            username,
-            first_name,
-            last_name,
-            payment_status
-          )
-        `
-      )
+      .select("user_id, joined_at")
       .eq("league_id", league.id);
 
     if (membersError) {
@@ -115,9 +105,26 @@ export async function GET(
       );
     }
 
+    const userIds = (memberRows ?? []).map((row) => row.user_id);
+
+    // Hämta profiler via admin-klient för att slippa RLS-problem
+    const { data: profiles, error: profilesError } = await supabaseAdmin
+      .from("profiles")
+      .select("id, username, first_name, last_name, payment_status")
+      .in("id", userIds);
+
+    if (profilesError) {
+      return NextResponse.json(
+        { error: "Kunde inte hämta profiler" },
+        { status: 500 }
+      );
+    }
+
+    const profileMap = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+
     const members = (memberRows ?? [])
-      .map((row: any) => {
-        const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+      .map((row) => {
+        const profile = profileMap.get(row.user_id);
         if (!profile) return null;
 
         return {
