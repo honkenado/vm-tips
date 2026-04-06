@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { createReadOnlyClient } from "@/lib/supabase/server-readonly";
 import NewsPreview from "@/components/NewsPreview";
 
 type MatchItem = {
@@ -142,7 +141,6 @@ function buildStatusText(params: {
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const readOnlySupabase = await createReadOnlyClient();
 
   const {
     data: { user },
@@ -180,31 +178,39 @@ export default async function HomePage() {
   }
 
   const nowIso = new Date().toISOString();
+  const beforeDeadline = isBeforeDeadline();
 
   const [
-  { data: upcomingMatches, error: upcomingMatchesError },
-  { data: openingMatches, error: openingMatchesError },
-] = await Promise.all([
-  supabase
-    .from("matches")
-    .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
-    .gt("match_date", nowIso)
-    .order("match_date", { ascending: true })
-    .limit(1),
-  supabase
-    .from("matches")
-    .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
-    .order("match_date", { ascending: true })
-    .limit(1),
-]);
+    { data: upcomingMatches, error: upcomingMatchesError },
+    { data: openingMatches, error: openingMatchesError },
+  ] = await Promise.all([
+    supabase
+      .from("matches")
+      .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
+      .gt("match_date", nowIso)
+      .order("match_date", { ascending: true })
+      .limit(1),
+    supabase
+      .from("matches")
+      .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
+      .order("match_date", { ascending: true })
+      .limit(1),
+  ]);
 
-if (upcomingMatchesError) {
-  console.error("Fel vid hämtning av kommande match:", upcomingMatchesError);
-}
+  if (upcomingMatchesError) {
+    console.error("Fel vid hämtning av kommande match:", upcomingMatchesError);
+  }
 
-if (openingMatchesError) {
-  console.error("Fel vid hämtning av öppningsmatch:", openingMatchesError);
-}
+  if (openingMatchesError) {
+    console.error("Fel vid hämtning av öppningsmatch:", openingMatchesError);
+  }
+
+  const openingMatch = ((openingMatches ?? [])[0] ?? null) as MatchItem | null;
+  const upcomingMatch = ((upcomingMatches ?? [])[0] ?? null) as MatchItem | null;
+
+  const nextMatch = beforeDeadline
+    ? openingMatch || upcomingMatch
+    : upcomingMatch || openingMatch;
 
   let registeredCount = 0;
 
@@ -227,13 +233,7 @@ if (openingMatchesError) {
     console.error("Kunde inte hämta members count", error);
   }
 
-  const nextMatch =
-    ((upcomingMatches ?? [])[0] ?? null) ||
-    ((openingMatches ?? [])[0] ?? null) ||
-    null;
-
   const daysLeft = getDaysLeftToDeadline();
-  const beforeDeadline = isBeforeDeadline();
 
   const displayName =
     [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
@@ -477,7 +477,7 @@ if (openingMatchesError) {
                   </div>
                 ) : (
                   <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/65">
-                    Inga matcher just nu
+                    Ingen match hittades i databasen
                   </div>
                 )}
 
