@@ -238,25 +238,33 @@ export default async function HomePage() {
                   </p>
 
                   <div className="mt-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap">
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                      <div className="text-3xl font-black text-white">{registeredCount}</div>
-                      <div className="text-sm text-white/75">registrerade</div>
-                    </div>
+  <Link
+    href="/medlemmar"
+    className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-white/20 hover:bg-white/[0.08] md:hidden"
+  >
+    <div className="text-3xl font-black text-white">{registeredCount}</div>
+    <div className="text-sm text-white/75">registrerade</div>
+  </Link>
 
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                      <div className="text-3xl font-black text-white">{daysLeft}</div>
-                      <div className="text-sm text-white/75">dagar kvar</div>
-                    </div>
+  <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] md:block">
+    <div className="text-3xl font-black text-white">{registeredCount}</div>
+    <div className="text-sm text-white/75">registrerade</div>
+  </div>
 
-                    <div className="hidden min-w-[110px] rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] md:block">
-                      <div className="text-lg font-black text-white">
-                        {featuredMatch ? featuredMatch.date : "-"}
-                      </div>
-                      <div className="text-sm text-white/75">
-                        {beforeDeadline ? "öppningsmatch" : "nästa match"}
-                      </div>
-                    </div>
-                  </div>
+  <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+    <div className="text-3xl font-black text-white">{daysLeft}</div>
+    <div className="text-sm text-white/75">dagar kvar</div>
+  </div>
+
+  <div className="hidden min-w-[110px] rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] md:block">
+    <div className="text-lg font-black text-white">
+      {featuredMatch ? featuredMatch.date : "-"}
+    </div>
+    <div className="text-sm text-white/75">
+      {beforeDeadline ? "öppningsmatch" : "nästa match"}
+    </div>
+  </div>
+</div>
 
                   <div className="mt-6 md:mt-7">
                     {isLoggedIn ? (
