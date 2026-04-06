@@ -47,11 +47,11 @@ const viewModeItems: { key: AppViewMode; label: string; mobileLabel: string }[] 
   ];
 
 function navLinkClassName() {
-  return "inline-flex h-10 items-center justify-center rounded-full border border-white/15 bg-white/10 px-4 text-[13px] font-semibold text-white transition hover:bg-white/20";
+  return "inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-4 text-[13px] font-semibold text-white/90 backdrop-blur-xl transition hover:border-white/20 hover:bg-white/[0.08]";
 }
 
 function secondaryButtonClassName() {
-  return "inline-flex h-10 items-center justify-center rounded-full border border-white/15 bg-white/10 px-4 text-[13px] font-semibold text-white transition hover:bg-white/20";
+  return "inline-flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-4 text-[13px] font-semibold text-white/90 backdrop-blur-xl transition hover:border-white/20 hover:bg-white/[0.08]";
 }
 
 function primaryButtonClassName() {
@@ -59,7 +59,7 @@ function primaryButtonClassName() {
 }
 
 function accentButtonClassName() {
-  return "inline-flex h-10 items-center justify-center rounded-full border border-emerald-300/20 bg-emerald-500 px-4 text-[13px] font-semibold text-white transition hover:bg-emerald-400";
+  return "inline-flex h-10 items-center justify-center rounded-full bg-emerald-500/95 px-4 text-[13px] font-semibold text-white shadow-[0_10px_24px_rgba(16,185,129,0.30)] transition hover:bg-emerald-400";
 }
 
 function slugifyTeamName(teamName: string) {
@@ -460,22 +460,23 @@ export default function TipsPage() {
   ]);
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_#ecfdf5_0%,_#f8fafc_35%,_#f1f5f9_68%,_#e2e8f0_100%)] px-3 py-3 pb-24 sm:px-4 sm:py-4 sm:pb-6 md:px-6 md:py-8 md:pb-8">
+    <main className="min-h-screen overflow-x-hidden px-3 py-3 pb-24 sm:px-4 sm:py-4 sm:pb-6 md:px-6 md:py-8 md:pb-8">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-32 -top-24 h-[420px] w-[420px] rounded-full bg-emerald-400/12 blur-3xl" />
-        <div className="absolute right-[-120px] top-[140px] h-[420px] w-[420px] rounded-full bg-green-500/10 blur-3xl" />
-        <div className="absolute bottom-[-140px] left-[18%] h-[360px] w-[360px] rounded-full bg-slate-400/10 blur-3xl" />
+        <div className="absolute -left-32 -top-24 h-[420px] w-[420px] rounded-full bg-emerald-500/10 blur-[140px]" />
+        <div className="absolute right-[-120px] top-[140px] h-[420px] w-[420px] rounded-full bg-emerald-400/8 blur-[140px]" />
+        <div className="absolute bottom-[-140px] left-[18%] h-[360px] w-[360px] rounded-full bg-emerald-300/6 blur-[120px]" />
       </div>
 
       <div className="mx-auto max-w-[1600px]">
-        <header className="relative mb-4 overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-gradient-to-r from-emerald-950 via-green-900 to-slate-950 p-3 text-white shadow-[0_20px_50px_rgba(15,23,42,0.20)] sm:mb-5 sm:p-4 md:mb-6 md:p-5">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.10),_transparent_35%)]" />
-          <div className="absolute right-[-80px] top-[-80px] h-40 w-40 rounded-full bg-emerald-300/10 blur-3xl" />
+        <header className="relative mb-4 overflow-hidden rounded-[2rem] border border-white/6 bg-[#020617] p-3 text-white shadow-[0_30px_100px_rgba(0,0,0,0.7)] sm:mb-5 sm:p-4 md:mb-6 md:p-5">
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(16,185,129,0.14),rgba(2,6,23,0.0)_35%,rgba(2,6,23,0.0)_65%,rgba(16,185,129,0.06))]" />
+          <div className="absolute -left-24 top-0 h-[220px] w-[220px] rounded-full bg-emerald-500/10 blur-[100px]" />
+          <div className="absolute right-[-50px] top-6 h-[180px] w-[180px] rounded-full bg-emerald-400/8 blur-[90px]" />
 
           <div className="relative">
             <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0 flex flex-col gap-3">
-                <div className="mb-1 inline-flex w-fit rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-slate-100 sm:text-[11px]">
+                <div className="mb-1 inline-flex w-fit rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/85 backdrop-blur-xl sm:text-[11px]">
                   Tipsläge
                 </div>
 
@@ -483,7 +484,7 @@ export default function TipsPage() {
                   <h1 className="text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
                     Lägg ditt tips
                   </h1>
-                  <p className="mt-2 max-w-2xl text-sm leading-5 text-slate-200 md:text-sm">
+                  <p className="mt-2 max-w-2xl text-sm leading-5 text-white/78 md:text-sm">
                     Här fokuserar du bara på tippningen. Översikt, nyheter och övriga
                     genvägar finns kvar på startsidan.
                   </p>
@@ -510,7 +511,7 @@ export default function TipsPage() {
             <div className="grid gap-4 xl:grid-cols-[1fr_auto] xl:items-start">
               <div className="flex flex-col gap-4">
                 <div>
-                  <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/70">
+                  <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/60">
                     Navigation
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -536,7 +537,7 @@ export default function TipsPage() {
                 </div>
 
                 <div>
-                  <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/70">
+                  <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/60">
                     Åtgärder
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -570,53 +571,53 @@ export default function TipsPage() {
                 </div>
               </div>
 
-              <div className="rounded-[1.5rem] border border-white/10 bg-white/10 p-4 xl:min-w-[340px]">
+              <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.05] p-4 backdrop-blur-xl xl:min-w-[340px]">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/70">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/60">
                       Din status
                     </p>
                     <h2 className="mt-1 text-xl font-black text-white">
                       {overallProgress.percent}% klart
                     </h2>
                   </div>
-                  <div className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white">
+                  <div className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-bold text-white">
                     {overallProgress.completed}/{overallProgress.total}
                   </div>
                 </div>
 
                 <div className="mt-3 h-2.5 rounded-full bg-white/10">
                   <div
-                    className="h-full rounded-full bg-emerald-400"
+                    className="h-full rounded-full bg-emerald-500"
                     style={{ width: `${overallProgress.percent}%` }}
                   />
                 </div>
 
-                <p className="mt-3 text-sm text-slate-200">{smartStatus}</p>
+                <p className="mt-3 text-sm text-white/82">{smartStatus}</p>
 
                 <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-                  <div className="rounded-xl bg-white/10 p-2">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.05] p-2 backdrop-blur-xl">
                     <div className="font-black text-white">
                       {groupProgress.completed}/{groupProgress.total}
                     </div>
-                    <div className="mt-1 text-white/70">Grupper</div>
+                    <div className="mt-1 text-white/65">Grupper</div>
                   </div>
-                  <div className="rounded-xl bg-white/10 p-2">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.05] p-2 backdrop-blur-xl">
                     <div className="font-black text-white">
                       {knockoutProgress.completed}/{knockoutProgress.total}
                     </div>
-                    <div className="mt-1 text-white/70">Slutspel</div>
+                    <div className="mt-1 text-white/65">Slutspel</div>
                   </div>
-                  <div className="rounded-xl bg-white/10 p-2">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.05] p-2 backdrop-blur-xl">
                     <div className="font-black text-white">{goldenBootDone}/1</div>
-                    <div className="mt-1 text-white/70">Skytt</div>
+                    <div className="mt-1 text-white/65">Skytt</div>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="mt-4 hidden md:block xl:max-w-[420px] xl:ml-auto">
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/70 xl:text-right">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/60 xl:text-right">
                 Visa del av tipset
               </p>
               <div className="flex flex-wrap gap-2 xl:justify-end">
@@ -630,7 +631,7 @@ export default function TipsPage() {
                       className={`h-9 rounded-full px-3 py-1.5 text-[13px] font-bold transition ${
                         active
                           ? "bg-white text-slate-900 shadow-md"
-                          : "border border-white/10 bg-white/10 text-white hover:bg-white/20"
+                          : "border border-white/10 bg-white/[0.05] text-white hover:bg-white/[0.10]"
                       }`}
                     >
                       {item.label}
@@ -679,10 +680,10 @@ export default function TipsPage() {
                       onClick={() => setActiveGroupLetter(letter)}
                       className={`min-h-11 rounded-full px-4 py-2 text-sm font-extrabold transition ${
                         activeGroupLetter === letter
-                          ? "bg-gradient-to-r from-emerald-700 to-green-700 text-white shadow-lg shadow-emerald-500/20"
+                          ? "bg-emerald-500 text-white shadow-[0_10px_24px_rgba(16,185,129,0.28)]"
                           : complete
-                          ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                          : "border border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
+                          ? "border border-emerald-400/20 bg-emerald-500/12 text-emerald-100"
+                          : "border border-white/10 bg-white/[0.05] text-white/85 hover:bg-white/[0.08]"
                       }`}
                     >
                       Grupp {letter} {complete ? "✓" : ""}
@@ -735,7 +736,7 @@ export default function TipsPage() {
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-2 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.10)] backdrop-blur md:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#020617]/95 px-2 py-2 shadow-[0_-10px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl md:hidden">
         <div className="mx-auto grid max-w-4xl grid-cols-6 gap-1">
           {viewModeItems.map((item) => {
             const active = viewMode === item.key;
@@ -746,8 +747,8 @@ export default function TipsPage() {
                 onClick={() => setViewMode(item.key)}
                 className={`min-h-12 rounded-2xl px-2 py-2 text-center text-[11px] font-extrabold leading-tight transition ${
                   active
-                    ? "bg-slate-900 text-white shadow-sm"
-                    : "bg-slate-100 text-slate-700"
+                    ? "bg-emerald-500 text-white shadow-[0_8px_18px_rgba(16,185,129,0.28)]"
+                    : "border border-white/10 bg-white/[0.05] text-white/72"
                 }`}
               >
                 {item.mobileLabel}
