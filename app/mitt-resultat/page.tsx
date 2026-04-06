@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import SectionCard from "@/components/SectionCard";
 import type { ScoreBreakdown } from "@/lib/scoring";
 
 type MyResultsResponse = {
@@ -31,6 +30,29 @@ type ScoreRow = {
   label: string;
   value: number;
 };
+
+function PremiumCard({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+      <div className="border-b border-white/8 bg-[linear-gradient(90deg,rgba(16,185,129,0.10),rgba(255,255,255,0.02))] px-5 py-5 sm:px-6">
+        <h2 className="text-xl font-black tracking-tight text-white">{title}</h2>
+        {subtitle ? (
+          <p className="mt-1 text-sm leading-6 text-white/65">{subtitle}</p>
+        ) : null}
+      </div>
+
+      <div className="p-5 sm:p-6">{children}</div>
+    </section>
+  );
+}
 
 export default function MyResultsPage() {
   const [data, setData] = useState<MyResultsResponse | null>(null);
@@ -96,153 +118,178 @@ export default function MyResultsPage() {
   }, [data]);
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#ecfdf5_0%,_#f8fafc_35%,_#f1f5f9_68%,_#e2e8f0_100%)] px-3 py-4 sm:px-4 sm:py-6 md:px-6 md:py-8">
+    <main className="min-h-screen bg-[#020617] px-3 py-4 pb-24 sm:px-4 sm:py-6 md:px-6 md:py-8 md:pb-8">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-32 -top-24 h-[420px] w-[420px] rounded-full bg-emerald-500/10 blur-[140px]" />
+        <div className="absolute right-[-120px] top-[140px] h-[420px] w-[420px] rounded-full bg-emerald-400/8 blur-[140px]" />
+        <div className="absolute bottom-[-140px] left-[18%] h-[360px] w-[360px] rounded-full bg-emerald-300/6 blur-[120px]" />
+      </div>
+
       <div className="mx-auto max-w-5xl">
         <div className="mb-4 flex flex-wrap items-center gap-3 sm:mb-6">
           <Link
             href="/"
-            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/[0.1]"
           >
             ← Till startsidan
           </Link>
 
-          <div className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
+          <div className="rounded-full border border-emerald-400/20 bg-emerald-500/12 px-4 py-2 text-sm font-semibold text-emerald-100">
             Mina poäng
           </div>
         </div>
 
-        <section className="mb-6 overflow-hidden rounded-[2rem] border border-emerald-950/10 bg-gradient-to-r from-emerald-950 via-green-900 to-slate-950 p-5 text-white shadow-[0_20px_50px_rgba(15,23,42,0.20)]">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <section className="relative mb-6 overflow-hidden rounded-[2rem] border border-white/6 bg-[#020617] p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.7)] sm:p-6">
+          <div className="pointer-events-none absolute -left-24 top-0 h-[220px] w-[220px] rounded-full bg-emerald-500/10 blur-[100px]" />
+          <div className="pointer-events-none absolute right-[-50px] top-6 h-[180px] w-[180px] rounded-full bg-emerald-400/8 blur-[90px]" />
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(16,185,129,0.14),rgba(2,6,23,0.0)_35%,rgba(2,6,23,0.0)_65%,rgba(16,185,129,0.06))]" />
+
+          <div className="relative flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <div className="mb-2 inline-flex rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.18em] text-slate-100">
+              <div className="mb-2 inline-flex rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.18em] text-white/85 backdrop-blur-xl">
                 Addes VM-tips
               </div>
-              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
+              <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
                 Mitt resultat
               </h1>
-              <p className="mt-2 max-w-2xl text-sm text-slate-200 sm:text-base">
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/78 sm:text-base">
                 Här ser du bara dina egna poäng och din poängfördelning hittills.
               </p>
             </div>
 
-            {data?.breakdown && (
-              <div className="rounded-3xl border border-white/10 bg-white/10 px-5 py-4 backdrop-blur">
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-200">
+            {data?.breakdown ? (
+              <div className="w-fit rounded-[1.75rem] border border-white/10 bg-white/[0.06] px-5 py-4 backdrop-blur-xl">
+                <div className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-white/65">
                   Totalpoäng
                 </div>
-                <div className="mt-1 text-4xl font-black leading-none">
+                <div className="mt-1 text-4xl font-black leading-none text-white">
                   {data.breakdown.total}
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
         </section>
 
         {loading && (
-          <SectionCard title="Laddar..." subtitle="Hämtar ditt resultat.">
-            <p className="text-sm text-slate-600">Vänta en liten stund.</p>
-          </SectionCard>
+          <PremiumCard
+            title="Laddar..."
+            subtitle="Hämtar ditt resultat."
+          >
+            <p className="text-sm text-white/70">Vänta en liten stund.</p>
+          </PremiumCard>
         )}
 
         {!loading && error && (
-          <SectionCard title="Kunde inte hämta resultat" subtitle="Något gick fel.">
-            <p className="text-sm text-red-600">{error}</p>
-          </SectionCard>
+          <PremiumCard
+            title="Kunde inte hämta resultat"
+            subtitle="Något gick fel."
+          >
+            <p className="text-sm text-red-300">{error}</p>
+          </PremiumCard>
         )}
 
         {!loading && !error && data && !data.hasPrediction && (
-          <SectionCard
+          <PremiumCard
             title="Du har inget sparat tips ännu"
             subtitle="Spara ditt tips först för att kunna se dina poäng här."
           >
             <div className="flex flex-wrap gap-3">
               <Link
-                href="/"
-                className="rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800"
+                href="/tips"
+                className="inline-flex items-center justify-center rounded-full bg-emerald-500/95 px-4 py-2 text-sm font-bold text-white shadow-[0_10px_24px_rgba(16,185,129,0.28)] transition hover:bg-emerald-400"
               >
-                Gå till mitt tips
+                Gå till tipset
               </Link>
             </div>
-          </SectionCard>
+          </PremiumCard>
         )}
 
         {!loading && !error && data && data.hasPrediction && (
           <div className="grid gap-6">
             <div className="grid gap-4 md:grid-cols-3">
-              <SectionCard title="Deltagare" subtitle="Din profil i tävlingen.">
-                <div className="space-y-2 text-sm text-slate-700">
+              <PremiumCard
+                title="Deltagare"
+                subtitle="Din profil i tävlingen."
+              >
+                <div className="space-y-3 text-sm text-white/80">
                   <p>
-                    <span className="font-semibold text-slate-900">Namn:</span>{" "}
+                    <span className="font-semibold text-white">Namn:</span>{" "}
                     {displayName}
                   </p>
 
                   {data.profile?.username && (
                     <p>
-                      <span className="font-semibold text-slate-900">Användarnamn:</span>{" "}
+                      <span className="font-semibold text-white">Användarnamn:</span>{" "}
                       {data.profile.username}
                     </p>
                   )}
 
                   {data.profile?.payment_code && (
                     <p>
-                      <span className="font-semibold text-slate-900">Betalkod:</span>{" "}
+                      <span className="font-semibold text-white">Betalkod:</span>{" "}
                       {data.profile.payment_code}
                     </p>
                   )}
 
                   {data.profile?.payment_status && (
                     <p>
-                      <span className="font-semibold text-slate-900">Status:</span>{" "}
+                      <span className="font-semibold text-white">Status:</span>{" "}
                       {data.profile.payment_status === "paid" ? "Betald" : "Ej betald"}
                     </p>
                   )}
                 </div>
-              </SectionCard>
+              </PremiumCard>
 
-              <SectionCard title="Skyttekung" subtitle="Ditt aktuella skyttekungstips.">
-                <div className="space-y-2 text-sm text-slate-700">
+              <PremiumCard
+                title="Skyttekung"
+                subtitle="Ditt aktuella skyttekungstips."
+              >
+                <div className="space-y-3 text-sm text-white/80">
                   <p>
-                    <span className="font-semibold text-slate-900">Val:</span>{" "}
+                    <span className="font-semibold text-white">Val:</span>{" "}
                     {data.prediction?.chosen_golden_boot || "Inget valt"}
                   </p>
 
                   {data.breakdown && (
                     <p>
-                      <span className="font-semibold text-slate-900">Poäng:</span>{" "}
+                      <span className="font-semibold text-white">Poäng:</span>{" "}
                       {data.breakdown.goldenBootPoints}
                     </p>
                   )}
                 </div>
-              </SectionCard>
+              </PremiumCard>
 
-              <SectionCard title="Senaste sparning" subtitle="När ditt tips senast uppdaterades.">
-                <div className="space-y-2 text-sm text-slate-700">
+              <PremiumCard
+                title="Senaste sparning"
+                subtitle="När ditt tips senast uppdaterades."
+              >
+                <div className="space-y-3 text-sm text-white/80">
                   <p>
                     {data.prediction?.updated_at
                       ? new Date(data.prediction.updated_at).toLocaleString("sv-SE")
                       : "Okänt"}
                   </p>
 
-                  <p className="text-slate-500">
+                  <p className="text-white/55">
                     Resultatet räknas ut mot officiella resultat som lagts in i admin.
                   </p>
                 </div>
-              </SectionCard>
+              </PremiumCard>
             </div>
 
             {!data.hasOfficialResults && (
-              <SectionCard
+              <PremiumCard
                 title="Inga officiella resultat ännu"
                 subtitle="Poäng visas så fort resultat har lagts in i admin."
               >
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-white/70">
                   Ditt tips är sparat, men det finns ännu inget officiellt underlag att räkna mot.
                 </p>
-              </SectionCard>
+              </PremiumCard>
             )}
 
             {data.breakdown && (
-              <SectionCard
+              <PremiumCard
                 title="Poängfördelning"
                 subtitle="Så här har dina poäng fördelats hittills."
               >
@@ -250,30 +297,30 @@ export default function MyResultsPage() {
                   {rows.map((row) => (
                     <div
                       key={row.label}
-                      className="rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-sm"
+                      className="rounded-[1.75rem] border border-white/10 bg-white/[0.05] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl"
                     >
-                      <div className="text-sm font-semibold text-slate-600">
+                      <div className="text-sm font-semibold leading-6 text-white/65">
                         {row.label}
                       </div>
-                      <div className="mt-2 text-3xl font-black text-slate-900">
+                      <div className="mt-2 text-3xl font-black text-white">
                         {row.value}
                       </div>
                     </div>
                   ))}
                 </div>
-              </SectionCard>
+              </PremiumCard>
             )}
 
             {data.breakdown && (
-              <SectionCard
+              <PremiumCard
                 title="Sammanfattning"
                 subtitle="En enkel översikt över ditt läge i tävlingen."
               >
-                <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                <div className="rounded-[1.75rem] border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm leading-7 text-emerald-50">
                   Du har just nu <span className="font-black">{data.breakdown.total} poäng</span>.
                   Här visas bara dina egna poängkategorier — inte andra deltagares framtida tips.
                 </div>
-              </SectionCard>
+              </PremiumCard>
             )}
           </div>
         )}
