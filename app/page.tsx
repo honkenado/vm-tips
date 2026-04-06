@@ -124,49 +124,39 @@ export default async function HomePage() {
     <main className="min-h-screen bg-[#020617] pb-24 md:pb-0">
       <div className="mx-auto w-full max-w-[1400px] px-4 py-4 md:px-6">
         <div className="mb-3 md:hidden">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <div className="truncate text-sm font-semibold text-white/90">
-                {isLoggedIn ? displayName : "Addes VM-tips"}
-              </div>
+  <div className="flex items-start justify-between gap-3">
+    <div className="min-w-0">
+      <div className="truncate text-sm font-semibold text-white/90">
+        {isLoggedIn ? displayName : "Addes VM-tips"}
+      </div>
+    </div>
 
-              {isLoggedIn ? (
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[11px] font-bold text-white">
-                    {profile?.payment_code || "Kod"}
-                  </span>
-
-                  <span
-                    className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${
-                      isPaid
-                        ? "border-emerald-400/30 bg-emerald-500/12 text-emerald-100"
-                        : "border-amber-400/35 bg-amber-500/12 text-amber-100"
-                    }`}
-                  >
-                    {isPaid ? "Betald" : "Ej betald"}
-                  </span>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="ml-3 flex shrink-0 items-center gap-2">
-              {profile?.is_admin ? (
-                <Link
-                  href="/admin"
-                  className="rounded-full bg-blue-500 px-3 py-1.5 text-xs font-bold text-white shadow-[0_10px_24px_rgba(59,130,246,0.25)] transition hover:bg-blue-400"
-                >
-                  Admin
-                </Link>
-              ) : null}
-
-              <AuthStatus />
-            </div>
-          </div>
-
-          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white/80 backdrop-blur-xl">
-            {mobileHeaderNote}
-          </div>
+    <div className="ml-3 flex shrink-0 items-center gap-2">
+      {isLoggedIn ? (
+        <AuthStatus />
+      ) : (
+        <div className="flex gap-2">
+          <Link
+            href="/login"
+            className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/[0.1]"
+          >
+            Logga in
+          </Link>
+          <Link
+            href="/register"
+            className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-900 transition hover:bg-slate-100"
+          >
+            Skapa konto
+          </Link>
         </div>
+      )}
+    </div>
+  </div>
+
+  <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white/80 backdrop-blur-xl">
+    {mobileHeaderNote}
+  </div>
+</div>
 
         <section className="relative overflow-hidden rounded-[2rem] border border-white/6 bg-[#020617] text-white shadow-[0_30px_100px_rgba(0,0,0,0.7)]">
           <div className="pointer-events-none absolute -left-28 -top-24 h-[420px] w-[420px] rounded-full bg-emerald-500/14 blur-[140px]" />
@@ -288,42 +278,8 @@ export default async function HomePage() {
 
             <div className="hidden md:flex md:flex-col md:gap-3">
               {isLoggedIn ? (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl md:flex md:flex-col md:items-end md:gap-2">
-                  <div className="text-xs text-white/82">{displayName}</div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-bold text-white">
-                      {profile?.payment_code || "Ingen kod"}
-                    </span>
-
-                    <span
-                      className={`rounded-full border px-3 py-1 text-[10px] font-bold ${
-                        isPaid
-                          ? "border-emerald-400/30 bg-emerald-500/12 text-emerald-100"
-                          : "border-amber-400/35 bg-amber-500/12 text-amber-100"
-                      }`}
-                    >
-                      {isPaid ? "Betald" : "Ej betald"}
-                    </span>
-                  </div>
-
-                  <div className="w-full rounded-xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-xs text-amber-50">
-                    Swisha 170 kr och märk med kod{" "}
-                    <span className="font-extrabold">{profile?.payment_code || "kod"}</span>
-                  </div>
-
-                  <div className="flex w-full flex-wrap gap-2">
-                    {profile?.is_admin ? (
-                      <Link
-                        href="/admin"
-                        className="rounded-lg bg-blue-500 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-blue-400"
-                      >
-                        Admin
-                      </Link>
-                    ) : null}
-
-                    <AuthStatus />
-                  </div>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+                  <AuthStatus />
                 </div>
               ) : (
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">

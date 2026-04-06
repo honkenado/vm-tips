@@ -9,15 +9,21 @@ type UserInfo = {
 } | null;
 
 type Profile = {
+  first_name: string | null;
+  last_name: string | null;
   payment_code: string | null;
   payment_status: "paid" | "unpaid";
   is_admin: boolean | null;
 } | null;
 
-function shortenEmail(email?: string) {
-  if (!email) return "";
-  if (email.length <= 24) return email;
-  return `${email.slice(0, 18)}...`;
+function getDisplayName(profile: Profile, email?: string) {
+  const fullName = [profile?.first_name, profile?.last_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  if (fullName) return fullName;
+  return email || "Deltagare";
 }
 
 export default function AuthStatus() {
@@ -38,7 +44,7 @@ export default function AuthStatus() {
 
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("payment_code, payment_status, is_admin")
+          .select("first_name, last_name, payment_code, payment_status, is_admin")
           .eq("id", user.id)
           .single();
 
@@ -83,12 +89,13 @@ export default function AuthStatus() {
   }
 
   const isUnpaid = profile?.payment_status === "unpaid";
+  const displayName = getDisplayName(profile, user.email);
 
   return (
     <div className="flex w-full flex-col gap-2 lg:items-end">
       <div className="flex flex-wrap items-center gap-2 text-[13px] text-white/80 lg:justify-end">
-        <p className="max-w-[220px] truncate" title={user.email}>
-          {shortenEmail(user.email)}
+        <p className="max-w-[220px] truncate font-semibold text-white" title={displayName}>
+          {displayName}
         </p>
 
         {profile && (
@@ -117,7 +124,8 @@ export default function AuthStatus() {
           {profile.payment_code ? (
             <>
               {" "}
-              och märk med kod <span className="font-bold text-white">{profile.payment_code}</span>
+              och märk med kod{" "}
+              <span className="font-bold text-white">{profile.payment_code}</span>
             </>
           ) : null}
           .
