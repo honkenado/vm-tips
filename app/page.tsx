@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import NewsPreview from "@/components/NewsPreview";
 import { getGroupStageSchedule } from "@/lib/match-schedule";
 import { getUpcomingMatches } from "@/lib/match-utils";
+import AuthStatus from "@/components/auth-status";
 
 type MembersResponse = {
   members?: Array<{
@@ -15,19 +16,6 @@ type MembersResponse = {
     member_number: number;
   }>;
   error?: string;
-};
-
-type PredictionRow = {
-  group_stage?: Array<{
-    name: string;
-    matches: Array<{
-      id: number;
-      homeGoals: string;
-      awayGoals: string;
-    }>;
-  }> | null;
-  knockout?: Record<string, string> | null;
-  golden_boot?: string | null;
 };
 
 function getDeadlineDate() {
@@ -171,23 +159,7 @@ export default async function HomePage() {
                 </Link>
               ) : null}
 
-              {isLoggedIn ? (
-                <form action="/auth/signout" method="post">
-                  <button
-                    type="submit"
-                    className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/[0.1]"
-                  >
-                    Logga ut
-                  </button>
-                </form>
-              ) : (
-                <Link
-                  href="/login"
-                  className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/[0.1]"
-                >
-                  Logga in
-                </Link>
-              )}
+              <AuthStatus />
             </div>
           </div>
 
@@ -238,33 +210,33 @@ export default async function HomePage() {
                   </p>
 
                   <div className="mt-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap">
-  <Link
-    href="/medlemmar"
-    className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-white/20 hover:bg-white/[0.08] md:hidden"
-  >
-    <div className="text-3xl font-black text-white">{registeredCount}</div>
-    <div className="text-sm text-white/75">registrerade</div>
-  </Link>
+                    <Link
+                      href="/medlemmar"
+                      className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-white/20 hover:bg-white/[0.08] md:hidden"
+                    >
+                      <div className="text-3xl font-black text-white">{registeredCount}</div>
+                      <div className="text-sm text-white/75">registrerade</div>
+                    </Link>
 
-  <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] md:block">
-    <div className="text-3xl font-black text-white">{registeredCount}</div>
-    <div className="text-sm text-white/75">registrerade</div>
-  </div>
+                    <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] md:block">
+                      <div className="text-3xl font-black text-white">{registeredCount}</div>
+                      <div className="text-sm text-white/75">registrerade</div>
+                    </div>
 
-  <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-    <div className="text-3xl font-black text-white">{daysLeft}</div>
-    <div className="text-sm text-white/75">dagar kvar</div>
-  </div>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                      <div className="text-3xl font-black text-white">{daysLeft}</div>
+                      <div className="text-sm text-white/75">dagar kvar</div>
+                    </div>
 
-  <div className="hidden min-w-[110px] rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] md:block">
-    <div className="text-lg font-black text-white">
-      {featuredMatch ? featuredMatch.date : "-"}
-    </div>
-    <div className="text-sm text-white/75">
-      {beforeDeadline ? "öppningsmatch" : "nästa match"}
-    </div>
-  </div>
-</div>
+                    <div className="hidden min-w-[110px] rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] md:block">
+                      <div className="text-lg font-black text-white">
+                        {featuredMatch ? featuredMatch.date : "-"}
+                      </div>
+                      <div className="text-sm text-white/75">
+                        {beforeDeadline ? "öppningsmatch" : "nästa match"}
+                      </div>
+                    </div>
+                  </div>
 
                   <div className="mt-6 md:mt-7">
                     {isLoggedIn ? (
@@ -340,7 +312,7 @@ export default async function HomePage() {
                     <span className="font-extrabold">{profile?.payment_code || "kod"}</span>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex w-full flex-wrap gap-2">
                     {profile?.is_admin ? (
                       <Link
                         href="/admin"
@@ -350,14 +322,7 @@ export default async function HomePage() {
                       </Link>
                     ) : null}
 
-                    <form action="/auth/signout" method="post">
-                      <button
-                        type="submit"
-                        className="rounded-lg border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/[0.1]"
-                      >
-                        Logga ut
-                      </button>
-                    </form>
+                    <AuthStatus />
                   </div>
                 </div>
               ) : (
@@ -373,6 +338,12 @@ export default async function HomePage() {
                       className="rounded-xl bg-emerald-500/95 px-4 py-2 text-sm font-bold text-white shadow-[0_10px_24px_rgba(16,185,129,0.28)] transition hover:bg-emerald-400"
                     >
                       Logga in
+                    </Link>
+                    <Link
+                      href="/register"
+                      className="rounded-xl border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-bold text-white transition hover:bg-white/[0.1]"
+                    >
+                      Skapa konto
                     </Link>
                   </div>
                 </div>
