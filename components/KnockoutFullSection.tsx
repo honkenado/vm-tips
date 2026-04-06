@@ -98,9 +98,9 @@ export default function KnockoutFullSection({
   }) => {
     const wrapperClass =
       emphasis === "final"
-        ? "rounded-[1.25rem] border border-yellow-300 bg-gradient-to-br from-yellow-50/95 via-amber-50/95 to-yellow-100/95 p-2 shadow-[0_10px_25px_rgba(234,179,8,0.18)]"
+        ? "rounded-[1.25rem] border border-yellow-400/30 bg-yellow-500/[0.10] p-2 shadow-[0_10px_25px_rgba(234,179,8,0.14)]"
         : emphasis === "bronze"
-        ? "rounded-[1.25rem] border border-orange-300 bg-gradient-to-br from-orange-50/95 via-amber-50/95 to-orange-100/95 p-2 shadow-[0_10px_25px_rgba(249,115,22,0.14)]"
+        ? "rounded-[1.25rem] border border-orange-400/25 bg-orange-500/[0.10] p-2 shadow-[0_10px_25px_rgba(249,115,22,0.12)]"
         : "";
 
     return (
@@ -126,7 +126,7 @@ export default function KnockoutFullSection({
         title="Slutspel"
         subtitle="Slutspelet låses upp när alla gruppmatcher är ifyllda."
       >
-        <div className="rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 text-sm text-amber-900 shadow-sm sm:p-5 sm:text-base">
+        <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4 text-sm text-amber-100 shadow-sm sm:p-5 sm:text-base">
           Fyll i samtliga gruppmatcher först för att generera slutspelet.
         </div>
       </SectionCard>
@@ -141,7 +141,7 @@ export default function KnockoutFullSection({
       <div className="mb-4 flex justify-end sm:mb-6">
         <button
           onClick={onResetKnockout}
-          className="h-10 rounded-xl bg-gradient-to-r from-emerald-900 via-green-900 to-slate-950 px-4 py-2 text-sm font-bold text-white shadow-md transition hover:opacity-95"
+          className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-500/95 px-4 py-2 text-sm font-bold text-white shadow-[0_10px_24px_rgba(16,185,129,0.28)] transition hover:bg-emerald-400"
         >
           Nollställ slutspel
         </button>
@@ -158,13 +158,13 @@ export default function KnockoutFullSection({
         ].map((round) => (
           <div
             key={round.title}
-            className="overflow-hidden rounded-[1.25rem] border border-emerald-200 bg-white shadow-sm sm:rounded-[1.5rem]"
+            className="overflow-hidden rounded-[1.25rem] border border-white/10 bg-white/[0.04] shadow-[0_10px_30px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:rounded-[1.5rem]"
           >
-            <div className="border-b border-emerald-200 bg-gradient-to-r from-emerald-900 via-green-900 to-slate-950 px-4 py-3 text-white">
+            <div className="border-b border-white/10 bg-[linear-gradient(90deg,rgba(16,185,129,0.16),rgba(2,6,23,0.92)_35%,rgba(2,6,23,0.92)_65%,rgba(16,185,129,0.08))] px-4 py-3 text-white">
               <h3 className="text-base font-extrabold sm:text-lg">{round.title}</h3>
             </div>
 
-            <div className="bg-gradient-to-b from-emerald-50/40 to-white p-3 sm:p-4">
+            <div className="p-3 sm:p-4">
               <div className="grid gap-2.5 sm:gap-3">
                 {round.matches.map((match) => (
                   <MatchButtons
@@ -181,29 +181,29 @@ export default function KnockoutFullSection({
         ))}
 
         <div className="grid gap-2.5 sm:gap-3">
-          <div className="rounded-[1.4rem] border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 via-amber-50 to-yellow-100 p-4 text-center shadow-sm sm:rounded-[1.75rem] sm:p-6">
-            <div className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-yellow-700 sm:mb-2 sm:text-sm">
+          <div className="rounded-[1.4rem] border border-yellow-400/30 bg-yellow-500/[0.10] p-4 text-center shadow-sm sm:rounded-[1.75rem] sm:p-6">
+            <div className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-yellow-200 sm:mb-2 sm:text-sm">
               Guld
             </div>
-            <div className="text-xl font-extrabold text-slate-900 sm:text-2xl">
+            <div className="text-xl font-extrabold text-white sm:text-2xl">
               {champion || "—"}
             </div>
           </div>
 
-          <div className="rounded-[1.4rem] border border-slate-300 bg-gradient-to-br from-slate-50 to-slate-200 p-4 text-center shadow-sm sm:rounded-[1.75rem] sm:p-5">
-            <div className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-slate-600 sm:mb-2 sm:text-sm">
+          <div className="rounded-[1.4rem] border border-white/10 bg-white/[0.06] p-4 text-center shadow-sm sm:rounded-[1.75rem] sm:p-5">
+            <div className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-white/60 sm:mb-2 sm:text-sm">
               Silver
             </div>
-            <div className="text-lg font-extrabold text-slate-900 sm:text-xl">
+            <div className="text-lg font-extrabold text-white sm:text-xl">
               {silverWinner || "—"}
             </div>
           </div>
 
-          <div className="rounded-[1.4rem] border border-orange-300 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 p-4 text-center shadow-sm sm:rounded-[1.75rem] sm:p-5">
-            <div className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-orange-700 sm:mb-2 sm:text-sm">
+          <div className="rounded-[1.4rem] border border-orange-400/25 bg-orange-500/[0.10] p-4 text-center shadow-sm sm:rounded-[1.75rem] sm:p-5">
+            <div className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-orange-200 sm:mb-2 sm:text-sm">
               Brons
             </div>
-            <div className="text-lg font-extrabold text-slate-900 sm:text-xl">
+            <div className="text-lg font-extrabold text-white sm:text-xl">
               {bronzeWinner || "—"}
             </div>
           </div>
@@ -211,53 +211,52 @@ export default function KnockoutFullSection({
       </div>
 
       <div className="hidden xl:block">
-        <div className="overflow-visible rounded-[1.75rem] border border-emerald-200/80 bg-white shadow-[0_12px_35px_rgba(5,150,105,0.08)]">
-          <div className="border-b border-emerald-200 bg-gradient-to-r from-emerald-900 via-green-900 to-slate-950 px-5 py-4 text-white">
+        <div className="overflow-visible rounded-[1.75rem] border border-white/10 bg-white/[0.04] shadow-[0_12px_35px_rgba(0,0,0,0.24)] backdrop-blur-xl">
+          <div className="border-b border-white/10 bg-[linear-gradient(90deg,rgba(16,185,129,0.16),rgba(2,6,23,0.92)_35%,rgba(2,6,23,0.92)_65%,rgba(16,185,129,0.08))] px-5 py-4 text-white">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-100/80">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-200/80">
                   Knockout stage
                 </p>
                 <h3 className="mt-1 text-xl font-black tracking-tight">Slutspelsträd</h3>
               </div>
 
-              <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold text-white/90">
+              <div className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-white/90">
                 FIFA World Cup 2026
               </div>
             </div>
           </div>
 
-          <div className="relative overflow-hidden bg-gradient-to-b from-emerald-100/80 via-white to-green-100/70 px-5 pb-14 pt-2">
+          <div className="relative overflow-hidden px-5 pb-14 pt-2">
             <div className="pointer-events-none absolute inset-0">
-              <div className="absolute -left-24 top-4 h-72 w-72 rounded-full bg-emerald-400/18 blur-3xl" />
-              <div className="absolute right-[-70px] top-14 h-80 w-80 rounded-full bg-green-400/16 blur-3xl" />
-              <div className="absolute bottom-[-90px] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-emerald-300/16 blur-3xl" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.72),_transparent_60%)]" />
-            </div>
+  <div className="absolute -left-24 top-4 h-72 w-72 rounded-full bg-emerald-500/6 blur-3xl" />
+  <div className="absolute right-[-70px] top-14 h-80 w-80 rounded-full bg-emerald-400/5 blur-3xl" />
+  <div className="absolute bottom-[-90px] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-emerald-300/4 blur-3xl" />
+</div>
 
             <div className="relative mb-3 flex justify-center">
               <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-[1.5rem] border-2 border-yellow-300 bg-gradient-to-br from-yellow-50 via-amber-50 to-yellow-100 px-6 py-4 text-center shadow-sm">
-                  <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-yellow-700">
+                <div className="rounded-[1.5rem] border border-yellow-400/25 bg-white/[0.06] px-6 py-4 text-center shadow-sm backdrop-blur-xl">
+                  <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-yellow-200">
                     Guld
                   </div>
-                  <div className="text-lg font-extrabold text-slate-900">{champion || "—"}</div>
+                  <div className="text-lg font-extrabold text-white">{champion || "—"}</div>
                 </div>
 
-                <div className="rounded-[1.5rem] border border-slate-300 bg-gradient-to-br from-slate-50 to-slate-200 px-6 py-4 text-center shadow-sm">
-                  <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-600">
+                <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.05] px-6 py-4 text-center shadow-sm backdrop-blur-xl">
+                  <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-white/60">
                     Silver
                   </div>
-                  <div className="text-lg font-extrabold text-slate-900">
+                  <div className="text-lg font-extrabold text-white">
                     {silverWinner || "—"}
                   </div>
                 </div>
 
-                <div className="rounded-[1.5rem] border border-orange-300 bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 px-6 py-4 text-center shadow-sm">
-                  <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-orange-700">
+                <div className="rounded-[1.5rem] border border-orange-400/20 bg-white/[0.06] px-6 py-4 text-center shadow-sm backdrop-blur-xl">
+                  <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-orange-200">
                     Brons
                   </div>
-                  <div className="text-lg font-extrabold text-slate-900">
+                  <div className="text-lg font-extrabold text-white">
                     {bronzeWinner || "—"}
                   </div>
                 </div>
@@ -265,8 +264,8 @@ export default function KnockoutFullSection({
             </div>
 
             <div className="relative flex w-full justify-center">
-              <div className="relative rounded-[2rem] bg-white/25 px-4 py-4 backdrop-blur-[1px] ring-1 ring-emerald-200/60">
-                <div className="pointer-events-none absolute inset-y-4 left-1/2 w-[188px] -translate-x-1/2 rounded-[1.75rem] bg-gradient-to-b from-yellow-100/35 via-white/15 to-orange-100/35" />
+              <div className="relative rounded-[2rem] border border-white/10 bg-[#07111f]/70 px-4 py-4 backdrop-blur-xl">
+                <div className="pointer-events-none absolute inset-y-4 left-1/2 w-[188px] -translate-x-1/2 rounded-[1.75rem] bg-[linear-gradient(180deg,rgba(250,204,21,0.04),rgba(255,255,255,0.02),rgba(249,115,22,0.04))]" />
 
                 <div
                   className="relative grid w-fit items-start gap-x-4 gap-y-0"
@@ -276,31 +275,31 @@ export default function KnockoutFullSection({
                     gridTemplateRows: "32px repeat(31, 22px)",
                   }}
                 >
-                  <div className="text-center text-sm font-black uppercase tracking-wide text-slate-700">
+                  <div className="text-center text-sm font-black uppercase tracking-wide text-white/78">
                     R32
                   </div>
-                  <div className="text-center text-sm font-black uppercase tracking-wide text-slate-700">
+                  <div className="text-center text-sm font-black uppercase tracking-wide text-white/78">
                     R16
                   </div>
-                  <div className="text-center text-sm font-black uppercase tracking-wide text-slate-700">
+                  <div className="text-center text-sm font-black uppercase tracking-wide text-white/78">
                     Kvartsfinal
                   </div>
-                  <div className="text-center text-sm font-black uppercase tracking-wide text-slate-700">
+                  <div className="text-center text-sm font-black uppercase tracking-wide text-white/78">
                     Semifinal
                   </div>
-                  <div className="text-center text-sm font-black uppercase tracking-wide text-slate-700">
+                  <div className="text-center text-sm font-black uppercase tracking-wide text-white/78">
                     Final / Brons
                   </div>
-                  <div className="text-center text-sm font-black uppercase tracking-wide text-slate-700">
+                  <div className="text-center text-sm font-black uppercase tracking-wide text-white/78">
                     Semifinal
                   </div>
-                  <div className="text-center text-sm font-black uppercase tracking-wide text-slate-700">
+                  <div className="text-center text-sm font-black uppercase tracking-wide text-white/78">
                     Kvartsfinal
                   </div>
-                  <div className="text-center text-sm font-black uppercase tracking-wide text-slate-700">
+                  <div className="text-center text-sm font-black uppercase tracking-wide text-white/78">
                     R16
                   </div>
-                  <div className="text-center text-sm font-black uppercase tracking-wide text-slate-700">
+                  <div className="text-center text-sm font-black uppercase tracking-wide text-white/78">
                     R32
                   </div>
 
