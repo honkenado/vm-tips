@@ -509,6 +509,21 @@ export default function TipsPage() {
             </div>
 
             <div className="mb-3 md:hidden">
+              <div className="mb-3 flex items-center justify-between">
+  <button
+    onClick={() => router.push("/")}
+    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-bold text-white transition hover:bg-white/[0.1]"
+  >
+    ← Start
+  </button>
+
+  <Link
+    href="/league"
+    className="text-xs font-semibold text-white/70 underline"
+  >
+    Ligor
+  </Link>
+</div>
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="inline-flex rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/85 backdrop-blur-xl">

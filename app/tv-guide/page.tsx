@@ -1,3 +1,4 @@
+import Link from "next/link";
 import TvGuideList from "@/components/matches/TvGuideList";
 import { getGroupStageSchedule } from "@/lib/match-schedule";
 import { getUpcomingMatches } from "@/lib/match-utils";
@@ -14,6 +15,15 @@ export default function TvGuidePage() {
   return (
     <main className="min-h-screen px-4 py-6">
       <div className="mx-auto max-w-5xl">
+        <div className="mb-4">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/[0.1]"
+          >
+            ← Till startsidan
+          </Link>
+        </div>
+
         <section className="card-premium-strong mb-4 p-5 sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>

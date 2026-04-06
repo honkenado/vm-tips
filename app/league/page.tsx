@@ -172,6 +172,15 @@ export default function LeagueHubPage() {
   return (
     <main className="min-h-screen px-3 py-4 sm:px-4 md:px-6 md:py-8">
       <div className="mx-auto max-w-5xl">
+        <div className="mb-4">
+          <button
+            onClick={() => router.push("/")}
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-semibold text-white hover:bg-white/[0.1]"
+          >
+            ← Till startsidan
+          </button>
+        </div>
+
         <section className="card-premium-strong mb-4 p-5 sm:p-6">
           <div className="flex flex-col gap-4">
             <div>

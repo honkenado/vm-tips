@@ -81,6 +81,15 @@ export default async function NewsPage() {
   return (
     <main className="min-h-screen px-4 py-8 md:px-6">
       <div className="mx-auto max-w-7xl">
+        <div className="mb-6">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/[0.1]"
+          >
+            ← Till startsidan
+          </Link>
+        </div>
+
         <section className="card-premium-strong mb-8 overflow-hidden">
           <div className="relative border-b border-white/10 px-6 py-6 md:px-8">
             <div className="pointer-events-none absolute -left-20 top-0 h-[220px] w-[220px] rounded-full bg-emerald-500/10 blur-[90px]" />
