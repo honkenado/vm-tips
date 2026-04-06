@@ -24,15 +24,15 @@ export default function MatchButtons({
 
   return (
     <div
-      className={`bg-white/95 shadow-sm backdrop-blur-sm ${
+      className={`border border-white/10 bg-white/[0.05] shadow-sm backdrop-blur-xl ${
         compact
-          ? "w-full rounded-xl border border-emerald-200/80 p-2 sm:p-2.5 xl:w-[152px] xl:rounded-xl xl:border xl:border-emerald-200 xl:p-1.5 xl:shadow-[0_6px_18px_rgba(5,150,105,0.08)]"
-          : "w-full rounded-2xl border border-emerald-200/80 p-3 sm:p-4"
+          ? "w-full rounded-xl p-2 sm:p-2.5 xl:w-[152px] xl:rounded-xl xl:p-1.5 xl:shadow-[0_6px_18px_rgba(0,0,0,0.22)]"
+          : "w-full rounded-2xl p-3 sm:p-4"
       }`}
     >
       {match.label ? (
         <div
-          className={`font-bold uppercase tracking-wide text-slate-500 ${
+          className={`font-bold uppercase tracking-wide text-white/45 ${
             compact
               ? "mb-2 text-[10px] leading-none sm:text-[11px] xl:mb-1 xl:text-[9px]"
               : "mb-2 text-[11px] sm:mb-3 sm:text-xs"
@@ -52,8 +52,8 @@ export default function MatchButtons({
               : "min-h-12 rounded-xl px-4 py-3 text-sm sm:text-base"
           } ${
             chosenHome
-              ? "bg-gradient-to-r from-emerald-700 to-green-600 text-white shadow-[0_6px_14px_rgba(5,150,105,0.28)]"
-              : "border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white text-slate-900 hover:from-emerald-100 hover:to-slate-50"
+              ? "bg-emerald-500/95 text-white shadow-[0_8px_18px_rgba(16,185,129,0.28)]"
+              : "border border-white/10 bg-white/[0.04] text-white/88 hover:border-white/20 hover:bg-white/[0.08]"
           } ${homeDisabled ? "cursor-not-allowed opacity-50" : ""}`}
         >
           <span className="block truncate text-center leading-tight">
@@ -62,7 +62,7 @@ export default function MatchButtons({
         </button>
 
         <div
-          className={`text-center font-semibold uppercase tracking-wide text-slate-400 ${
+          className={`text-center font-semibold uppercase tracking-wide text-white/30 ${
             compact
               ? "text-[10px] leading-none xl:text-[8px]"
               : "text-[10px] sm:text-xs"
@@ -80,8 +80,8 @@ export default function MatchButtons({
               : "min-h-12 rounded-xl px-4 py-3 text-sm sm:text-base"
           } ${
             chosenAway
-              ? "bg-gradient-to-r from-emerald-700 to-green-600 text-white shadow-[0_6px_14px_rgba(5,150,105,0.28)]"
-              : "border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white text-slate-900 hover:from-emerald-100 hover:to-slate-50"
+              ? "bg-emerald-500/95 text-white shadow-[0_8px_18px_rgba(16,185,129,0.28)]"
+              : "border border-white/10 bg-white/[0.04] text-white/88 hover:border-white/20 hover:bg-white/[0.08]"
           } ${awayDisabled ? "cursor-not-allowed opacity-50" : ""}`}
         >
           <span className="block truncate text-center leading-tight">
@@ -91,7 +91,7 @@ export default function MatchButtons({
 
         {deadlinePassed && (
           <div
-            className={`text-center font-medium text-rose-500 ${
+            className={`text-center font-medium text-amber-300 ${
               compact
                 ? "pt-1 text-[10px] xl:text-[9px]"
                 : "pt-1 text-[11px] sm:pt-2 sm:text-xs"
