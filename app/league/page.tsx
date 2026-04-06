@@ -158,18 +158,18 @@ export default function LeagueHubPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#dbeafe_0%,_#eef2ff_28%,_#f8fafc_58%,_#e2e8f0_100%)] px-3 py-4 sm:px-4 md:px-6 md:py-8">
+    <main className="min-h-screen px-3 py-4 sm:px-4 md:px-6 md:py-8">
       <div className="mx-auto max-w-5xl">
-        <section className="mb-4 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-[1.75rem] sm:p-6">
+        <section className="card-premium-strong mb-4 p-5 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-emerald-700">
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-emerald-400">
                 Addes VM-tips
               </p>
-              <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">
                 Ligor
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+              <p className="text-muted-premium mt-2 max-w-2xl text-sm leading-6">
                 Här hittar du huvudligan och dina kompisligor. Du kan också skapa
                 en egen liga eller gå med via ligakod.
               </p>
@@ -180,7 +180,7 @@ export default function LeagueHubPage() {
                 type="button"
                 onClick={handleCreateLeague}
                 disabled={creating}
-                className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+                className="btn-primary-premium px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {creating ? "Skapar..." : "Skapa liga"}
               </button>
@@ -189,7 +189,7 @@ export default function LeagueHubPage() {
                 type="button"
                 onClick={handleJoinLeague}
                 disabled={joining}
-                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="btn-secondary-premium px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {joining ? "Ansluter..." : "Gå med i liga"}
               </button>
@@ -197,49 +197,49 @@ export default function LeagueHubPage() {
           </div>
         </section>
 
-        <section className="mb-4 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-[1.75rem] sm:p-6">
+        <section className="card-premium mb-4 p-5 sm:p-6">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-black text-slate-900">Huvudligan</h2>
-              <p className="mt-1 text-sm text-slate-600">
+              <h2 className="text-xl font-black text-white">Huvudligan</h2>
+              <p className="text-muted-premium mt-1 text-sm">
                 Den officiella stora ligan där alla aktiva deltagare jämförs.
               </p>
             </div>
 
             <Link
               href="/league/main"
-              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800"
+              className="btn-secondary-premium px-4 py-2 text-sm"
             >
               Öppna
             </Link>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div className="text-base font-bold text-slate-900">Huvudligan</div>
-            <div className="mt-1 text-sm text-slate-500">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-xl">
+            <div className="text-base font-bold text-white">Huvudligan</div>
+            <div className="text-muted-premium mt-1 text-sm">
               Alla poäng räknas mot den officiella tabellen.
             </div>
           </div>
         </section>
 
-        <section className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-[1.75rem] sm:p-6">
+        <section className="card-premium p-5 sm:p-6">
           <div className="mb-4">
-            <h2 className="text-xl font-black text-slate-900">Mina ligor</h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <h2 className="text-xl font-black text-white">Mina ligor</h2>
+            <p className="text-muted-premium mt-1 text-sm">
               Här ser du ligor du redan är med i.
             </p>
           </div>
 
           {loading ? (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+            <div className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-5 text-sm text-white/70">
               Laddar ligor...
             </div>
           ) : errorMessage ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-5 text-sm text-red-600">
+            <div className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-5 text-sm text-red-200">
               {errorMessage}
             </div>
           ) : myLeagues.length === 0 ? (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+            <div className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-5 text-sm text-white/70">
               Du är inte med i någon kompisliga ännu.
             </div>
           ) : (
@@ -247,19 +247,19 @@ export default function LeagueHubPage() {
               {myLeagues.map((league) => (
                 <Link
                   key={league.id}
-                  href={`/league/${league.id}`}
-                  className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-sm"
+                  href={`/league/${league.join_code}`}
+                  className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.07]"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-base font-black text-slate-900">
+                    <div className="truncate text-base font-black text-white">
                       {league.name}
                     </div>
-                    <div className="mt-1 text-sm text-slate-500">
-                      Kod: <span className="font-bold">{league.join_code}</span>
+                    <div className="text-muted-premium mt-1 text-sm">
+                      Kod: <span className="font-bold text-white">{league.join_code}</span>
                     </div>
                   </div>
 
-                  <span className="ml-4 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
+                  <span className="ml-4 rounded-full border border-emerald-400/20 bg-emerald-500/12 px-3 py-1 text-xs font-bold text-emerald-200">
                     Öppna
                   </span>
                 </Link>
