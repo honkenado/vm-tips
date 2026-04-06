@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Profile = {
   id: string;
@@ -16,6 +16,7 @@ export default function AdminPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   async function loadProfiles() {
     try {
@@ -83,6 +84,25 @@ export default function AdminPage() {
     loadProfiles();
   }, []);
 
+  const filteredProfiles = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    if (!query) return profiles;
+
+    return profiles.filter((profile) => {
+      const fullName =
+        `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim().toLowerCase();
+      const email = (profile.email ?? "").toLowerCase();
+      const paymentCode = (profile.payment_code ?? "").toLowerCase();
+
+      return (
+        fullName.includes(query) ||
+        email.includes(query) ||
+        paymentCode.includes(query)
+      );
+    });
+  }, [profiles, search]);
+
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 md:px-6">
       <div className="mx-auto max-w-6xl">
@@ -98,6 +118,23 @@ export default function AdminPage() {
             {message}
           </div>
         )}
+
+        <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <label
+            htmlFor="payment-search"
+            className="mb-2 block text-sm font-bold text-slate-800"
+          >
+            Sök deltagare eller betalningskod
+          </label>
+          <input
+            id="payment-search"
+            type="text"
+            placeholder="Sök namn, e-post eller betalningskod..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          />
+        </div>
 
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="overflow-x-auto">
@@ -119,14 +156,14 @@ export default function AdminPage() {
                       Laddar användare...
                     </td>
                   </tr>
-                ) : profiles.length === 0 ? (
+                ) : filteredProfiles.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-6 text-sm text-slate-500">
-                      Inga användare hittades.
+                      Inga användare matchar din sökning.
                     </td>
                   </tr>
                 ) : (
-                  profiles.map((profile) => (
+                  filteredProfiles.map((profile) => (
                     <tr key={profile.id} className="border-t border-slate-100">
                       <td className="px-4 py-3 font-medium text-slate-900">
                         {profile.first_name || profile.last_name
@@ -156,6 +193,7 @@ export default function AdminPage() {
                       <td className="px-4 py-3">
                         {profile.payment_status === "paid" ? (
                           <button
+                            type="button"
                             onClick={() => updatePaymentStatus(profile.id, "unpaid")}
                             className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 hover:bg-slate-50"
                           >
@@ -163,6 +201,7 @@ export default function AdminPage() {
                           </button>
                         ) : (
                           <button
+                            type="button"
                             onClick={() => updatePaymentStatus(profile.id, "paid")}
                             className="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-700"
                           >
