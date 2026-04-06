@@ -37,6 +37,40 @@ async function getNews(): Promise<NewsPost[]> {
   return data.posts ?? [];
 }
 
+function NewsImage({
+  imageUrl,
+  title,
+  heightClass,
+}: {
+  imageUrl: string | null;
+  title: string;
+  heightClass: string;
+}) {
+  if (imageUrl) {
+    return (
+      <div className="overflow-hidden">
+        <img
+          src={imageUrl}
+          alt={title}
+          className={`${heightClass} w-full object-cover transition duration-300 group-hover:scale-[1.02]`}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`flex ${heightClass} items-center justify-center bg-[linear-gradient(135deg,rgba(16,185,129,0.10),rgba(255,255,255,0.02))]`}
+    >
+      <img
+        src="/logo.png"
+        alt="Addes VM-tips"
+        className="max-h-24 w-auto object-contain opacity-90 transition duration-300 group-hover:scale-[1.03]"
+      />
+    </div>
+  );
+}
+
 export default async function NewsPage() {
   const posts = await getNews();
 
@@ -93,19 +127,11 @@ export default async function NewsPage() {
                   href={`/news/${featuredPost.id}`}
                   className="group overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.06]"
                 >
-                  {featuredPost.image_url ? (
-                    <div className="overflow-hidden">
-                      <img
-                        src={featuredPost.image_url}
-                        alt={featuredPost.title}
-                        className="h-64 w-full object-cover transition duration-300 group-hover:scale-[1.02] md:h-[380px]"
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex h-64 items-center justify-center bg-white/[0.03] text-sm text-white/45 md:h-[380px]">
-                      Ingen bild
-                    </div>
-                  )}
+                  <NewsImage
+                    imageUrl={featuredPost.image_url}
+                    title={featuredPost.title}
+                    heightClass="h-64 md:h-[380px]"
+                  />
 
                   <div className="p-6 md:p-8">
                     <div className="mb-3 flex items-center gap-3">
@@ -138,17 +164,11 @@ export default async function NewsPage() {
                       href={`/news/${post.id}`}
                       className="group overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.04] shadow-[0_12px_40px_rgba(0,0,0,0.24)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.06]"
                     >
-                      {post.image_url ? (
-                        <img
-                          src={post.image_url}
-                          alt={post.title}
-                          className="h-44 w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-                        />
-                      ) : (
-                        <div className="flex h-44 items-center justify-center bg-white/[0.03] text-sm text-white/45">
-                          Ingen bild
-                        </div>
-                      )}
+                      <NewsImage
+                        imageUrl={post.image_url}
+                        title={post.title}
+                        heightClass="h-44"
+                      />
 
                       <div className="p-5">
                         <div className="mb-2 flex items-center justify-between gap-3">
@@ -198,17 +218,11 @@ export default async function NewsPage() {
                       href={`/news/${post.id}`}
                       className="group overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.04] shadow-[0_10px_30px_rgba(0,0,0,0.22)] backdrop-blur-xl transition hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.06]"
                     >
-                      {post.image_url ? (
-                        <img
-                          src={post.image_url}
-                          alt={post.title}
-                          className="h-44 w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-                        />
-                      ) : (
-                        <div className="flex h-44 items-center justify-center bg-white/[0.03] text-sm text-white/45">
-                          Ingen bild
-                        </div>
-                      )}
+                      <NewsImage
+                        imageUrl={post.image_url}
+                        title={post.title}
+                        heightClass="h-44"
+                      />
 
                       <div className="p-5">
                         <div className="mb-3 text-xs text-white/45">
