@@ -26,6 +26,10 @@ export default function LeagueHubPage() {
   const [joining, setJoining] = useState(false);
   const [creating, setCreating] = useState(false);
 
+  const [createName, setCreateName] = useState("");
+  const [joinCode, setJoinCode] = useState("");
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+
   async function loadMyLeagues() {
     try {
       setLoading(true);
@@ -64,84 +68,92 @@ export default function LeagueHubPage() {
   }, []);
 
   async function handleCreateLeague() {
-    const name = prompt("Vad ska ligan heta?");
-    if (!name?.trim()) return;
+    const trimmedName = createName.trim();
+    if (!trimmedName) {
+      setActionMessage("Skriv ett namn på ligan först.");
+      return;
+    }
 
     try {
       setCreating(true);
+      setActionMessage(null);
 
       const res = await fetch("/api/leagues/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name: name.trim() }),
+        body: JSON.stringify({ name: trimmedName }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || "Kunde inte skapa ligan");
+        setActionMessage(data.error || "Kunde inte skapa ligan");
         return;
       }
 
       await loadMyLeagues();
 
       const leagueId = data.league?.id;
-      const joinCode = data.league?.join_code;
+      const createdJoinCode = data.league?.join_code;
 
-      if (joinCode) {
-        alert(`Liga skapad! Kod: ${joinCode}`);
-      } else {
-        alert("Liga skapad!");
-      }
+      setCreateName("");
+      setActionMessage(
+        createdJoinCode
+          ? `Liga skapad! Kod: ${createdJoinCode}`
+          : "Liga skapad!"
+      );
 
       if (leagueId) {
         router.push(`/league/${leagueId}`);
         return;
       }
 
-      if (joinCode) {
-        router.push(`/league/${joinCode}`);
+      if (createdJoinCode) {
+        router.push(`/league/${createdJoinCode}`);
       }
     } catch (error) {
       console.error("Fel vid skapande av liga", error);
-      alert("Något gick fel när ligan skulle skapas");
+      setActionMessage("Något gick fel när ligan skulle skapas");
     } finally {
       setCreating(false);
     }
   }
 
   async function handleJoinLeague() {
-    const rawJoinCode = prompt("Ange ligakod");
-    const joinCode = rawJoinCode?.trim();
-
-    if (!joinCode) return;
+    const trimmedCode = joinCode.trim();
+    if (!trimmedCode) {
+      setActionMessage("Skriv in en ligakod först.");
+      return;
+    }
 
     try {
       setJoining(true);
+      setActionMessage(null);
 
       const res = await fetch("/api/leagues/join", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ joinCode }),
+        body: JSON.stringify({ joinCode: trimmedCode }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || "Kunde inte gå med i ligan");
+        setActionMessage(data.error || "Kunde inte gå med i ligan");
         return;
       }
 
       await loadMyLeagues();
 
       const leagueId = data.league?.id;
-      const nextCode = data.league?.join_code || joinCode.toUpperCase();
+      const nextCode = data.league?.join_code || trimmedCode.toUpperCase();
 
-      alert(`Du gick med i ligan: ${data.league?.name || nextCode}`);
+      setJoinCode("");
+      setActionMessage(`Du gick med i ligan: ${data.league?.name || nextCode}`);
 
       if (leagueId) {
         router.push(`/league/${leagueId}`);
@@ -151,7 +163,7 @@ export default function LeagueHubPage() {
       router.push(`/league/${nextCode}`);
     } catch (error) {
       console.error("Fel vid join league", error);
-      alert("Något gick fel när du skulle gå med i ligan");
+      setActionMessage("Något gick fel när du skulle gå med i ligan");
     } finally {
       setJoining(false);
     }
@@ -161,7 +173,7 @@ export default function LeagueHubPage() {
     <main className="min-h-screen px-3 py-4 sm:px-4 md:px-6 md:py-8">
       <div className="mx-auto max-w-5xl">
         <section className="card-premium-strong mb-4 p-5 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-4">
             <div>
               <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-emerald-400">
                 Addes VM-tips
@@ -175,25 +187,63 @@ export default function LeagueHubPage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={handleCreateLeague}
-                disabled={creating}
-                className="btn-primary-premium px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {creating ? "Skapar..." : "Skapa liga"}
-              </button>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-xl">
+                <label
+                  htmlFor="create-league-name"
+                  className="mb-2 block text-sm font-bold text-white"
+                >
+                  Skapa ny liga
+                </label>
+                <input
+                  id="create-league-name"
+                  type="text"
+                  value={createName}
+                  onChange={(e) => setCreateName(e.target.value)}
+                  placeholder="Skriv ligans namn"
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-emerald-400 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateLeague}
+                  disabled={creating}
+                  className="btn-primary-premium mt-3 w-full px-4 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {creating ? "Skapar..." : "Skapa liga"}
+                </button>
+              </div>
 
-              <button
-                type="button"
-                onClick={handleJoinLeague}
-                disabled={joining}
-                className="btn-secondary-premium px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {joining ? "Ansluter..." : "Gå med i liga"}
-              </button>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-xl">
+                <label
+                  htmlFor="join-league-code"
+                  className="mb-2 block text-sm font-bold text-white"
+                >
+                  Gå med i liga
+                </label>
+                <input
+                  id="join-league-code"
+                  type="text"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value)}
+                  placeholder="Ange ligakod"
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-emerald-400 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleJoinLeague}
+                  disabled={joining}
+                  className="btn-secondary-premium mt-3 w-full px-4 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {joining ? "Ansluter..." : "Gå med i liga"}
+                </button>
+              </div>
             </div>
+
+            {actionMessage ? (
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/80">
+                {actionMessage}
+              </div>
+            ) : null}
           </div>
         </section>
 
