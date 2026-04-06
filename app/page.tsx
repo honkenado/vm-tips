@@ -226,8 +226,61 @@ export default async function HomePage() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#020617]">
+    <main className="min-h-screen bg-[#020617] pb-24 md:pb-0">
       <div className="mx-auto w-full max-w-[1400px] px-4 py-4 md:px-6">
+        <div className="mb-3 flex items-center justify-between md:hidden">
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold text-white/90">
+              {isLoggedIn ? displayName : "Addes VM-tips"}
+            </div>
+            {isLoggedIn ? (
+              <div className="mt-1 flex items-center gap-2">
+                <span className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[11px] font-bold text-white">
+                  {profile?.payment_code || "Kod"}
+                </span>
+                <span
+                  className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+                    isPaid
+                      ? "border-emerald-400/30 bg-emerald-500/12 text-emerald-100"
+                      : "border-amber-400/35 bg-amber-500/12 text-amber-100"
+                  }`}
+                >
+                  {isPaid ? "Betald" : "Ej betald"}
+                </span>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="ml-3 flex shrink-0 items-center gap-2">
+            {profile?.is_admin ? (
+              <Link
+                href="/admin"
+                className="rounded-full bg-blue-500 px-3 py-1.5 text-xs font-bold text-white shadow-[0_10px_24px_rgba(59,130,246,0.25)] transition hover:bg-blue-400"
+              >
+                Admin
+              </Link>
+            ) : null}
+
+            {isLoggedIn ? (
+              <form action="/auth/signout" method="post">
+                <button
+                  type="submit"
+                  className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/[0.1]"
+                >
+                  Logga ut
+                </button>
+              </form>
+            ) : (
+              <Link
+                href="/login"
+                className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/[0.1]"
+              >
+                Logga in
+              </Link>
+            )}
+          </div>
+        </div>
+
         <section className="relative overflow-hidden rounded-[2rem] border border-white/6 bg-[#020617] text-white shadow-[0_30px_100px_rgba(0,0,0,0.7)]">
           <div className="pointer-events-none absolute -left-28 -top-24 h-[420px] w-[420px] rounded-full bg-emerald-500/14 blur-[140px]" />
           <div className="pointer-events-none absolute left-[18%] top-[58%] h-[280px] w-[280px] rounded-full bg-emerald-400/6 blur-[120px]" />
@@ -307,6 +360,28 @@ export default async function HomePage() {
                       </Link>
                     )}
                   </div>
+
+                  {isLoggedIn && beforeDeadline ? (
+                    <div className="mt-4 md:hidden">
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <h2 className="text-base font-black text-white">Värva</h2>
+                            <p className="mt-1 text-xs text-white/78">
+                              Bjud in fler till ligan före deadline.
+                            </p>
+                          </div>
+
+                          <Link
+                            href="/varva"
+                            className="rounded-xl bg-emerald-500/95 px-4 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(16,185,129,0.25)] transition hover:bg-emerald-400"
+                          >
+                            Öppna
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
@@ -340,16 +415,16 @@ export default async function HomePage() {
 
             <div className="flex flex-col gap-3 md:gap-3">
               {isLoggedIn ? (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl md:flex md:flex-col md:items-end md:gap-2 md:p-3">
-                  <div className="text-sm text-white/82 md:text-xs">{displayName}</div>
+                <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl md:flex md:flex-col md:items-end md:gap-2">
+                  <div className="text-xs text-white/82">{displayName}</div>
 
-                  <div className="mt-2 flex flex-wrap items-center gap-2 md:mt-0">
-                    <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-sm font-bold text-white md:text-xs">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-bold text-white">
                       {profile?.payment_code || "Ingen kod"}
                     </span>
 
                     <span
-                      className={`rounded-full border px-3 py-1 text-xs font-bold md:text-[10px] ${
+                      className={`rounded-full border px-3 py-1 text-[10px] font-bold ${
                         isPaid
                           ? "border-emerald-400/30 bg-emerald-500/12 text-emerald-100"
                           : "border-amber-400/35 bg-amber-500/12 text-amber-100"
@@ -359,16 +434,16 @@ export default async function HomePage() {
                     </span>
                   </div>
 
-                  <div className="mt-3 w-full rounded-xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-sm text-amber-50 md:mt-0 md:text-xs">
+                  <div className="w-full rounded-xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-xs text-amber-50">
                     Swisha 170 kr och märk med kod{" "}
                     <span className="font-extrabold">{profile?.payment_code || "kod"}</span>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-2 md:mt-0">
+                  <div className="flex flex-wrap gap-2">
                     {profile?.is_admin ? (
                       <Link
                         href="/admin"
-                        className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-400 md:px-3 md:py-1.5 md:text-xs"
+                        className="rounded-lg bg-blue-500 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-blue-400"
                       >
                         Admin
                       </Link>
@@ -377,7 +452,7 @@ export default async function HomePage() {
                     <form action="/auth/signout" method="post">
                       <button
                         type="submit"
-                        className="rounded-lg border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-bold text-white transition hover:bg-white/[0.1] md:px-3 md:py-1.5 md:text-xs"
+                        className="rounded-lg border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/[0.1]"
                       >
                         Logga ut
                       </button>
@@ -503,6 +578,51 @@ export default async function HomePage() {
           <NewsPreview />
         </div>
       </div>
+
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#020617]/92 backdrop-blur-2xl md:hidden">
+        <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent" />
+        <div className="mx-auto flex max-w-[520px] items-stretch justify-around px-2 py-2.5">
+          <Link
+            href="/tips"
+            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-white/90 transition hover:bg-white/[0.05]"
+          >
+            <span className="text-lg leading-none">📝</span>
+            <span className="text-[11px] font-semibold">Tipset</span>
+          </Link>
+
+          <Link
+            href="/league"
+            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-white/90 transition hover:bg-white/[0.05]"
+          >
+            <span className="text-lg leading-none">🏆</span>
+            <span className="text-[11px] font-semibold">Ligor</span>
+          </Link>
+
+          <Link
+            href="/varva"
+            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl bg-emerald-500/10 px-2 py-2 text-emerald-200 transition hover:bg-emerald-500/15"
+          >
+            <span className="text-lg leading-none">🚀</span>
+            <span className="text-[11px] font-semibold">Värva</span>
+          </Link>
+
+          <Link
+            href="/tv-guide"
+            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-white/90 transition hover:bg-white/[0.05]"
+          >
+            <span className="text-lg leading-none">📺</span>
+            <span className="text-[11px] font-semibold">TV-guide</span>
+          </Link>
+
+          <Link
+            href="/help"
+            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-white/90 transition hover:bg-white/[0.05]"
+          >
+            <span className="text-lg leading-none">❓</span>
+            <span className="text-[11px] font-semibold">Hjälp</span>
+          </Link>
+        </div>
+      </nav>
     </main>
   );
 }
