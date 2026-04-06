@@ -211,7 +211,7 @@ export default function KnockoutFullSection({
       </div>
 
       <div className="hidden xl:block">
-        <div className="overflow-visible rounded-[1.75rem] border border-white/10 bg-white/[0.04] shadow-[0_12px_35px_rgba(0,0,0,0.24)] backdrop-blur-xl">
+        <div className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.04] shadow-[0_12px_35px_rgba(0,0,0,0.24)] backdrop-blur-xl">
           <div className="border-b border-white/10 bg-[linear-gradient(90deg,rgba(16,185,129,0.16),rgba(2,6,23,0.92)_35%,rgba(2,6,23,0.92)_65%,rgba(16,185,129,0.08))] px-5 py-4 text-white">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -227,7 +227,7 @@ export default function KnockoutFullSection({
             </div>
           </div>
 
-          <div className="relative overflow-hidden px-5 pb-14 pt-2">
+          <div className="relative overflow-hidden px-5 pb-6 pt-2">
             <div className="pointer-events-none absolute inset-0">
   <div className="absolute -left-24 top-4 h-72 w-72 rounded-full bg-emerald-500/6 blur-3xl" />
   <div className="absolute right-[-70px] top-14 h-80 w-80 rounded-full bg-emerald-400/5 blur-3xl" />
@@ -264,8 +264,8 @@ export default function KnockoutFullSection({
             </div>
 
             <div className="relative flex w-full justify-center">
-              <div className="relative rounded-[2rem] border border-white/10 bg-[#07111f]/70 px-4 py-4 backdrop-blur-xl">
-                <div className="pointer-events-none absolute inset-y-4 left-1/2 w-[188px] -translate-x-1/2 rounded-[1.75rem] bg-[linear-gradient(180deg,rgba(250,204,21,0.04),rgba(255,255,255,0.02),rgba(249,115,22,0.04))]" />
+              <div className="relative rounded-[2rem] border border-white/10 bg-[#07111f]/70 px-4 pt-4 pb-2 backdrop-blur-xl">
+                <div className="pointer-events-none absolute inset-y-4 left-1/2 w-[188px] -translate-x-1/2 rounded-[1.75rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02),rgba(255,255,255,0.04))]" />
 
                 <div
                   className="relative grid w-fit items-start gap-x-4 gap-y-0"

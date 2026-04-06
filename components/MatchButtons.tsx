@@ -46,9 +46,9 @@ export default function MatchButtons({
         <button
           disabled={homeDisabled}
           onClick={() => onSelectWinner(match.id, match.home)}
-          className={`font-semibold transition ${
+          className={`min-w-0 font-semibold transition ${
             compact
-              ? "min-h-11 rounded-xl px-3 py-2 text-sm xl:min-h-[24px] xl:rounded-lg xl:px-2 xl:py-0.5 xl:text-[11px]"
+              ? "min-h-11 rounded-xl px-3 py-2 text-sm xl:min-h-[24px] xl:rounded-lg xl:px-2 xl:py-0.5 xl:text-[10px]"
               : "min-h-12 rounded-xl px-4 py-3 text-sm sm:text-base"
           } ${
             chosenHome
@@ -56,7 +56,7 @@ export default function MatchButtons({
               : "border border-white/10 bg-white/[0.05] text-white/90 hover:border-emerald-300 hover:bg-white/[0.10]"
           } ${homeDisabled ? "cursor-not-allowed opacity-50" : ""}`}
         >
-          <span className="block truncate text-center leading-tight">
+          <span className="block w-full truncate text-center leading-tight">
             {match.home || "Väntar..."}
           </span>
         </button>
@@ -74,9 +74,9 @@ export default function MatchButtons({
         <button
           disabled={awayDisabled}
           onClick={() => onSelectWinner(match.id, match.away)}
-          className={`font-semibold transition ${
+          className={`min-w-0 font-semibold transition ${
             compact
-              ? "min-h-11 rounded-xl px-3 py-2 text-sm xl:min-h-[24px] xl:rounded-lg xl:px-2 xl:py-0.5 xl:text-[11px]"
+              ? "min-h-11 rounded-xl px-3 py-2 text-sm xl:min-h-[24px] xl:rounded-lg xl:px-2 xl:py-0.5 xl:text-[10px]"
               : "min-h-12 rounded-xl px-4 py-3 text-sm sm:text-base"
           } ${
             chosenAway
@@ -84,7 +84,7 @@ export default function MatchButtons({
               : "border border-white/10 bg-white/[0.05] text-white/90 hover:border-emerald-300 hover:bg-white/[0.10]"
           } ${awayDisabled ? "cursor-not-allowed opacity-50" : ""}`}
         >
-          <span className="block truncate text-center leading-tight">
+          <span className="block w-full truncate text-center leading-tight">
             {match.away || "Väntar..."}
           </span>
         </button>
