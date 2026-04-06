@@ -228,18 +228,21 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen bg-slate-100">
       <div className="mx-auto w-full max-w-[1400px] px-4 py-4 md:px-6">
-        <section className="overflow-hidden rounded-[2rem] border border-slate-800/80 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.35),_rgba(5,10,30,0.97)_45%,_rgba(2,6,23,1)_100%)] text-white shadow-[0_20px_60px_rgba(2,6,23,0.35)]">
-          <div className="grid gap-5 p-5 md:grid-cols-[1.4fr_0.9fr] md:p-6 xl:p-8">
+        <section className="relative overflow-hidden rounded-[2rem] border border-white/5 bg-[#020617] text-white shadow-[0_20px_80px_rgba(0,0,0,0.6)]">
+          <div className="pointer-events-none absolute -left-32 -top-32 h-[400px] w-[400px] rounded-full bg-emerald-500/10 blur-[120px]" />
+          <div className="pointer-events-none absolute right-[-120px] top-1/2 h-[320px] w-[320px] -translate-y-1/2 rounded-full bg-emerald-400/10 blur-[110px]" />
+
+          <div className="relative grid gap-5 p-5 md:grid-cols-[1.4fr_0.9fr] md:p-6 xl:p-8">
             <div className="flex flex-col gap-5">
               <div>
-                <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/80">
+                <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/80">
                   FIFA World Cup 2026
                 </span>
               </div>
 
               <div className="flex flex-col gap-4 md:flex-row md:items-start">
                 <div className="shrink-0">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-white/10 shadow-xl backdrop-blur-sm md:h-24 md:w-24">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-xl backdrop-blur-xl md:h-24 md:w-24">
                     <img
                       src="/logo.png"
                       alt="Addes VM-tips"
@@ -255,30 +258,28 @@ export default async function HomePage() {
                     Addes VM-tips
                   </h1>
 
-                  <p className="mt-4 max-w-2xl text-sm leading-7 text-white/85 md:text-lg">
+                  <p className="mt-4 max-w-2xl text-sm leading-7 text-white/90 md:text-lg">
                     Lägg dina tips, följ spänningen i fotbolls-VM och tävla mot
                     andra om ära, poäng och topplaceringar i tabellen.
                   </p>
 
-                  <p className="mt-2 text-sm text-white/65">
+                  <p className="mt-2 text-sm text-white/75">
                     Tippa gruppspel, slutspel och hela vägen fram till världsmästaren.
                   </p>
 
                   <div className="mt-6 flex flex-wrap gap-3">
-                    <div className="min-w-[110px] rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
+                    <div className="min-w-[110px] rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-xl">
                       <div className="text-3xl font-black">{registeredCount}</div>
                       <div className="text-sm text-white/75">registrerade</div>
                     </div>
 
-                    <div className="min-w-[110px] rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
+                    <div className="min-w-[110px] rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-xl">
                       <div className="text-3xl font-black">{daysLeft}</div>
                       <div className="text-sm text-white/75">dagar kvar</div>
                     </div>
 
-                    <div className="min-w-[110px] rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
-                      <div className="text-lg font-black">
-                        {featuredMatch ? featuredMatch.date : "-"}
-                      </div>
+                    <div className="min-w-[110px] rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-xl">
+                      <div className="text-lg font-black">{featuredMatch ? featuredMatch.date : "-"}</div>
                       <div className="text-sm text-white/75">
                         {beforeDeadline ? "öppningsmatch" : "nästa match"}
                       </div>
@@ -289,14 +290,14 @@ export default async function HomePage() {
                     {isLoggedIn ? (
                       <Link
                         href="/tips"
-                        className="inline-flex min-w-[240px] items-center justify-center rounded-2xl bg-emerald-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-400"
+                        className="inline-flex min-w-[240px] items-center justify-center rounded-2xl bg-emerald-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-900/40 transition hover:bg-emerald-400"
                       >
                         Gå till tipset
                       </Link>
                     ) : (
                       <Link
                         href="/login"
-                        className="inline-flex min-w-[240px] items-center justify-center rounded-2xl bg-emerald-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-400"
+                        className="inline-flex min-w-[240px] items-center justify-center rounded-2xl bg-emerald-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-900/40 transition hover:bg-emerald-400"
                       >
                         Logga in
                       </Link>
@@ -306,7 +307,7 @@ export default async function HomePage() {
               </div>
 
               <div className="pt-2">
-                <p className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-white/55">
+                <p className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-white/50">
                   Navigation
                 </p>
 
@@ -315,7 +316,7 @@ export default async function HomePage() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className="rounded-full border border-white/10 bg-white/8 px-4 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm transition hover:border-white/20 hover:bg-white/15"
+                      className="rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-xl transition hover:border-white/20 hover:bg-white/10"
                     >
                       {item.label}
                     </Link>
@@ -324,7 +325,7 @@ export default async function HomePage() {
                   {isLoggedIn ? (
                     <Link
                       href="/mitt-resultat"
-                      className="rounded-full border border-white/10 bg-white/8 px-4 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm transition hover:border-white/20 hover:bg-white/15"
+                      className="rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-xl transition hover:border-white/20 hover:bg-white/10"
                     >
                       Mitt resultat
                     </Link>
@@ -335,11 +336,11 @@ export default async function HomePage() {
 
             <div className="flex flex-col gap-3">
               {isLoggedIn ? (
-                <div className="flex flex-col items-start gap-2 rounded-[1.6rem] border border-white/10 bg-slate-950/40 p-4 shadow-xl backdrop-blur-sm md:items-end">
+                <div className="flex flex-col items-start gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 text-white shadow-lg backdrop-blur-xl md:items-end">
                   <div className="text-xs text-white/80">{displayName}</div>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-bold text-white">
+                    <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs font-bold text-white">
                       {profile?.payment_code || "Ingen kod"}
                     </span>
 
@@ -356,9 +357,7 @@ export default async function HomePage() {
 
                   <div className="w-full rounded-xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-xs text-amber-50">
                     Swisha 170 kr och märk med kod{" "}
-                    <span className="font-extrabold">
-                      {profile?.payment_code || "kod"}
-                    </span>
+                    <span className="font-extrabold">{profile?.payment_code || "kod"}</span>
                   </div>
 
                   <div className="flex flex-wrap gap-2">
@@ -374,7 +373,7 @@ export default async function HomePage() {
                     <form action="/auth/signout" method="post">
                       <button
                         type="submit"
-                        className="rounded-lg border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/15"
+                        className="rounded-lg border border-white/10 bg-white/8 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/12"
                       >
                         Logga ut
                       </button>
@@ -382,9 +381,9 @@ export default async function HomePage() {
                   </div>
                 </div>
               ) : (
-                <div className="rounded-[1.6rem] border border-white/10 bg-slate-950/40 p-4 shadow-xl backdrop-blur-sm">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white shadow-lg backdrop-blur-xl">
                   <h2 className="text-lg font-black text-white">Redo att vara med?</h2>
-                  <p className="mt-2 text-sm text-white/75">
+                  <p className="mt-2 text-sm text-white/80">
                     Logga in för att lägga ditt tips, följa ditt resultat och värva
                     vänner till ligan.
                   </p>
@@ -399,7 +398,7 @@ export default async function HomePage() {
                 </div>
               )}
 
-              <div className="rounded-[1.6rem] border border-white/10 bg-white/8 p-4 text-white shadow-lg backdrop-blur-sm">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white shadow-lg backdrop-blur-xl">
                 <div className="mb-2 flex items-center justify-between">
                   <h2 className="text-xl font-black text-white">Nästa match</h2>
 
@@ -417,23 +416,27 @@ export default async function HomePage() {
                       {featuredMatch.homeTeam} - {featuredMatch.awayTeam}
                     </div>
 
-                    <div className="text-xs text-white/65">
+                    <div className="mt-1 text-xs text-white/80">
                       {featuredMatch.date} · {featuredMatch.time}
                     </div>
 
-                    <div className="mt-1 text-xs text-white/70">
+                    <div className="mt-1 text-xs text-white/75">
+                      {featuredMatch.groupName}
+                    </div>
+
+                    <div className="mt-1 text-xs text-white/80">
                       {featuredMatch.tvChannel || "TV-kanal saknas"}
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/65">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/70">
                     Ingen match hittades i spelschemat
                   </div>
                 )}
 
                 <Link
                   href="/tv-guide"
-                  className="mt-3 block w-full rounded-xl bg-white/10 py-2.5 text-center text-sm font-bold text-white transition hover:bg-white/15"
+                  className="mt-3 block w-full rounded-xl bg-white/8 py-2.5 text-center text-sm font-bold text-white transition hover:bg-white/12"
                 >
                   TV-guide
                 </Link>
@@ -441,10 +444,10 @@ export default async function HomePage() {
 
               {isLoggedIn && beforeDeadline ? (
                 <>
-                  <div className="rounded-[1.6rem] border border-white/10 bg-white/8 p-4 text-white shadow-lg backdrop-blur-sm">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white shadow-lg backdrop-blur-xl">
                     <h2 className="text-lg font-black text-white">Din status</h2>
 
-                    <div className="mt-2 text-xs text-white/70">{statusText}</div>
+                    <div className="mt-2 text-xs text-white/80">{statusText}</div>
 
                     <div className="mt-3 h-2 rounded-full bg-white/10">
                       <div
@@ -460,18 +463,18 @@ export default async function HomePage() {
                     <div className="mt-4">
                       <Link
                         href="/tips"
-                        className="block rounded-xl bg-emerald-500 py-2.5 text-center text-sm font-bold text-white transition hover:bg-emerald-400"
+                        className="block rounded-xl bg-emerald-500 py-2.5 text-center text-sm font-bold text-white shadow-lg shadow-emerald-900/30 transition hover:bg-emerald-400"
                       >
                         Gå till tipset
                       </Link>
                     </div>
                   </div>
 
-                  <div className="rounded-[1.35rem] border border-white/10 bg-white/5 p-3 text-white/90 shadow-md backdrop-blur-sm">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90 shadow-md backdrop-blur-xl">
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <h2 className="text-sm font-black text-white">Värva</h2>
-                        <p className="mt-1 text-xs text-white/65">
+                        <p className="mt-1 text-xs text-white/75">
                           Bjud in fler till ligan före deadline.
                         </p>
                       </div>
