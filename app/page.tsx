@@ -47,74 +47,6 @@ function isBeforeDeadline() {
   return new Date().getTime() <= getDeadlineDate().getTime();
 }
 
-function countGroupProgress(
-  groupStage:
-    | Array<{
-        name: string;
-        matches: Array<{ id: number; homeGoals: string; awayGoals: string }>;
-      }>
-    | undefined
-    | null
-) {
-  if (!groupStage?.length) {
-    return { total: 72, completed: 0 };
-  }
-
-  const total = groupStage.reduce((sum, group) => sum + group.matches.length, 0);
-  const completed = groupStage.reduce(
-    (sum, group) =>
-      sum +
-      group.matches.filter(
-        (match) => match.homeGoals !== "" && match.awayGoals !== ""
-      ).length,
-    0
-  );
-
-  return { total, completed };
-}
-
-function countKnockoutProgress(knockout: Record<string, string> | undefined | null) {
-  const completed = knockout
-    ? Object.values(knockout).filter(
-        (winner) => typeof winner === "string" && winner.trim() !== ""
-      ).length
-    : 0;
-
-  return { total: 32, completed };
-}
-
-function buildStatusText(params: {
-  groupCompleted: number;
-  groupTotal: number;
-  knockoutCompleted: number;
-  knockoutTotal: number;
-  goldenBootDone: number;
-}) {
-  const {
-    groupCompleted,
-    groupTotal,
-    knockoutCompleted,
-    knockoutTotal,
-    goldenBootDone,
-  } = params;
-
-  if (groupCompleted < groupTotal) {
-    const left = groupTotal - groupCompleted;
-    return `Du har ${left} gruppmatcher kvar att fylla i.`;
-  }
-
-  if (knockoutCompleted < knockoutTotal) {
-    const left = knockoutTotal - knockoutCompleted;
-    return `Du har ${left} slutspelsval kvar att fylla i.`;
-  }
-
-  if (!goldenBootDone) {
-    return "Du saknar fortfarande skyttekung.";
-  }
-
-  return "Ditt tips ser komplett ut.";
-}
-
 export default async function HomePage() {
   const supabase = await createClient();
 
@@ -133,8 +65,6 @@ export default async function HomePage() {
       }
     | null = null;
 
-  let prediction: PredictionRow | null = null;
-
   if (user) {
     const { data } = await supabase
       .from("profiles")
@@ -143,14 +73,6 @@ export default async function HomePage() {
       .single();
 
     profile = data;
-
-    const { data: predictionData } = await supabase
-      .from("predictions")
-      .select("group_stage, knockout, golden_boot")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    prediction = (predictionData as PredictionRow | null) ?? null;
   }
 
   const beforeDeadline = isBeforeDeadline();
@@ -195,26 +117,11 @@ export default async function HomePage() {
   const isLoggedIn = !!user;
   const isPaid = profile?.payment_status === "paid";
 
-  const groupProgress = countGroupProgress(prediction?.group_stage);
-  const knockoutProgress = countKnockoutProgress(prediction?.knockout);
-  const goldenBootDone = prediction?.golden_boot?.trim() ? 1 : 0;
-
-  const totalProgressItems = groupProgress.total + knockoutProgress.total + 1;
-  const completedProgressItems =
-    groupProgress.completed + knockoutProgress.completed + goldenBootDone;
-
-  const progressPercent =
-    totalProgressItems > 0
-      ? Math.round((completedProgressItems / totalProgressItems) * 100)
-      : 0;
-
-  const statusText = buildStatusText({
-    groupCompleted: groupProgress.completed,
-    groupTotal: groupProgress.total,
-    knockoutCompleted: knockoutProgress.completed,
-    knockoutTotal: knockoutProgress.total,
-    goldenBootDone,
-  });
+  const mobileHeaderNote = beforeDeadline
+    ? `${daysLeft} dagar kvar till deadline`
+    : featuredMatch
+    ? `Nästa match: ${featuredMatch.homeTeam} - ${featuredMatch.awayTeam}`
+    : "VM-tipset är öppet";
 
   const navItems = [
     { href: "/rules", label: "Regler" },
@@ -228,56 +135,64 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen bg-[#020617] pb-24 md:pb-0">
       <div className="mx-auto w-full max-w-[1400px] px-4 py-4 md:px-6">
-        <div className="mb-3 flex items-center justify-between md:hidden">
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold text-white/90">
-              {isLoggedIn ? displayName : "Addes VM-tips"}
-            </div>
-            {isLoggedIn ? (
-              <div className="mt-1 flex items-center gap-2">
-                <span className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[11px] font-bold text-white">
-                  {profile?.payment_code || "Kod"}
-                </span>
-                <span
-                  className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${
-                    isPaid
-                      ? "border-emerald-400/30 bg-emerald-500/12 text-emerald-100"
-                      : "border-amber-400/35 bg-amber-500/12 text-amber-100"
-                  }`}
-                >
-                  {isPaid ? "Betald" : "Ej betald"}
-                </span>
+        <div className="mb-3 md:hidden">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold text-white/90">
+                {isLoggedIn ? displayName : "Addes VM-tips"}
               </div>
-            ) : null}
-          </div>
 
-          <div className="ml-3 flex shrink-0 items-center gap-2">
-            {profile?.is_admin ? (
-              <Link
-                href="/admin"
-                className="rounded-full bg-blue-500 px-3 py-1.5 text-xs font-bold text-white shadow-[0_10px_24px_rgba(59,130,246,0.25)] transition hover:bg-blue-400"
-              >
-                Admin
-              </Link>
-            ) : null}
+              {isLoggedIn ? (
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[11px] font-bold text-white">
+                    {profile?.payment_code || "Kod"}
+                  </span>
 
-            {isLoggedIn ? (
-              <form action="/auth/signout" method="post">
-                <button
-                  type="submit"
+                  <span
+                    className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+                      isPaid
+                        ? "border-emerald-400/30 bg-emerald-500/12 text-emerald-100"
+                        : "border-amber-400/35 bg-amber-500/12 text-amber-100"
+                    }`}
+                  >
+                    {isPaid ? "Betald" : "Ej betald"}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="ml-3 flex shrink-0 items-center gap-2">
+              {profile?.is_admin ? (
+                <Link
+                  href="/admin"
+                  className="rounded-full bg-blue-500 px-3 py-1.5 text-xs font-bold text-white shadow-[0_10px_24px_rgba(59,130,246,0.25)] transition hover:bg-blue-400"
+                >
+                  Admin
+                </Link>
+              ) : null}
+
+              {isLoggedIn ? (
+                <form action="/auth/signout" method="post">
+                  <button
+                    type="submit"
+                    className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/[0.1]"
+                  >
+                    Logga ut
+                  </button>
+                </form>
+              ) : (
+                <Link
+                  href="/login"
                   className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/[0.1]"
                 >
-                  Logga ut
-                </button>
-              </form>
-            ) : (
-              <Link
-                href="/login"
-                className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/[0.1]"
-              >
-                Logga in
-              </Link>
-            )}
+                  Logga in
+                </Link>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white/80 backdrop-blur-xl">
+            {mobileHeaderNote}
           </div>
         </div>
 
@@ -360,28 +275,6 @@ export default async function HomePage() {
                       </Link>
                     )}
                   </div>
-
-                  {isLoggedIn && beforeDeadline ? (
-                    <div className="mt-4 md:hidden">
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.22)] backdrop-blur-xl">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <h2 className="text-base font-black text-white">Värva</h2>
-                            <p className="mt-1 text-xs text-white/78">
-                              Bjud in fler till ligan före deadline.
-                            </p>
-                          </div>
-
-                          <Link
-                            href="/varva"
-                            className="rounded-xl bg-emerald-500/95 px-4 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(16,185,129,0.25)] transition hover:bg-emerald-400"
-                          >
-                            Öppna
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
               </div>
 
@@ -413,9 +306,9 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 md:gap-3">
+            <div className="hidden md:flex md:flex-col md:gap-3">
               {isLoggedIn ? (
-                <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl md:flex md:flex-col md:items-end md:gap-2">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl md:flex md:flex-col md:items-end md:gap-2">
                   <div className="text-xs text-white/82">{displayName}</div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -460,9 +353,9 @@ export default async function HomePage() {
                   </div>
                 </div>
               ) : (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl md:p-3">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
                   <h2 className="text-lg font-black text-white">Redo att vara med?</h2>
-                  <p className="mt-2 text-sm leading-6 text-white/82">
+                  <p className="mt-2 text-sm text-white/82">
                     Logga in för att lägga ditt tips, följa ditt resultat och värva
                     vänner till ligan.
                   </p>
@@ -477,99 +370,49 @@ export default async function HomePage() {
                 </div>
               )}
 
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl md:p-3">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
                 <div className="mb-2 flex items-center justify-between">
-                  <h2 className="text-2xl font-black text-white md:text-xl">Nästa match</h2>
+                  <h2 className="text-xl font-black text-white">Nästa match</h2>
 
                   <Link
                     href="/tv-guide"
-                    className="text-sm font-semibold text-white/72 hover:text-white hover:underline md:text-xs"
+                    className="text-xs font-semibold text-white/72 hover:text-white hover:underline"
                   >
                     Se allt
                   </Link>
                 </div>
 
                 {featuredMatch ? (
-                  <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 md:p-3">
-                    <div className="text-xl font-black text-white md:text-base">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                    <div className="text-base font-black text-white">
                       {featuredMatch.homeTeam} - {featuredMatch.awayTeam}
                     </div>
 
-                    <div className="mt-2 text-sm text-white/82 md:mt-1 md:text-xs">
+                    <div className="mt-1 text-xs text-white/82">
                       {featuredMatch.date} · {featuredMatch.time}
                     </div>
 
-                    <div className="mt-1 text-sm text-white/72 md:text-xs">
+                    <div className="mt-1 text-xs text-white/72">
                       {featuredMatch.groupName}
                     </div>
 
-                    <div className="mt-1 text-sm text-white/82 md:text-xs">
+                    <div className="mt-1 text-xs text-white/82">
                       {featuredMatch.tvChannel || "TV-kanal saknas"}
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm text-white/72 md:p-3 md:text-xs">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs text-white/72">
                     Ingen match hittades i spelschemat
                   </div>
                 )}
 
                 <Link
                   href="/tv-guide"
-                  className="mt-3 block w-full rounded-xl bg-white/[0.07] py-3 text-center text-base font-bold text-white transition hover:bg-white/[0.11] md:py-2.5 md:text-sm"
+                  className="mt-3 block w-full rounded-xl bg-white/[0.07] py-2.5 text-center text-sm font-bold text-white transition hover:bg-white/[0.11]"
                 >
                   TV-guide
                 </Link>
               </div>
-
-              {isLoggedIn && beforeDeadline ? (
-                <>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl md:p-3">
-                    <h2 className="text-xl font-black text-white md:text-lg">Din status</h2>
-
-                    <div className="mt-2 text-sm leading-6 text-white/82 md:text-xs">
-                      {statusText}
-                    </div>
-
-                    <div className="mt-3 h-2.5 rounded-full bg-white/10 md:h-2">
-                      <div
-                        className="h-full rounded-full bg-emerald-500"
-                        style={{ width: `${progressPercent}%` }}
-                      />
-                    </div>
-
-                    <div className="mt-2 text-sm font-semibold text-white/88 md:mt-1 md:text-xs">
-                      {progressPercent}%
-                    </div>
-
-                    <div className="mt-4">
-                      <Link
-                        href="/tips"
-                        className="block rounded-xl bg-emerald-500/95 py-3 text-center text-base font-bold text-white shadow-[0_10px_24px_rgba(16,185,129,0.28)] transition hover:bg-emerald-400 md:py-2.5 md:text-sm"
-                      >
-                        Gå till tipset
-                      </Link>
-                    </div>
-                  </div>
-
-                  <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.22)] backdrop-blur-xl md:block">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <h2 className="text-sm font-black text-white">Värva</h2>
-                        <p className="mt-1 text-xs text-white/78">
-                          Bjud in fler till ligan före deadline.
-                        </p>
-                      </div>
-
-                      <Link
-                        href="/varva"
-                        className="rounded-xl bg-emerald-500/95 px-3 py-2 text-xs font-bold text-white shadow-[0_10px_24px_rgba(16,185,129,0.25)] transition hover:bg-emerald-400"
-                      >
-                        Öppna
-                      </Link>
-                    </div>
-                  </div>
-                </>
-              ) : null}
             </div>
           </div>
         </section>

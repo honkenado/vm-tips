@@ -474,7 +474,7 @@ export default function TipsPage() {
           <div className="absolute right-[-50px] top-6 h-[180px] w-[180px] rounded-full bg-emerald-400/8 blur-[90px]" />
 
           <div className="relative">
-            <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="mb-4 hidden md:flex md:flex-col md:gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0 flex flex-col gap-3">
                 <div className="mb-1 inline-flex w-fit rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/85 backdrop-blur-xl sm:text-[11px]">
                   Tipsläge
@@ -508,7 +508,54 @@ export default function TipsPage() {
               </div>
             </div>
 
-            <div className="grid gap-4 xl:grid-cols-[1fr_auto] xl:items-start">
+            <div className="mb-3 md:hidden">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="inline-flex rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/85 backdrop-blur-xl">
+                    Tipsläge
+                  </div>
+                  <h1 className="mt-3 text-3xl font-black tracking-tight text-white">
+                    Lägg ditt tips
+                  </h1>
+                </div>
+
+                <div className="shrink-0">
+                  <button
+                    onClick={savePredictionToDatabase}
+                    disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
+                    className="inline-flex h-11 items-center justify-center rounded-2xl bg-emerald-500/95 px-4 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(16,185,129,0.30)] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSaving ? "Sparar..." : "Spara"}
+                  </button>
+                </div>
+              </div>
+
+              <p className="mt-3 text-sm leading-6 text-white/78">
+                Fokusera bara på tippningen här.
+              </p>
+
+              {(deadlinePassed || saveMessage || hasUnsavedChanges) && (
+                <div className="mt-3 flex flex-col gap-2">
+                  {deadlinePassed && (
+                    <p className="text-sm font-semibold text-amber-300">
+                      Deadline har passerat. Tipset är nu låst.
+                    </p>
+                  )}
+
+                  {!deadlinePassed && hasUnsavedChanges && !saveMessage && (
+                    <p className="text-sm text-white/80">
+                      Du har osparade ändringar.
+                    </p>
+                  )}
+
+                  {saveMessage && (
+                    <p className="text-sm text-white/80">{saveMessage}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="hidden grid-cols-[1fr_auto] gap-4 xl:grid xl:items-start">
               <div className="flex flex-col gap-4">
                 <div>
                   <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/60">
@@ -640,26 +687,6 @@ export default function TipsPage() {
                 })}
               </div>
             </div>
-
-            {(deadlinePassed || saveMessage || hasUnsavedChanges) && (
-              <div className="mt-4 flex flex-col gap-2">
-                {deadlinePassed && (
-                  <p className="text-sm font-semibold text-amber-300">
-                    Deadline har passerat. Tipset är nu låst.
-                  </p>
-                )}
-
-                {!deadlinePassed && hasUnsavedChanges && !saveMessage && (
-                  <p className="text-sm text-white/80">
-                    Du har osparade ändringar.
-                  </p>
-                )}
-
-                {saveMessage && (
-                  <p className="text-sm text-white/80">{saveMessage}</p>
-                )}
-              </div>
-            )}
           </div>
         </header>
 
