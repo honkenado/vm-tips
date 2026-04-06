@@ -357,50 +357,7 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#020617]/92 backdrop-blur-2xl md:hidden">
-        <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent" />
-        <div className="mx-auto flex max-w-[520px] items-stretch justify-around px-2 py-2.5">
-          <Link
-            href="/tips"
-            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-white/90 transition hover:bg-white/[0.05]"
-          >
-            <span className="text-lg leading-none">📝</span>
-            <span className="text-[11px] font-semibold">Tipset</span>
-          </Link>
-
-          <Link
-            href="/league"
-            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-white/90 transition hover:bg-white/[0.05]"
-          >
-            <span className="text-lg leading-none">🏆</span>
-            <span className="text-[11px] font-semibold">Ligor</span>
-          </Link>
-
-          <Link
-            href="/varva"
-            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl bg-emerald-500/10 px-2 py-2 text-emerald-200 transition hover:bg-emerald-500/15"
-          >
-            <span className="text-lg leading-none">🚀</span>
-            <span className="text-[11px] font-semibold">Värva</span>
-          </Link>
-
-          <Link
-            href="/tv-guide"
-            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-white/90 transition hover:bg-white/[0.05]"
-          >
-            <span className="text-lg leading-none">📺</span>
-            <span className="text-[11px] font-semibold">TV-guide</span>
-          </Link>
-
-          <Link
-            href="/help"
-            className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-white/90 transition hover:bg-white/[0.05]"
-          >
-            <span className="text-lg leading-none">❓</span>
-            <span className="text-[11px] font-semibold">Hjälp</span>
-          </Link>
-        </div>
-      </nav>
+      
     </main>
   );
 }
