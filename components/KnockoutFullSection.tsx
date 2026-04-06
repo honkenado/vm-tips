@@ -227,7 +227,7 @@ export default function KnockoutFullSection({
             </div>
           </div>
 
-          <div className="relative overflow-hidden px-5 pb-6 pt-2">
+          <div className="relative overflow-hidden px-5 pb-10 pt-2">
             <div className="pointer-events-none absolute inset-0">
   <div className="absolute -left-24 top-4 h-72 w-72 rounded-full bg-emerald-500/6 blur-3xl" />
   <div className="absolute right-[-70px] top-14 h-80 w-80 rounded-full bg-emerald-400/5 blur-3xl" />
@@ -264,7 +264,7 @@ export default function KnockoutFullSection({
             </div>
 
             <div className="relative flex w-full justify-center">
-              <div className="relative rounded-[2rem] border border-white/10 bg-[#07111f]/70 px-4 pt-4 pb-2 backdrop-blur-xl">
+              <div className="relative rounded-[2rem] border border-white/10 bg-[#07111f]/70 px-4 pt-4 pb-8 backdrop-blur-xl">
                 <div className="pointer-events-none absolute inset-y-4 left-1/2 w-[188px] -translate-x-1/2 rounded-[1.75rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02),rgba(255,255,255,0.04))]" />
 
                 <div
