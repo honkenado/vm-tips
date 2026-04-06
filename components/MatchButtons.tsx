@@ -24,10 +24,10 @@ export default function MatchButtons({
 
   return (
     <div
-      className={`bg-white/92 shadow-sm backdrop-blur-sm ${
+      className={`bg-white/[0.08] shadow-sm backdrop-blur-sm ${
         compact
-          ? "w-full rounded-xl border border-emerald-200/70 p-2 sm:p-2.5 xl:w-[152px] xl:rounded-xl xl:border xl:border-emerald-200/70 xl:p-1.5 xl:shadow-[0_6px_18px_rgba(15,23,42,0.12)]"
-          : "w-full rounded-2xl border border-emerald-200/70 p-3 sm:p-4"
+          ? "w-full rounded-xl border border-white/10 p-2 sm:p-2.5 xl:w-[152px] xl:rounded-xl xl:border xl:border-emerald-200/70 xl:p-1.5 xl:shadow-[0_6px_18px_rgba(15,23,42,0.12)]"
+          : "w-full rounded-2xl border border-white/10 p-3 sm:p-4"
       }`}
     >
       {match.label ? (
@@ -53,7 +53,7 @@ export default function MatchButtons({
           } ${
             chosenHome
               ? "bg-emerald-500 text-white shadow-[0_8px_18px_rgba(16,185,129,0.22)]"
-              : "border border-slate-200 bg-white text-slate-900 hover:border-emerald-300 hover:bg-emerald-50/60"
+              : "border border-white/10 bg-white/[0.05] text-white/90 hover:border-emerald-300 hover:bg-white/[0.10]"
           } ${homeDisabled ? "cursor-not-allowed opacity-50" : ""}`}
         >
           <span className="block truncate text-center leading-tight">
@@ -81,7 +81,7 @@ export default function MatchButtons({
           } ${
             chosenAway
               ? "bg-emerald-500 text-white shadow-[0_8px_18px_rgba(16,185,129,0.22)]"
-              : "border border-slate-200 bg-white text-slate-900 hover:border-emerald-300 hover:bg-emerald-50/60"
+              : "border border-white/10 bg-white/[0.05] text-white/90 hover:border-emerald-300 hover:bg-white/[0.10]"
           } ${awayDisabled ? "cursor-not-allowed opacity-50" : ""}`}
         >
           <span className="block truncate text-center leading-tight">
