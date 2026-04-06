@@ -205,12 +205,23 @@ export default async function HomePage() {
     console.error("Fel vid hämtning av öppningsmatch:", openingMatchesError);
   }
 
-  const openingMatch = ((openingMatches ?? [])[0] ?? null) as MatchItem | null;
-  const upcomingMatch = ((upcomingMatches ?? [])[0] ?? null) as MatchItem | null;
+  const openingMatchFromDb = ((openingMatches ?? [])[0] ?? null) as MatchItem | null;
+  const upcomingMatchFromDb = ((upcomingMatches ?? [])[0] ?? null) as MatchItem | null;
+
+  // Manuell fallback tills matches-tabellen är fylld korrekt
+  const manualOpeningMatch: MatchItem = {
+    id: "opening-fallback",
+    home_team: "Mexiko",
+    away_team: "—",
+    match_date: "2026-06-11T19:00:00.000Z",
+    group_name: null,
+    tv_channel: "TBA",
+    tv_stream: null,
+  };
 
   const nextMatch = beforeDeadline
-    ? openingMatch || upcomingMatch
-    : upcomingMatch || openingMatch;
+    ? openingMatchFromDb || manualOpeningMatch
+    : upcomingMatchFromDb || openingMatchFromDb || manualOpeningMatch;
 
   let registeredCount = 0;
 
