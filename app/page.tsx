@@ -2,10 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import NewsPreview from "@/components/NewsPreview";
-import {
-  getGroupStageSchedule,
-  type ScheduleMatch,
-} from "@/lib/match-schedule";
+import { getGroupStageSchedule } from "@/lib/match-schedule";
 import { getUpcomingMatches } from "@/lib/match-utils";
 
 type MembersResponse = {
@@ -32,22 +29,6 @@ type PredictionRow = {
   knockout?: Record<string, string> | null;
   golden_boot?: string | null;
 };
-
-function formatShortDate(dateString: string | null) {
-  if (!dateString) return "";
-  return new Intl.DateTimeFormat("sv-SE", {
-    day: "numeric",
-    month: "long",
-  }).format(new Date(dateString));
-}
-
-function formatTime(dateString: string | null) {
-  if (!dateString) return "";
-  return new Intl.DateTimeFormat("sv-SE", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(dateString));
-}
 
 function getDeadlineDate() {
   const now = new Date();
@@ -134,24 +115,6 @@ function buildStatusText(params: {
   return "Ditt tips ser komplett ut.";
 }
 
-function toIsoFromSchedule(match: ScheduleMatch | null) {
-  if (!match) return null;
-
-  const raw = `${match.date} ${match.time}`.trim();
-  const parsed = new Date(raw);
-
-  if (!Number.isNaN(parsed.getTime())) {
-    return parsed.toISOString();
-  }
-
-  const fallback = new Date(match.date);
-  if (!Number.isNaN(fallback.getTime())) {
-    return fallback.toISOString();
-  }
-
-  return null;
-}
-
 export default async function HomePage() {
   const supabase = await createClient();
 
@@ -191,17 +154,17 @@ export default async function HomePage() {
   }
 
   const beforeDeadline = isBeforeDeadline();
+  const daysLeft = getDaysLeftToDeadline();
 
   const schedule = getGroupStageSchedule();
   const upcomingMatches = getUpcomingMatches(schedule);
 
   const openingMatch = schedule.length > 0 ? schedule[0] : null;
   const nextUpcomingMatch = upcomingMatches.length > 0 ? upcomingMatches[0] : null;
+
   const featuredMatch = beforeDeadline
     ? openingMatch || nextUpcomingMatch
     : nextUpcomingMatch || openingMatch;
-
-  const featuredMatchIso = toIsoFromSchedule(featuredMatch);
 
   let registeredCount = 0;
 
@@ -223,8 +186,6 @@ export default async function HomePage() {
   } catch (error) {
     console.error("Kunde inte hämta members count", error);
   }
-
-  const daysLeft = getDaysLeftToDeadline();
 
   const displayName =
     [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
@@ -316,7 +277,7 @@ export default async function HomePage() {
 
                     <div className="min-w-[110px] rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
                       <div className="text-lg font-black">
-                        {featuredMatchIso ? formatShortDate(featuredMatchIso) : "-"}
+                        {featuredMatch ? featuredMatch.date : "-"}
                       </div>
                       <div className="text-sm text-white/75">
                         {beforeDeadline ? "öppningsmatch" : "nästa match"}
@@ -440,9 +401,7 @@ export default async function HomePage() {
 
               <div className="rounded-[1.6rem] border border-white/10 bg-white/8 p-4 text-white shadow-lg backdrop-blur-sm">
                 <div className="mb-2 flex items-center justify-between">
-                  <h2 className="text-xl font-black text-white">
-                    {beforeDeadline ? "Öppningsmatch" : "Nästa match"}
-                  </h2>
+                  <h2 className="text-xl font-black text-white">Nästa match</h2>
 
                   <Link
                     href="/tv-guide"
