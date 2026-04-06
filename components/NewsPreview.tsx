@@ -161,8 +161,12 @@ export default function NewsPreview() {
                   className="h-44 w-full object-cover transition duration-300 group-hover:scale-[1.02]"
                 />
               ) : (
-                <div className="flex h-44 items-center justify-center bg-white/[0.03] text-sm text-white/45">
-                  Ingen bild
+                <div className="flex h-44 items-center justify-center bg-[linear-gradient(135deg,rgba(16,185,129,0.10),rgba(255,255,255,0.02))]">
+                  <img
+                    src="/logo.png"
+                    alt="Addes VM-tips"
+                    className="max-h-24 w-auto object-contain opacity-90 transition duration-300 group-hover:scale-[1.03]"
+                  />
                 </div>
               )}
 
