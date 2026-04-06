@@ -2,16 +2,11 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import NewsPreview from "@/components/NewsPreview";
-
-type MatchItem = {
-  id: string;
-  home_team: string;
-  away_team: string;
-  match_date: string;
-  group_name?: string | null;
-  tv_channel?: string | null;
-  tv_stream?: string | null;
-};
+import {
+  getGroupStageSchedule,
+  type ScheduleMatch,
+} from "@/lib/match-schedule";
+import { getUpcomingMatches } from "@/lib/match-utils";
 
 type MembersResponse = {
   members?: Array<{
@@ -139,6 +134,24 @@ function buildStatusText(params: {
   return "Ditt tips ser komplett ut.";
 }
 
+function toIsoFromSchedule(match: ScheduleMatch | null) {
+  if (!match) return null;
+
+  const raw = `${match.date} ${match.time}`.trim();
+  const parsed = new Date(raw);
+
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toISOString();
+  }
+
+  const fallback = new Date(match.date);
+  if (!Number.isNaN(fallback.getTime())) {
+    return fallback.toISOString();
+  }
+
+  return null;
+}
+
 export default async function HomePage() {
   const supabase = await createClient();
 
@@ -177,51 +190,18 @@ export default async function HomePage() {
     prediction = (predictionData as PredictionRow | null) ?? null;
   }
 
-  const nowIso = new Date().toISOString();
   const beforeDeadline = isBeforeDeadline();
 
-  const [
-    { data: upcomingMatches, error: upcomingMatchesError },
-    { data: openingMatches, error: openingMatchesError },
-  ] = await Promise.all([
-    supabase
-      .from("matches")
-      .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
-      .gt("match_date", nowIso)
-      .order("match_date", { ascending: true })
-      .limit(1),
-    supabase
-      .from("matches")
-      .select("id, home_team, away_team, match_date, group_name, tv_channel, tv_stream")
-      .order("match_date", { ascending: true })
-      .limit(1),
-  ]);
+  const schedule = getGroupStageSchedule();
+  const upcomingMatches = getUpcomingMatches(schedule);
 
-  if (upcomingMatchesError) {
-    console.error("Fel vid hämtning av kommande match:", upcomingMatchesError);
-  }
+  const openingMatch = schedule.length > 0 ? schedule[0] : null;
+  const nextUpcomingMatch = upcomingMatches.length > 0 ? upcomingMatches[0] : null;
+  const featuredMatch = beforeDeadline
+    ? openingMatch || nextUpcomingMatch
+    : nextUpcomingMatch || openingMatch;
 
-  if (openingMatchesError) {
-    console.error("Fel vid hämtning av öppningsmatch:", openingMatchesError);
-  }
-
-  const openingMatchFromDb = ((openingMatches ?? [])[0] ?? null) as MatchItem | null;
-  const upcomingMatchFromDb = ((upcomingMatches ?? [])[0] ?? null) as MatchItem | null;
-
-  // Manuell fallback tills matches-tabellen är fylld korrekt
-  const manualOpeningMatch: MatchItem = {
-    id: "opening-fallback",
-    home_team: "Mexiko",
-    away_team: "—",
-    match_date: "2026-06-11T19:00:00.000Z",
-    group_name: null,
-    tv_channel: "TBA",
-    tv_stream: null,
-  };
-
-  const nextMatch = beforeDeadline
-    ? openingMatchFromDb || manualOpeningMatch
-    : upcomingMatchFromDb || openingMatchFromDb || manualOpeningMatch;
+  const featuredMatchIso = toIsoFromSchedule(featuredMatch);
 
   let registeredCount = 0;
 
@@ -281,6 +261,7 @@ export default async function HomePage() {
     { href: "/medlemmar", label: "Medlemmar" },
     { href: "/league", label: "Ligor" },
     { href: "/lag", label: "Lag & spelare" },
+    { href: "/tv-guide", label: "TV-guide" },
   ];
 
   return (
@@ -335,7 +316,7 @@ export default async function HomePage() {
 
                     <div className="min-w-[110px] rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
                       <div className="text-lg font-black">
-                        {nextMatch ? formatShortDate(nextMatch.match_date) : "-"}
+                        {featuredMatchIso ? formatShortDate(featuredMatchIso) : "-"}
                       </div>
                       <div className="text-sm text-white/75">
                         {beforeDeadline ? "öppningsmatch" : "nästa match"}
@@ -464,39 +445,38 @@ export default async function HomePage() {
                   </h2>
 
                   <Link
-                    href="/matcher-idag"
+                    href="/tv-guide"
                     className="text-xs font-semibold text-white/70 hover:text-white hover:underline"
                   >
                     Se allt
                   </Link>
                 </div>
 
-                {nextMatch ? (
+                {featuredMatch ? (
                   <div className="rounded-xl border border-white/10 bg-white/5 p-3">
                     <div className="text-base font-black text-white">
-                      {nextMatch.home_team} - {nextMatch.away_team}
+                      {featuredMatch.homeTeam} - {featuredMatch.awayTeam}
                     </div>
 
                     <div className="text-xs text-white/65">
-                      {formatShortDate(nextMatch.match_date)} ·{" "}
-                      {formatTime(nextMatch.match_date)}
+                      {featuredMatch.date} · {featuredMatch.time}
                     </div>
 
                     <div className="mt-1 text-xs text-white/70">
-                      {nextMatch.tv_channel || "TBA"}
+                      {featuredMatch.tvChannel || "TV-kanal saknas"}
                     </div>
                   </div>
                 ) : (
                   <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/65">
-                    Ingen match hittades i databasen
+                    Ingen match hittades i spelschemat
                   </div>
                 )}
 
                 <Link
-                  href="/matcher-idag"
+                  href="/tv-guide"
                   className="mt-3 block w-full rounded-xl bg-white/10 py-2.5 text-center text-sm font-bold text-white transition hover:bg-white/15"
                 >
-                  Matchschema
+                  TV-guide
                 </Link>
               </div>
 
