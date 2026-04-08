@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
+import { isDeadlinePassed } from "@/lib/config";
+import { hasActiveTimeOverride } from "@/lib/access-overrides";
 
 type StoredMatch = {
   homeTeam?: string;
@@ -85,16 +87,31 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
   }
 
-  const { data: tournament, error: tournamentError } = await serviceSupabase
-    .from("tournaments")
-    .select("id")
-    .eq("slug", "world-cup-2026")
-    .single();
+  const [{ data: tournament, error: tournamentError }, { data: profile, error: profileError }] =
+    await Promise.all([
+      serviceSupabase
+        .from("tournaments")
+        .select("id")
+        .eq("slug", "world-cup-2026")
+        .single(),
+      serviceSupabase
+        .from("profiles")
+        .select("prediction_unlock_until")
+        .eq("id", user.id)
+        .single(),
+    ]);
 
   if (tournamentError || !tournament) {
     return NextResponse.json(
       { error: "Tournament not found" },
       { status: 404 }
+    );
+  }
+
+  if (profileError) {
+    return NextResponse.json(
+      { error: profileError.message },
+      { status: 500 }
     );
   }
 
@@ -110,7 +127,10 @@ export async function GET(request: NextRequest) {
   }
 
   if (!prediction) {
-    return NextResponse.json({ prediction: null });
+    return NextResponse.json({
+      prediction: null,
+      prediction_unlock_until: profile?.prediction_unlock_until ?? null,
+    });
   }
 
   return NextResponse.json({
@@ -118,6 +138,7 @@ export async function GET(request: NextRequest) {
       ...prediction,
       group_stage: migrateLegacyGroupStage(prediction.group_stage),
     },
+    prediction_unlock_until: profile?.prediction_unlock_until ?? null,
   });
 }
 
@@ -146,6 +167,30 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
+  }
+
+  const { data: profile, error: profileError } = await serviceSupabase
+    .from("profiles")
+    .select("prediction_unlock_until")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError) {
+    return NextResponse.json(
+      { error: profileError.message || "Kunde inte läsa profil" },
+      { status: 500 }
+    );
+  }
+
+  const hasPredictionOverride = hasActiveTimeOverride(
+    profile?.prediction_unlock_until ?? null
+  );
+
+  if (isDeadlinePassed() && !hasPredictionOverride) {
+    return NextResponse.json(
+      { error: "Deadline har passerat – tipset är låst" },
+      { status: 403 }
+    );
   }
 
   const body = await request.json();

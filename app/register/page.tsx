@@ -58,10 +58,36 @@ export default function RegisterPage() {
     setErrorMessage(null);
 
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+
+      const accessRes = await fetch("/api/registration-access", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: normalizedEmail }),
+      });
+
+      const accessData = await accessRes.json();
+
+      if (!accessRes.ok) {
+        setErrorMessage(
+          accessData.error || "Kunde inte kontrollera registreringen"
+        );
+        setLoading(false);
+        return;
+      }
+
+      if (!accessData.allowed) {
+        setErrorMessage("Registreringen är stängd efter deadline.");
+        setLoading(false);
+        return;
+      }
+
       const referralCode = await createUniqueReferralCode();
 
       const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: normalizedEmail,
         password,
       });
 

@@ -95,6 +95,9 @@ export default function TipsPage() {
   const [hasLoadedFromDatabase, setHasLoadedFromDatabase] = useState(false);
   const [myLeagues, setMyLeagues] = useState<MyLeague[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [predictionUnlockUntil, setPredictionUnlockUntil] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     if (!saveMessage) return;
@@ -143,6 +146,7 @@ export default function TipsPage() {
           setGoldenBoot(data.prediction.golden_boot);
         }
 
+        setPredictionUnlockUntil(data.prediction_unlock_until ?? null);
         setHasUnsavedChanges(false);
       } catch (error) {
         console.error("Kunde inte läsa från databasen", error);
@@ -310,8 +314,14 @@ export default function TipsPage() {
     setSaveMessage(null);
   }
 
+  const hasPredictionOverride =
+    !!predictionUnlockUntil &&
+    new Date(predictionUnlockUntil).getTime() > Date.now();
+
+  const deadlinePassed = isDeadlinePassed() && !hasPredictionOverride;
+
   async function savePredictionToDatabase() {
-    if (isDeadlinePassed()) {
+    if (deadlinePassed) {
       setSaveMessage("Deadline har passerat – tipset är låst");
       return false;
     }
@@ -375,8 +385,6 @@ export default function TipsPage() {
     () => isTournamentGroupStageComplete(groups),
     [groups]
   );
-
-  const deadlinePassed = isDeadlinePassed();
 
   const groupProgress = useMemo(() => {
     const total = groups.reduce((sum, group) => sum + group.matches.length, 0);
@@ -510,20 +518,20 @@ export default function TipsPage() {
 
             <div className="mb-3 md:hidden">
               <div className="mb-3 flex items-center justify-between">
-  <button
-    onClick={() => router.push("/")}
-    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-bold text-white transition hover:bg-white/[0.1]"
-  >
-    ← Start
-  </button>
+                <button
+                  onClick={() => router.push("/")}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-bold text-white transition hover:bg-white/[0.1]"
+                >
+                  ← Start
+                </button>
 
-  <Link
-    href="/league"
-    className="text-xs font-semibold text-white/70 underline"
-  >
-    Ligor
-  </Link>
-</div>
+                <Link
+                  href="/league"
+                  className="text-xs font-semibold text-white/70 underline"
+                >
+                  Ligor
+                </Link>
+              </div>
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="inline-flex rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/85 backdrop-blur-xl">
@@ -549,8 +557,15 @@ export default function TipsPage() {
                 Fokusera bara på tippningen här.
               </p>
 
-              {(deadlinePassed || saveMessage || hasUnsavedChanges) && (
+              {(deadlinePassed || saveMessage || hasUnsavedChanges || hasPredictionOverride) && (
                 <div className="mt-3 flex flex-col gap-2">
+                  {hasPredictionOverride && predictionUnlockUntil && (
+                    <p className="text-sm font-semibold text-emerald-300">
+                      Du har tillfälligt öppet att ändra tipset till{" "}
+                      {new Date(predictionUnlockUntil).toLocaleString("sv-SE")}.
+                    </p>
+                  )}
+
                   {deadlinePassed && (
                     <p className="text-sm font-semibold text-amber-300">
                       Deadline har passerat. Tipset är nu låst.
@@ -656,6 +671,13 @@ export default function TipsPage() {
                 </div>
 
                 <p className="mt-3 text-sm text-white/82">{smartStatus}</p>
+
+                {hasPredictionOverride && predictionUnlockUntil && (
+                  <p className="mt-3 text-sm font-semibold text-emerald-300">
+                    Tillfälligt upplåst till{" "}
+                    {new Date(predictionUnlockUntil).toLocaleString("sv-SE")}.
+                  </p>
+                )}
 
                 <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
                   <div className="rounded-xl border border-white/10 bg-white/[0.05] p-2 backdrop-blur-xl">
