@@ -43,28 +43,39 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
 
   let profile:
-    | {
-        first_name: string | null;
-        last_name: string | null;
-        email: string | null;
-        payment_code: string | null;
-        payment_status: string | null;
-        role: string | null;
-        is_admin: boolean | null;
-      }
-    | null = null;
+  | {
+      first_name: string | null;
+      last_name: string | null;
+      email: string | null;
+      payment_code: string | null;
+      payment_status: string | null;
+      role: string | null;
+      is_admin: boolean | null;
+    }
+  | null = null;
 
-  if (user) {
-    const { data } = await supabase
+if (user) {
+  const profileColumns =
+    "first_name, last_name, email, payment_code, payment_status, role, is_admin";
+
+  const { data: profileById } = await supabase
+    .from("profiles")
+    .select(profileColumns)
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileById) {
+    profile = profileById;
+  } else if (user.email) {
+    const { data: profileByEmail } = await supabase
       .from("profiles")
-      .select(
-        "first_name, last_name, email, payment_code, payment_status, role, is_admin"
-      )
-      .eq("id", user.id)
-      .single();
+      .select(profileColumns)
+      .eq("email", user.email)
+      .maybeSingle();
 
-    profile = data;
+    profile = profileByEmail;
   }
+}
 
   const beforeDeadline = isBeforeDeadline();
   const daysLeft = getDaysLeftToDeadline();
@@ -101,9 +112,10 @@ export default async function HomePage() {
   }
 
   const displayName =
-    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
-    profile?.email ||
-    "Deltagare";
+  [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
+  profile?.email ||
+  user?.email ||
+  "Deltagare";
 
   const isLoggedIn = !!user;
   const isAdmin = profile?.role === "admin" || profile?.is_admin === true;
