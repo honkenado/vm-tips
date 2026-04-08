@@ -43,20 +43,21 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
 
   let profile:
-    | {
-        first_name: string | null;
-        last_name: string | null;
-        email: string | null;
-        payment_code: string | null;
-        payment_status: string | null;
-        is_admin: boolean | null;
-      }
-    | null = null;
+  | {
+      first_name: string | null;
+      last_name: string | null;
+      email: string | null;
+      payment_code: string | null;
+      payment_status: string | null;
+      role: string | null;
+      is_admin: boolean | null;
+    }
+  | null = null;
 
   if (user) {
     const { data } = await supabase
       .from("profiles")
-      .select("first_name, last_name, email, payment_code, payment_status, is_admin")
+      .select("first_name, last_name, email, payment_code, payment_status, role, is_admin")
       .eq("id", user.id)
       .single();
 
@@ -103,7 +104,7 @@ export default async function HomePage() {
     "Deltagare";
 
   const isLoggedIn = !!user;
-  const isAdmin = !!profile?.is_admin;
+  const isAdmin = profile?.role === "admin" || !!profile?.is_admin;
 
   const mobileHeaderNote = beforeDeadline
     ? `${daysLeft} dagar kvar till deadline`
