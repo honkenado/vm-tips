@@ -43,21 +43,23 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
 
   let profile:
-  | {
-      first_name: string | null;
-      last_name: string | null;
-      email: string | null;
-      payment_code: string | null;
-      payment_status: string | null;
-      role: string | null;
-      is_admin: boolean | null;
-    }
-  | null = null;
+    | {
+        first_name: string | null;
+        last_name: string | null;
+        email: string | null;
+        payment_code: string | null;
+        payment_status: string | null;
+        role: string | null;
+        is_admin: boolean | null;
+      }
+    | null = null;
 
   if (user) {
     const { data } = await supabase
       .from("profiles")
-      .select("first_name, last_name, email, payment_code, payment_status, role, is_admin")
+      .select(
+        "first_name, last_name, email, payment_code, payment_status, role, is_admin"
+      )
       .eq("id", user.id)
       .single();
 
@@ -104,7 +106,7 @@ export default async function HomePage() {
     "Deltagare";
 
   const isLoggedIn = !!user;
-  const isAdmin = profile?.role === "admin" || !!profile?.is_admin;
+  const isAdmin = profile?.role === "admin" || profile?.is_admin === true;
 
   const mobileHeaderNote = beforeDeadline
     ? `${daysLeft} dagar kvar till deadline`
@@ -132,14 +134,12 @@ export default async function HomePage() {
               </div>
 
               {isLoggedIn && isAdmin ? (
-                <div className="mt-2">
-                  <Link
-                    href="/admin"
-                    className="inline-flex rounded-full border border-emerald-400/25 bg-emerald-500/12 px-3 py-1.5 text-[11px] font-bold text-emerald-100 transition hover:bg-emerald-500/20"
-                  >
-                    Admin
-                  </Link>
-                </div>
+                <Link
+                  href="/admin"
+                  className="mt-2 inline-flex rounded-full border border-emerald-400/25 bg-emerald-500/12 px-3 py-1.5 text-[11px] font-bold text-emerald-100 transition hover:bg-emerald-500/20"
+                >
+                  Admin
+                </Link>
               ) : null}
             </div>
 
@@ -297,14 +297,12 @@ export default async function HomePage() {
                   <AuthStatus />
 
                   {isAdmin ? (
-                    <div className="mt-3">
-                      <Link
-                        href="/admin"
-                        className="inline-flex w-full items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-500/12 px-4 py-2 text-sm font-bold text-emerald-100 transition hover:bg-emerald-500/20"
-                      >
-                        Adminpanel
-                      </Link>
-                    </div>
+                    <Link
+                      href="/admin"
+                      className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-500/12 px-4 py-2 text-sm font-bold text-emerald-100 transition hover:bg-emerald-500/20"
+                    >
+                      Adminpanel
+                    </Link>
                   ) : null}
                 </div>
               ) : (
