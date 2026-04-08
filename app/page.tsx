@@ -103,6 +103,7 @@ export default async function HomePage() {
     "Deltagare";
 
   const isLoggedIn = !!user;
+  const isAdmin = !!profile?.is_admin;
 
   const mobileHeaderNote = beforeDeadline
     ? `${daysLeft} dagar kvar till deadline`
@@ -128,6 +129,17 @@ export default async function HomePage() {
               <div className="truncate text-sm font-semibold text-white/90">
                 {isLoggedIn ? displayName : "Addes VM-tips"}
               </div>
+
+              {isLoggedIn && isAdmin ? (
+                <div className="mt-2">
+                  <Link
+                    href="/admin"
+                    className="inline-flex rounded-full border border-emerald-400/25 bg-emerald-500/12 px-3 py-1.5 text-[11px] font-bold text-emerald-100 transition hover:bg-emerald-500/20"
+                  >
+                    Admin
+                  </Link>
+                </div>
+              ) : null}
             </div>
 
             <div className="ml-3 flex shrink-0 items-center gap-2">
@@ -282,6 +294,17 @@ export default async function HomePage() {
               {isLoggedIn ? (
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
                   <AuthStatus />
+
+                  {isAdmin ? (
+                    <div className="mt-3">
+                      <Link
+                        href="/admin"
+                        className="inline-flex w-full items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-500/12 px-4 py-2 text-sm font-bold text-emerald-100 transition hover:bg-emerald-500/20"
+                      >
+                        Adminpanel
+                      </Link>
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
