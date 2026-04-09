@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import MobileNav from "@/components/MobileNav";
 
@@ -33,9 +34,10 @@ export default function RootLayout({
       lang="sv"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-50">
+      <body className="min-h-full flex flex-col bg-slate-50 pb-[110px] md:pb-0">
         {children}
         <MobileNav />
+        <Analytics />
       </body>
     </html>
   );
