@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import NewsPreview from "@/components/NewsPreview";
 import GlobalChat from "@/components/chat/GlobalChat";
+import OnlineNow from "@/components/presence/OnlineNow";
 import { getGroupStageSchedule } from "@/lib/match-schedule";
 import { getUpcomingMatches } from "@/lib/match-utils";
 import AuthStatus from "@/components/auth-status";
@@ -386,6 +387,8 @@ export default async function HomePage() {
                   TV-guide
                 </Link>
               </div>
+
+              <OnlineNow isLoggedIn={isLoggedIn} />
             </div>
           </div>
         </section>
