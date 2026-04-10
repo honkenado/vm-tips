@@ -53,7 +53,7 @@ export default function GlobalChat({
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const listRef = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  
 
   const lastMessageId = useMemo(
     () => messages[messages.length - 1]?.id ?? null,
@@ -92,11 +92,7 @@ export default function GlobalChat({
     loadMessages();
   }, []);
 
-  useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, []);
+ 
 
   useEffect(() => {
     if (!listRef.current) return;
@@ -146,7 +142,6 @@ export default function GlobalChat({
       }
 
       setMessage("");
-      inputRef.current?.focus();
     } catch (error) {
       console.error("Fel vid skickande av global chat", error);
       setErrorMessage("Kunde inte skicka meddelandet.");
@@ -281,7 +276,7 @@ export default function GlobalChat({
               </label>
 
               <textarea
-                ref={inputRef}
+                
                 id="global-chat-message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
