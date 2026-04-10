@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import LeagueChat from "@/components/chat/LeagueChat";
 
 type League = {
   id: string;
@@ -414,6 +415,12 @@ export default function LeaguePage() {
             </div>
           )}
         </section>
+
+        {!isMainLeague && league ? (
+          <div className="mt-4">
+            <LeagueChat leagueId={league.id} isLoggedIn={Boolean(currentUserId)} />
+          </div>
+        ) : null}
       </div>
     </main>
   );
