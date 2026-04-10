@@ -415,15 +415,15 @@ export default function ReferralPage() {
                         <div className="font-black text-slate-900">{rank}</div>
 
                         <div className="min-w-0">
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="truncate font-semibold text-slate-800">
-                              {getDisplayName(row)}
-                            </span>
-                            <span className="shrink-0 text-xs text-slate-400">
-                              {isOpen ? "▲" : "▼"}
-                            </span>
-                          </div>
-                        </div>
+  <div className="flex items-center gap-2">
+    <span className="font-semibold text-slate-800">
+      {getDisplayName(row)}
+    </span>
+    <span className="shrink-0 text-xs text-slate-400">
+      {isOpen ? "▲" : "▼"}
+    </span>
+  </div>
+</div>
 
                         <div className="text-center font-bold text-emerald-700">
                           {payout} kr
