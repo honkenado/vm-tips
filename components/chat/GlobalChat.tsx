@@ -53,7 +53,7 @@ export default function GlobalChat({
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const listRef = useRef<HTMLDivElement | null>(null);
-  
+  const hasLoadedInitiallyRef = useRef(false);
 
   const lastMessageId = useMemo(
     () => messages[messages.length - 1]?.id ?? null,
@@ -92,17 +92,6 @@ export default function GlobalChat({
     loadMessages();
   }, []);
 
- 
-
-  useEffect(() => {
-    if (!listRef.current) return;
-
-    listRef.current.scrollTo({
-      top: listRef.current.scrollHeight,
-      behavior: "smooth",
-    });
-  }, [lastMessageId]);
-
   useEffect(() => {
     const interval = window.setInterval(() => {
       loadMessages({ silent: true });
@@ -110,6 +99,20 @@ export default function GlobalChat({
 
     return () => window.clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!listRef.current || !lastMessageId) return;
+
+    if (!hasLoadedInitiallyRef.current) {
+      hasLoadedInitiallyRef.current = true;
+      return;
+    }
+
+    listRef.current.scrollTo({
+      top: listRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [lastMessageId]);
 
   async function handleSendMessage() {
     const trimmed = message.trim();
@@ -276,7 +279,6 @@ export default function GlobalChat({
               </label>
 
               <textarea
-                
                 id="global-chat-message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
