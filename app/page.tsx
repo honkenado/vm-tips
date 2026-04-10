@@ -310,15 +310,6 @@ export default async function HomePage() {
               {isLoggedIn ? (
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
                   <AuthStatus />
-
-                  {isAdmin ? (
-                    <Link
-                      href="/admin"
-                      className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-500/12 px-4 py-2 text-sm font-bold text-emerald-100 transition hover:bg-emerald-500/20"
-                    >
-                      Adminpanel
-                    </Link>
-                  ) : null}
                 </div>
               ) : (
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
