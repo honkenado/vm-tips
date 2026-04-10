@@ -18,6 +18,15 @@ type ReferralLeaderboardRow = {
   paid_referrals: number;
 };
 
+type ReferralDetailRow = {
+  referrer_id: string;
+  referred_user_id: string;
+  username: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  payment_status?: string | null;
+};
+
 function buildShareTexts(link: string) {
   const shortText = `Häng med i Addes VM-tips 2026 ⚽
 Registrera dig här:
@@ -33,7 +42,11 @@ ${link}`;
   return { shortText, longText };
 }
 
-function getDisplayName(row: ReferralLeaderboardRow) {
+function getDisplayName(row: {
+  username: string | null;
+  first_name: string | null;
+  last_name: string | null;
+}) {
   const fullName = `${row.first_name ?? ""} ${row.last_name ?? ""}`.trim();
   if (fullName) return fullName;
   if (row.username) return row.username;
@@ -53,6 +66,10 @@ export default function ReferralPage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [leaderboard, setLeaderboard] = useState<ReferralLeaderboardRow[]>([]);
   const [notLoggedIn, setNotLoggedIn] = useState(false);
+  const [openRow, setOpenRow] = useState<string | null>(null);
+  const [referralsMap, setReferralsMap] = useState<
+    Record<string, ReferralDetailRow[]>
+  >({});
 
   useEffect(() => {
     async function loadReferralData() {
@@ -87,6 +104,31 @@ export default function ReferralPage() {
 
         if (!leaderboardError && leaderboardData) {
           setLeaderboard(leaderboardData);
+        }
+
+        const { data: referralsData, error: referralsError } = await supabase
+          .from("referral_details")
+          .select(
+            "referrer_id, referred_user_id, username, first_name, last_name, payment_status"
+          );
+
+        if (!referralsError && referralsData) {
+          const map: Record<string, ReferralDetailRow[]> = {};
+
+          referralsData.forEach((item) => {
+            if (!map[item.referrer_id]) {
+              map[item.referrer_id] = [];
+            }
+            map[item.referrer_id].push(item);
+          });
+
+          Object.keys(map).forEach((key) => {
+            map[key].sort((a, b) =>
+              getDisplayName(a).localeCompare(getDisplayName(b), "sv")
+            );
+          });
+
+          setReferralsMap(map);
         }
       } finally {
         setLoading(false);
@@ -338,14 +380,13 @@ export default function ReferralPage() {
               Värvarligan
             </h2>
             <p className="mt-3 text-sm leading-6 text-slate-700">
-              Endast betalande värvningar räknas.
+              Klicka på ett namn för att se vilka personer som har värvats.
             </p>
 
             <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
-              <div className="grid grid-cols-[56px_minmax(0,1fr)_90px_90px] gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500">
+              <div className="grid grid-cols-[56px_minmax(0,1fr)_110px] gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500">
                 <div>Plats</div>
                 <div>Namn</div>
-                <div className="text-center">Värvningar</div>
                 <div className="text-center">Pris</div>
               </div>
 
@@ -357,24 +398,67 @@ export default function ReferralPage() {
                 sortedLeaderboard.slice(0, 10).map((row, index) => {
                   const rank = index + 1;
                   const payout = getPayoutForRow(rank, row.paid_referrals);
+                  const referredPeople = referralsMap[row.id] ?? [];
+                  const isOpen = openRow === row.id;
 
                   return (
-                    <div
-                      key={row.id}
-                      className={`grid grid-cols-[56px_minmax(0,1fr)_90px_90px] items-center gap-2 border-b border-slate-100 px-4 py-3 text-sm ${
-                        profile?.id === row.id ? "bg-emerald-50" : "bg-white"
-                      }`}
-                    >
-                      <div className="font-black text-slate-900">{rank}</div>
-                      <div className="font-semibold leading-5 text-slate-800 break-words">
-                        {getDisplayName(row)}
-                      </div>
-                      <div className="text-center font-black text-slate-900">
-                        {row.paid_referrals}
-                      </div>
-                      <div className="text-center font-bold text-emerald-700">
-                        {payout} kr
-                      </div>
+                    <div key={row.id} className="border-b border-slate-100 last:border-b-0">
+                      <button
+                        type="button"
+                        onClick={() => setOpenRow(isOpen ? null : row.id)}
+                        className={`grid w-full grid-cols-[56px_minmax(0,1fr)_110px] items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                          profile?.id === row.id
+                            ? "bg-emerald-50 hover:bg-emerald-100/60"
+                            : "bg-white hover:bg-slate-50"
+                        }`}
+                      >
+                        <div className="font-black text-slate-900">{rank}</div>
+
+                        <div className="min-w-0">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="truncate font-semibold text-slate-800">
+                              {getDisplayName(row)}
+                            </span>
+                            <span className="shrink-0 text-xs text-slate-400">
+                              {isOpen ? "▲" : "▼"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="text-center font-bold text-emerald-700">
+                          {payout} kr
+                        </div>
+                      </button>
+
+                      {isOpen && (
+                        <div className="bg-slate-50 px-4 py-3">
+                          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+                            Värvade personer
+                          </p>
+
+                          {referredPeople.length > 0 ? (
+                            <ul className="space-y-2">
+                              {referredPeople.map((person) => (
+                                <li
+                                  key={person.referred_user_id}
+                                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                                >
+                                  {getDisplayName(person)}
+                                  {person.payment_status === "paid" && (
+                                    <span className="ml-2 font-semibold text-emerald-700">
+                                      (betald)
+                                    </span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-slate-600">
+                              Inga värvningar ännu.
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })
@@ -387,7 +471,7 @@ export default function ReferralPage() {
               Så fungerar det
             </h2>
             <ul className="mt-4 space-y-2 text-sm leading-6 text-slate-700 md:text-base">
-              <li>• Endast betalande deltagare räknas.</li>
+              <li>• Endast betalande deltagare räknas för utbetalningen.</li>
               <li>• Topp 1 och topp 2 får 20 kr per betalande värvning.</li>
               <li>• Max ersättning är 500 kr per person.</li>
               <li>• Samma person kan bara räknas en gång.</li>
