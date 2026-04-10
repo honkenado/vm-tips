@@ -2,110 +2,82 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-type JoinedProfile =
-  | {
-      username: string | null;
-      first_name: string | null;
-      last_name: string | null;
-    }
-  | {
-      username: string | null;
-      first_name: string | null;
-      last_name: string | null;
-    }[]
-  | null;
-
-type LeagueChatRow = {
-  id: string;
-  message: string;
-  created_at: string;
-  user_id: string;
-  profiles: JoinedProfile;
-};
-
-function pickProfile(profile: JoinedProfile) {
-  if (!profile) return null;
-  return Array.isArray(profile) ? profile[0] ?? null : profile;
-}
-
-export async function GET(
-  _req: Request,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(_req: Request) {
   try {
-    const { id } = await context.params;
+    const supabase = await createClient();
 
-    if (!id || id === "main") {
-      return NextResponse.json({ messages: [] });
-    }
-
-    const { data, error } = await supabaseAdmin
-      .from("league_chat_messages")
-      .select(
-        `
-        id,
-        message,
-        created_at,
-        user_id,
-        profiles (
-          username,
-          first_name,
-          last_name
-        )
-      `
-      )
-      .eq("league_id", id)
+    const { data: messages, error } = await supabase
+      .from("chat_messages")
+      .select("id, user_id, message, created_at")
+      .eq("scope", "global")
       .order("created_at", { ascending: true })
-      .limit(100);
+      .limit(80);
 
     if (error) {
-      console.error("GET /api/chat/league/[id] error:", error);
+      console.error("GET /api/chat/global error:", error);
       return NextResponse.json(
-        { error: "Kunde inte hämta ligachatten." },
+        { error: "Kunde inte hämta chatten." },
         { status: 500 }
       );
     }
 
-    const rows = (data ?? []) as LeagueChatRow[];
+    const userIds = [...new Set((messages ?? []).map((message) => message.user_id))];
 
-    return NextResponse.json({
-      messages: rows.map((row) => {
-        const profile = pickProfile(row.profiles);
+    let profiles:
+      | Array<{
+          id: string;
+          username: string | null;
+          first_name: string | null;
+          last_name: string | null;
+        }>
+      | null = [];
 
-        return {
-          id: row.id,
-          message: row.message,
-          created_at: row.created_at,
-          user_id: row.user_id,
-          username: profile?.username ?? null,
-          first_name: profile?.first_name ?? null,
-          last_name: profile?.last_name ?? null,
-        };
-      }),
+    if (userIds.length > 0) {
+      const { data: profileRows, error: profilesError } = await supabaseAdmin
+        .from("profiles")
+        .select("id, username, first_name, last_name")
+        .in("id", userIds);
+
+      if (profilesError) {
+        console.error("GET /api/chat/global profiles error:", profilesError);
+        return NextResponse.json(
+          { error: "Kunde inte hämta profiler till chatten." },
+          { status: 500 }
+        );
+      }
+
+      profiles = profileRows;
+    }
+
+    const profileMap = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+
+    const hydratedMessages = (messages ?? []).map((message) => {
+      const profile = profileMap.get(message.user_id);
+
+      return {
+        id: message.id,
+        user_id: message.user_id,
+        message: message.message,
+        created_at: message.created_at,
+        username: profile?.username ?? null,
+        first_name: profile?.first_name ?? null,
+        last_name: profile?.last_name ?? null,
+      };
     });
+
+    return NextResponse.json({ messages: hydratedMessages });
   } catch (error) {
-    console.error("GET /api/chat/league/[id] crash:", error);
+    console.error("GET /api/chat/global crash:", error);
     return NextResponse.json(
-      { error: "Något gick fel när ligachatten hämtades." },
+      { error: "Något gick fel när chatten hämtades." },
       { status: 500 }
     );
   }
 }
 
-export async function POST(
-  req: Request,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: Request) {
   try {
     const supabase = await createClient();
-    const { id } = await context.params;
-
-    if (!id || id === "main") {
-      return NextResponse.json(
-        { error: "Ingen chat i huvudligan" },
-        { status: 400 }
-      );
-    }
 
     const {
       data: { user },
@@ -113,66 +85,67 @@ export async function POST(
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      return NextResponse.json({ error: "Inte inloggad" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Du måste vara inloggad för att skriva i chatten." },
+        { status: 401 }
+      );
     }
 
     const body = await req.json();
-    const message =
-      typeof body.message === "string" ? body.message.trim() : "";
+    const rawMessage = typeof body.message === "string" ? body.message : "";
+    const message = rawMessage.trim();
 
     if (!message) {
       return NextResponse.json(
-        { error: "Tomt meddelande" },
+        { error: "Skriv ett meddelande först." },
         { status: 400 }
       );
     }
 
-    const { data, error } = await supabaseAdmin
-      .from("league_chat_messages")
+    if (message.length > 400) {
+      return NextResponse.json(
+        { error: "Meddelandet får vara max 400 tecken." },
+        { status: 400 }
+      );
+    }
+
+    const { data: inserted, error: insertError } = await supabase
+      .from("chat_messages")
       .insert({
-        league_id: id,
         user_id: user.id,
+        scope: "global",
         message,
       })
-      .select(
-        `
-        id,
-        message,
-        created_at,
-        user_id,
-        profiles (
-          username,
-          first_name,
-          last_name
-        )
-      `
-      )
+      .select("id, user_id, message, created_at")
       .single();
 
-    if (error || !data) {
-      console.error("POST /api/chat/league/[id] error:", error);
+    if (insertError || !inserted) {
+      console.error("POST /api/chat/global insert error:", insertError);
       return NextResponse.json(
-        { error: "Kunde inte skicka" },
+        { error: "Kunde inte skicka meddelandet." },
         { status: 500 }
       );
     }
 
-    const row = data as LeagueChatRow;
-    const profile = pickProfile(row.profiles);
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("id, username, first_name, last_name")
+      .eq("id", inserted.user_id)
+      .maybeSingle();
 
     return NextResponse.json({
       message: {
-        id: row.id,
-        message: row.message,
-        created_at: row.created_at,
-        user_id: row.user_id,
+        id: inserted.id,
+        user_id: inserted.user_id,
+        message: inserted.message,
+        created_at: inserted.created_at,
         username: profile?.username ?? null,
         first_name: profile?.first_name ?? null,
         last_name: profile?.last_name ?? null,
       },
     });
   } catch (error) {
-    console.error("POST /api/chat/league/[id] crash:", error);
+    console.error("POST /api/chat/global crash:", error);
     return NextResponse.json(
       { error: "Något gick fel när meddelandet skickades." },
       { status: 500 }
