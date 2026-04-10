@@ -366,7 +366,7 @@ export default function ReferralPage() {
                       }`}
                     >
                       <div className="font-black text-slate-900">{rank}</div>
-                      <div className="truncate font-semibold text-slate-800">
+                      <div className="font-semibold leading-5 text-slate-800 break-words">
                         {getDisplayName(row)}
                       </div>
                       <div className="text-center font-black text-slate-900">
