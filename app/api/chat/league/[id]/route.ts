@@ -30,10 +30,10 @@ function pickProfile(profile: JoinedProfile) {
 
 export async function GET(
   _req: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = context.params;
+    const { id } = await context.params;
 
     if (!id || id === "main") {
       return NextResponse.json({ messages: [] });
@@ -94,11 +94,11 @@ export async function GET(
 
 export async function POST(
   req: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const { id } = context.params;
+    const { id } = await context.params;
 
     if (!id || id === "main") {
       return NextResponse.json(

@@ -40,14 +40,17 @@ function formatTime(dateString: string) {
 
 export default function GlobalChat({
   isLoggedIn,
+  isAdmin = false,
 }: {
   isLoggedIn: boolean;
+  isAdmin?: boolean;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const listRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -152,6 +155,43 @@ export default function GlobalChat({
     }
   }
 
+  async function handleDeleteMessage(messageId: string) {
+    if (!isAdmin || !messageId || deletingId) return;
+
+    const confirmed = window.confirm(
+      "Är du säker på att du vill radera detta meddelande?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(messageId);
+      setErrorMessage(null);
+
+      const res = await fetch("/api/chat/global", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messageId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorMessage(data.error || "Kunde inte radera meddelandet.");
+        return;
+      }
+
+      setMessages((prev) => prev.filter((item) => item.id !== messageId));
+    } catch (error) {
+      console.error("Fel vid radering av chatmeddelande", error);
+      setErrorMessage("Kunde inte radera meddelandet.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <section className="relative overflow-hidden rounded-[2rem] border border-white/8 bg-white/[0.04] p-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl md:p-5">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),transparent_35%,transparent_100%)]" />
@@ -200,13 +240,26 @@ export default function GlobalChat({
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <span className="text-sm font-black text-white">
-                          {getDisplayName(item)}
-                        </span>
-                        <span className="text-xs text-white/40">
-                          {formatTime(item.created_at)}
-                        </span>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="text-sm font-black text-white">
+                            {getDisplayName(item)}
+                          </span>
+                          <span className="text-xs text-white/40">
+                            {formatTime(item.created_at)}
+                          </span>
+                        </div>
+
+                        {isAdmin ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteMessage(item.id)}
+                            disabled={deletingId === item.id}
+                            className="shrink-0 rounded-full border border-red-400/20 bg-red-500/10 px-3 py-1 text-[11px] font-bold text-red-100 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {deletingId === item.id ? "Raderar..." : "Radera"}
+                          </button>
+                        ) : null}
                       </div>
 
                       <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-white/86">
