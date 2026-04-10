@@ -50,6 +50,8 @@ export default function GlobalChat({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const listRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+
   const lastMessageId = useMemo(
     () => messages[messages.length - 1]?.id ?? null,
     [messages]
@@ -88,7 +90,14 @@ export default function GlobalChat({
   }, []);
 
   useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
+  useEffect(() => {
     if (!listRef.current) return;
+
     listRef.current.scrollTo({
       top: listRef.current.scrollHeight,
       behavior: "smooth",
@@ -134,6 +143,7 @@ export default function GlobalChat({
       }
 
       setMessage("");
+      inputRef.current?.focus();
     } catch (error) {
       console.error("Fel vid skickande av global chat", error);
       setErrorMessage("Kunde inte skicka meddelandet.");
@@ -145,6 +155,7 @@ export default function GlobalChat({
   return (
     <section className="relative overflow-hidden rounded-[2rem] border border-white/8 bg-white/[0.04] p-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl md:p-5">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),transparent_35%,transparent_100%)]" />
+
       <div className="relative">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
@@ -166,45 +177,47 @@ export default function GlobalChat({
 
         <div
           ref={listRef}
-          className="max-h-[420px] min-h-[260px] space-y-3 overflow-y-auto rounded-[1.5rem] border border-white/8 bg-[#020617]/50 p-3 md:p-4"
+          className="h-[420px] overflow-y-auto rounded-[1.5rem] border border-white/8 bg-[#020617]/50 p-3 md:p-4"
         >
-          {loading ? (
-            <div className="rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-4 text-sm text-white/70">
-              Laddar chatten...
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-5 text-sm text-white/65">
-              Inga meddelanden ännu. Bli först att skriva något ⚽
-            </div>
-          ) : (
-            messages.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-[1.4rem] border border-white/8 bg-white/[0.05] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-500/12 text-sm font-black text-emerald-100">
-                    {getInitials(item)}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className="text-sm font-black text-white">
-                        {getDisplayName(item)}
-                      </span>
-                      <span className="text-xs text-white/40">
-                        {formatTime(item.created_at)}
-                      </span>
+          <div className="space-y-3">
+            {loading ? (
+              <div className="rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-4 text-sm text-white/70">
+                Laddar chatten...
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-5 text-sm text-white/65">
+                Inga meddelanden ännu. Bli först att skriva något ⚽
+              </div>
+            ) : (
+              messages.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-[1.4rem] border border-white/8 bg-white/[0.05] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-500/12 text-sm font-black text-emerald-100">
+                      {getInitials(item)}
                     </div>
 
-                    <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-white/86">
-                      {item.message}
-                    </p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="text-sm font-black text-white">
+                          {getDisplayName(item)}
+                        </span>
+                        <span className="text-xs text-white/40">
+                          {formatTime(item.created_at)}
+                        </span>
+                      </div>
+
+                      <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-white/86">
+                        {item.message}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
 
         <div className="mt-4 rounded-[1.5rem] border border-white/8 bg-[#020617]/60 p-3 md:p-4">
@@ -215,9 +228,16 @@ export default function GlobalChat({
               </label>
 
               <textarea
+                ref={inputRef}
                 id="global-chat-message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
                 placeholder="Skriv något till alla deltagare..."
                 maxLength={400}
                 rows={3}
