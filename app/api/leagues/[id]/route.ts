@@ -92,7 +92,6 @@ export async function GET(
       );
     }
 
-    // Hämta ligamedlemmar
     const { data: memberRows, error: membersError } = await supabase
       .from("league_members")
       .select("user_id, joined_at")
@@ -107,7 +106,6 @@ export async function GET(
 
     const userIds = (memberRows ?? []).map((row) => row.user_id);
 
-    // Hämta profiler via admin-klient för att slippa RLS-problem
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from("profiles")
       .select("id, username, first_name, last_name, payment_status")
@@ -147,6 +145,82 @@ export async function GET(
     console.error("Fel i league route:", error);
     return NextResponse.json(
       { error: "Något gick fel när ligan hämtades" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  _req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabase = await createClient();
+    const { id } = await context.params;
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({ error: "Inte inloggad" }, { status: 401 });
+    }
+
+    const leagueParam = id?.trim();
+
+    if (!leagueParam || leagueParam.toLowerCase() === "main") {
+      return NextResponse.json({ error: "Ogiltig liga" }, { status: 400 });
+    }
+
+    const { data: league, error: leagueError } = await supabase
+      .from("leagues")
+      .select("id, name, created_by")
+      .eq("id", leagueParam)
+      .maybeSingle();
+
+    if (leagueError || !league) {
+      return NextResponse.json({ error: "Liga hittades inte" }, { status: 404 });
+    }
+
+    if (!league.created_by || league.created_by !== user.id) {
+      return NextResponse.json(
+        { error: "Du har inte rätt att radera denna liga" },
+        { status: 403 }
+      );
+    }
+
+    const { error: membersError } = await supabase
+      .from("league_members")
+      .delete()
+      .eq("league_id", league.id);
+
+    if (membersError) {
+      console.error("Fel vid radering av members:", membersError);
+      return NextResponse.json(
+        { error: "Kunde inte radera ligamedlemmar" },
+        { status: 500 }
+      );
+    }
+
+    const { error: deleteError } = await supabase
+      .from("leagues")
+      .delete()
+      .eq("id", league.id);
+
+    if (deleteError) {
+      console.error("Fel vid radering av league:", deleteError);
+      return NextResponse.json(
+        { error: "Kunde inte radera ligan" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("DELETE league error:", error);
+    return NextResponse.json(
+      { error: "Något gick fel vid radering" },
       { status: 500 }
     );
   }

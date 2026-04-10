@@ -41,6 +41,12 @@ type LeagueTableEntry = {
   joined_at: string | null;
 };
 
+type MeResponse = {
+  user: {
+    id: string;
+  } | null;
+};
+
 export default function LeaguePage() {
   const params = useParams();
   const router = useRouter();
@@ -55,19 +61,30 @@ export default function LeaguePage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   useEffect(() => {
     async function loadLeaguePage() {
       try {
         setLoading(true);
         setErrorMessage(null);
+        setDeleteError(null);
 
-        const [leagueRes, leaderboardRes] = await Promise.all([
+        const [leagueRes, leaderboardRes, meRes] = await Promise.all([
           fetch(`/api/leagues/${leagueId}`, { cache: "no-store" }),
           fetch("/api/leaderboard", { cache: "no-store" }),
+          fetch("/api/auth/me", { cache: "no-store" }),
         ]);
 
         const leagueData = await leagueRes.json();
         const leaderboardData = await leaderboardRes.json();
+
+        let meData: MeResponse = { user: null };
+        if (meRes.ok) {
+          meData = await meRes.json();
+        }
 
         if (!leagueRes.ok) {
           setErrorMessage(leagueData.error || "Kunde inte hämta ligan");
@@ -77,6 +94,7 @@ export default function LeaguePage() {
         setLeague(leagueData.league ?? null);
         setMembers(leagueData.members ?? []);
         setIsMainLeague(Boolean(leagueData.isMainLeague));
+        setCurrentUserId(meData.user?.id ?? null);
 
         if (leaderboardRes.ok) {
           setGlobalLeaderboard(leaderboardData.leaderboard ?? []);
@@ -165,6 +183,46 @@ export default function LeaguePage() {
   const paidCount = table.filter((entry) => entry.payment_status === "paid").length;
   const unpaidCount = table.filter((entry) => entry.payment_status !== "paid").length;
 
+  const canDeleteLeague =
+    !isMainLeague &&
+    Boolean(currentUserId) &&
+    Boolean(league?.created_by) &&
+    currentUserId === league?.created_by;
+
+  async function handleDeleteLeague() {
+    if (!league || !canDeleteLeague || deleteLoading) return;
+
+    const confirmed = window.confirm(
+      `Är du säker på att du vill radera ligan "${league.name}"? Detta går inte att ångra.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeleteLoading(true);
+      setDeleteError(null);
+
+      const res = await fetch(`/api/leagues/${league.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setDeleteError(data.error || "Kunde inte radera ligan.");
+        return;
+      }
+
+      router.push("/league");
+      router.refresh();
+    } catch (error) {
+      console.error("Fel vid radering av liga", error);
+      setDeleteError("Kunde inte radera ligan.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen px-3 py-4 sm:px-4 md:px-6 md:py-8">
@@ -222,7 +280,7 @@ export default function LeaguePage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-white/85 backdrop-blur-xl">
                 {table.length} medlemmar
               </div>
@@ -234,8 +292,25 @@ export default function LeaguePage() {
                   {unpaidCount} ej betalda
                 </div>
               )}
+
+              {canDeleteLeague && (
+                <button
+                  type="button"
+                  onClick={handleDeleteLeague}
+                  disabled={deleteLoading}
+                  className="rounded-full border border-red-400/20 bg-red-500/12 px-3 py-1.5 text-xs font-bold text-red-100 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deleteLoading ? "Raderar..." : "Ta bort liga"}
+                </button>
+              )}
             </div>
           </div>
+
+          {deleteError && (
+            <div className="mt-4 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+              {deleteError}
+            </div>
+          )}
         </section>
 
         <section className="card-premium p-4 sm:p-5 md:p-6">
