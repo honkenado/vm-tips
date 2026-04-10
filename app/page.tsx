@@ -2,6 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import NewsPreview from "@/components/NewsPreview";
+import GlobalChat from "@/components/chat/GlobalChat";
 import { getGroupStageSchedule } from "@/lib/match-schedule";
 import { getUpcomingMatches } from "@/lib/match-utils";
 import AuthStatus from "@/components/auth-status";
@@ -43,39 +44,39 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
 
   let profile:
-  | {
-      first_name: string | null;
-      last_name: string | null;
-      email: string | null;
-      payment_code: string | null;
-      payment_status: string | null;
-      role: string | null;
-      is_admin: boolean | null;
-    }
-  | null = null;
+    | {
+        first_name: string | null;
+        last_name: string | null;
+        email: string | null;
+        payment_code: string | null;
+        payment_status: string | null;
+        role: string | null;
+        is_admin: boolean | null;
+      }
+    | null = null;
 
-if (user) {
-  const profileColumns =
-    "first_name, last_name, email, payment_code, payment_status, role, is_admin";
+  if (user) {
+    const profileColumns =
+      "first_name, last_name, email, payment_code, payment_status, role, is_admin";
 
-  const { data: profileById } = await supabase
-    .from("profiles")
-    .select(profileColumns)
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (profileById) {
-    profile = profileById;
-  } else if (user.email) {
-    const { data: profileByEmail } = await supabase
+    const { data: profileById } = await supabase
       .from("profiles")
       .select(profileColumns)
-      .eq("email", user.email)
+      .eq("id", user.id)
       .maybeSingle();
 
-    profile = profileByEmail;
+    if (profileById) {
+      profile = profileById;
+    } else if (user.email) {
+      const { data: profileByEmail } = await supabase
+        .from("profiles")
+        .select(profileColumns)
+        .eq("email", user.email)
+        .maybeSingle();
+
+      profile = profileByEmail;
+    }
   }
-}
 
   const beforeDeadline = isBeforeDeadline();
   const daysLeft = getDaysLeftToDeadline();
@@ -112,10 +113,10 @@ if (user) {
   }
 
   const displayName =
-  [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
-  profile?.email ||
-  user?.email ||
-  "Deltagare";
+    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
+    profile?.email ||
+    user?.email ||
+    "Deltagare";
 
   const isLoggedIn = !!user;
   const isAdmin = profile?.role === "admin" || profile?.is_admin === true;
@@ -127,14 +128,14 @@ if (user) {
     : "VM-tipset är öppet";
 
   const navItems = [
-  { href: "/rules", label: "Regler" },
-  { href: "/help", label: "Hjälp" },
-  { href: "/medlemmar", label: "Medlemmar" },
-  { href: "/league", label: "Ligor" },
-  { href: "/varva", label: "Värva medlemmar" },
-  { href: "/lag", label: "Lag & spelare" },
-  { href: "/tv-guide", label: "TV-guide" },
-];
+    { href: "/rules", label: "Regler" },
+    { href: "/help", label: "Hjälp" },
+    { href: "/medlemmar", label: "Medlemmar" },
+    { href: "/league", label: "Ligor" },
+    { href: "/varva", label: "Värva medlemmar" },
+    { href: "/lag", label: "Lag & spelare" },
+    { href: "/tv-guide", label: "TV-guide" },
+  ];
 
   return (
     <main className="min-h-screen bg-[#020617] pb-24 md:pb-0">
@@ -389,8 +390,14 @@ if (user) {
           </div>
         </section>
 
-        <div className="mt-4">
-          <NewsPreview />
+        <div className="mt-4 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <div className="min-w-0">
+            <NewsPreview />
+          </div>
+
+          <div className="min-w-0">
+            <GlobalChat isLoggedIn={isLoggedIn} />
+          </div>
         </div>
       </div>
     </main>
