@@ -121,6 +121,7 @@ export default async function HomePage() {
 
   const isLoggedIn = !!user;
   const isAdmin = profile?.role === "admin" || profile?.is_admin === true;
+  const isPaid = profile?.payment_status === "paid";
 
   const mobileHeaderNote = beforeDeadline
     ? `${daysLeft} dagar kvar till deadline`
@@ -141,46 +142,81 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen bg-[#020617] pb-24 md:pb-0">
       <div className="mx-auto w-full max-w-[1400px] px-4 py-4 md:px-6">
-        <div className="mb-3 md:hidden">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="truncate text-sm font-semibold text-white/90">
-                {isLoggedIn ? displayName : "Addes VM-tips"}
+        <div className="mb-4 md:hidden">
+          {isLoggedIn ? (
+            <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="truncate text-xl font-black text-white">
+                    {displayName}
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {profile?.payment_code ? (
+                      <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-sm font-bold text-white/90">
+                        {profile.payment_code}
+                      </span>
+                    ) : null}
+
+                    <span
+                      className={`rounded-full px-3 py-1 text-sm font-bold ${
+                        isPaid
+                          ? "border border-emerald-400/20 bg-emerald-500/12 text-emerald-100"
+                          : "border border-amber-400/20 bg-amber-500/12 text-amber-100"
+                      }`}
+                    >
+                      {isPaid ? "Betald" : "Ej betald"}
+                    </span>
+                  </div>
+                </div>
+
+                {isAdmin ? (
+                  <Link
+                    href="/admin"
+                    className="shrink-0 rounded-full border border-emerald-400/25 bg-emerald-500/12 px-3 py-1.5 text-[11px] font-bold text-emerald-100 transition hover:bg-emerald-500/20"
+                  >
+                    Admin
+                  </Link>
+                ) : null}
               </div>
 
-              {isLoggedIn && isAdmin ? (
-                <Link
-                  href="/admin"
-                  className="mt-2 inline-flex rounded-full border border-emerald-400/25 bg-emerald-500/12 px-3 py-1.5 text-[11px] font-bold text-emerald-100 transition hover:bg-emerald-500/20"
-                >
-                  Admin
-                </Link>
-              ) : null}
-            </div>
+              <details className="mt-3 group">
+                <summary className="cursor-pointer list-none rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm font-semibold text-white/85 transition hover:bg-white/[0.08]">
+                  <div className="flex items-center justify-between gap-3">
+                    <span>Konto & betalning</span>
+                    <span className="text-white/45 group-open:rotate-180 transition">˅</span>
+                  </div>
+                </summary>
 
-            <div className="ml-3 flex shrink-0 items-center gap-2">
-              {isLoggedIn ? (
-                <AuthStatus />
-              ) : (
-                <div className="flex gap-2">
-                  <Link
-                    href="/login"
-                    className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/[0.1]"
-                  >
-                    Logga in
-                  </Link>
-                  <Link
-                    href="/register"
-                    className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-900 transition hover:bg-slate-100"
-                  >
-                    Skapa konto
-                  </Link>
+                <div className="mt-3">
+                  <AuthStatus />
                 </div>
-              )}
+              </details>
             </div>
-          </div>
+          ) : (
+            <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+              <div className="text-lg font-black text-white">Addes VM-tips</div>
+              <p className="mt-2 text-sm text-white/78">
+                Logga in för att lägga tips, följa resultat och gå med i ligor.
+              </p>
 
-          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white/80 backdrop-blur-xl">
+              <div className="mt-4 flex gap-2">
+                <Link
+                  href="/login"
+                  className="rounded-xl bg-emerald-500/95 px-4 py-2 text-sm font-bold text-white shadow-[0_10px_24px_rgba(16,185,129,0.28)] transition hover:bg-emerald-400"
+                >
+                  Logga in
+                </Link>
+                <Link
+                  href="/register"
+                  className="rounded-xl border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-bold text-white transition hover:bg-white/[0.1]"
+                >
+                  Skapa konto
+                </Link>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/80 backdrop-blur-xl">
             {mobileHeaderNote}
           </div>
         </div>
@@ -211,13 +247,13 @@ export default async function HomePage() {
                 </div>
 
                 <div className="max-w-3xl">
-                  <h1 className="text-[2.75rem] font-black leading-[0.95] tracking-tight text-white md:text-6xl xl:text-7xl">
+                  <h1 className="text-[2.4rem] font-black leading-[0.95] tracking-tight text-white sm:text-[3.1rem] md:text-6xl xl:text-7xl">
                     Välkommen till
                     <br />
                     Addes VM-tips
                   </h1>
 
-                  <p className="mt-4 max-w-2xl text-base leading-8 text-white/90 md:text-lg">
+                  <p className="mt-4 max-w-2xl text-[1.05rem] leading-8 text-white/90 md:text-lg">
                     Lägg dina tips, följ spänningen i fotbolls-VM och tävla mot
                     andra om ära, poäng och topplaceringar i tabellen.
                   </p>
@@ -229,15 +265,7 @@ export default async function HomePage() {
                   <div className="mt-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap">
                     <Link
                       href="/medlemmar"
-                      className="relative z-10 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-white/20 hover:bg-white/[0.08] md:hidden"
-                    >
-                      <div className="text-3xl font-black text-white">{registeredCount}</div>
-                      <div className="text-sm text-white/75">registrerade</div>
-                    </Link>
-
-                    <Link
-                      href="/medlemmar"
-                      className="relative z-10 hidden rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-white/20 hover:bg-white/[0.08] md:block"
+                      className="relative z-10 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-white/20 hover:bg-white/[0.08]"
                     >
                       <div className="text-3xl font-black text-white">{registeredCount}</div>
                       <div className="text-sm text-white/75">registrerade</div>
