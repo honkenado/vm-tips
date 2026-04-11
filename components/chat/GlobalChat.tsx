@@ -17,16 +17,6 @@ function getDisplayName(message: ChatMessage) {
   return fullName || message.username || "Okänd användare";
 }
 
-function getInitials(message: ChatMessage) {
-  const name = getDisplayName(message).trim();
-  const parts = name.split(/\s+/).filter(Boolean);
-
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
-
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-}
-
 function formatTime(dateString: string) {
   try {
     return new Intl.DateTimeFormat("sv-SE", {
@@ -195,7 +185,7 @@ export default function GlobalChat({
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),transparent_35%,transparent_100%)]" />
 
       <div className="relative">
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-emerald-400/90">
               Community
@@ -215,55 +205,47 @@ export default function GlobalChat({
 
         <div
           ref={listRef}
-          className="h-[420px] overflow-y-auto rounded-[1.5rem] border border-white/8 bg-[#020617]/50 p-3 md:p-4"
+          className="h-[300px] overflow-y-auto rounded-[1.5rem] border border-white/8 bg-[#020617]/50 p-3 md:h-[320px]"
         >
-          <div className="space-y-3">
+          <div className="space-y-2">
             {loading ? (
-              <div className="rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-4 text-sm text-white/70">
-                Laddar chatten...
-              </div>
+              <div className="text-sm text-white/70">Laddar chatten...</div>
             ) : messages.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-5 text-sm text-white/65">
+              <div className="text-sm text-white/65">
                 Inga meddelanden ännu. Bli först att skriva något ⚽
               </div>
             ) : (
               messages.map((item) => (
                 <div
                   key={item.id}
-                  className="rounded-[1.4rem] border border-white/8 bg-white/[0.05] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+                  className="border-b border-white/8 pb-2 last:border-b-0 last:pb-0"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-500/12 text-sm font-black text-emerald-100">
-                      {getInitials(item)}
-                    </div>
-
+                  <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                          <span className="text-sm font-black text-white">
-                            {getDisplayName(item)}
-                          </span>
-                          <span className="text-xs text-white/40">
-                            {formatTime(item.created_at)}
-                          </span>
-                        </div>
-
-                        {isAdmin ? (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteMessage(item.id)}
-                            disabled={deletingId === item.id}
-                            className="shrink-0 rounded-full border border-red-400/20 bg-red-500/10 px-3 py-1 text-[11px] font-bold text-red-100 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {deletingId === item.id ? "Raderar..." : "Radera"}
-                          </button>
-                        ) : null}
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="text-sm font-bold text-white">
+                          {getDisplayName(item)}
+                        </span>
+                        <span className="text-xs text-white/40">
+                          {formatTime(item.created_at)}
+                        </span>
                       </div>
 
-                      <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-white/86">
+                      <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-white/82">
                         {item.message}
                       </p>
                     </div>
+
+                    {isAdmin ? (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteMessage(item.id)}
+                        disabled={deletingId === item.id}
+                        className="shrink-0 rounded-full border border-red-400/20 bg-red-500/10 px-2.5 py-1 text-[11px] font-bold text-red-100 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {deletingId === item.id ? "..." : "Radera"}
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               ))
@@ -271,7 +253,7 @@ export default function GlobalChat({
           </div>
         </div>
 
-        <div className="mt-4 rounded-[1.5rem] border border-white/8 bg-[#020617]/60 p-3 md:p-4">
+        <div className="mt-3 rounded-[1.5rem] border border-white/8 bg-[#020617]/60 p-3">
           {isLoggedIn ? (
             <>
               <label htmlFor="global-chat-message" className="sr-only">
@@ -310,7 +292,7 @@ export default function GlobalChat({
               </div>
             </>
           ) : (
-            <div className="rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-4 text-sm text-white/75">
+            <div className="text-sm text-white/75">
               Du behöver vara inloggad för att skriva i chatten.
             </div>
           )}
