@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import InstagramNewsCard from "./InstagramNewsCard";
 import { buildInstagramCaption } from "@/lib/social";
@@ -27,6 +27,9 @@ export default function InstagramExportPanel({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const [isPostImageReady, setIsPostImageReady] = useState(!imageUrl);
+  const [isStoryImageReady, setIsStoryImageReady] = useState(!imageUrl);
+
   const safeTitle = title.trim() || "Rubrik saknas";
   const safeExcerpt = excerpt?.trim() || "Kort text saknas";
 
@@ -37,6 +40,11 @@ export default function InstagramExportPanel({
       id,
     });
   }, [safeTitle, safeExcerpt, id]);
+
+  useEffect(() => {
+    setIsPostImageReady(!imageUrl);
+    setIsStoryImageReady(!imageUrl);
+  }, [imageUrl]);
 
   async function waitForImages(container: HTMLElement) {
     const images = Array.from(container.querySelectorAll("img"));
@@ -56,10 +64,6 @@ export default function InstagramExportPanel({
     );
   }
 
-  async function wait(ms: number) {
-    await new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
   async function downloadImage(
     ref: React.RefObject<HTMLDivElement | null>,
     filename: string,
@@ -71,17 +75,22 @@ export default function InstagramExportPanel({
     setStatusMessage(null);
 
     if (kind === "post") {
+      if (imageUrl && !isPostImageReady) {
+        setErrorMessage("Bilden laddas fortfarande. Testa igen om en sekund.");
+        return;
+      }
       setIsDownloadingPost(true);
     } else {
+      if (imageUrl && !isStoryImageReady) {
+        setErrorMessage("Bilden laddas fortfarande. Testa igen om en sekund.");
+        return;
+      }
       setIsDownloadingStory(true);
     }
 
     try {
       await waitForImages(ref.current);
-
-      await wait(400);
       await document.fonts?.ready;
-      await wait(150);
 
       const dataUrl = await toPng(ref.current, {
         cacheBust: true,
@@ -175,6 +184,12 @@ export default function InstagramExportPanel({
           </button>
         </div>
 
+        {imageUrl && (!isPostImageReady || !isStoryImageReady) ? (
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            Bilden förbereds för export...
+          </div>
+        ) : null}
+
         {statusMessage ? (
           <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
             {statusMessage}
@@ -263,6 +278,7 @@ export default function InstagramExportPanel({
                 excerpt={safeExcerpt}
                 imageUrl={imageUrl}
                 variant="post"
+                onImageReady={() => setIsPostImageReady(true)}
               />
             </div>
 
@@ -272,6 +288,7 @@ export default function InstagramExportPanel({
                 excerpt={safeExcerpt}
                 imageUrl={imageUrl}
                 variant="story"
+                onImageReady={() => setIsStoryImageReady(true)}
               />
             </div>
           </div>

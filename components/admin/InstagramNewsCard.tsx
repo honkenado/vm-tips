@@ -7,6 +7,7 @@ type Props = {
   excerpt?: string | null;
   imageUrl?: string | null;
   variant?: "post" | "story";
+  onImageReady?: () => void;
 };
 
 export default function InstagramNewsCard({
@@ -14,6 +15,7 @@ export default function InstagramNewsCard({
   excerpt,
   imageUrl,
   variant = "post",
+  onImageReady,
 }: Props) {
   const isStory = variant === "story";
   const [safeImageSrc, setSafeImageSrc] = useState<string | null>(null);
@@ -37,14 +39,20 @@ export default function InstagramNewsCard({
         const reader = new FileReader();
         reader.onloadend = () => {
           if (!cancelled) {
-            setSafeImageSrc(
-              typeof reader.result === "string" ? reader.result : null
-            );
+            const result =
+              typeof reader.result === "string" ? reader.result : null;
+
+            setSafeImageSrc(result);
+
+            if (result) {
+              onImageReady?.();
+            }
           }
         };
+
         reader.readAsDataURL(blob);
-      } catch (error) {
-        console.error("Kunde inte läsa bild för export:", error);
+      } catch (err) {
+        console.error("Kunde inte läsa bild för export:", err);
         if (!cancelled) {
           setSafeImageSrc(null);
         }
@@ -59,6 +67,7 @@ export default function InstagramNewsCard({
 
     if (imageUrl.startsWith("data:")) {
       setSafeImageSrc(imageUrl);
+      onImageReady?.();
       return;
     }
 
@@ -67,7 +76,7 @@ export default function InstagramNewsCard({
     return () => {
       cancelled = true;
     };
-  }, [imageUrl]);
+  }, [imageUrl, onImageReady]);
 
   return (
     <div
