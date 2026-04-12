@@ -15,6 +15,7 @@ export default function MobileNav() {
     { href: "/varva", label: "Värva", icon: "🚀" },
     { href: "/tv-guide", label: "TV", icon: "📺" },
     { href: "/lag", label: "Lag", icon: "⚽" },
+    { href: "/om", label: "Om", icon: "👤" },
     { href: "/help", label: "Hjälp", icon: "❓" },
   ];
 

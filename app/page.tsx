@@ -129,14 +129,15 @@ export default async function HomePage() {
     : "VM-tipset är öppet";
 
   const navItems = [
-    { href: "/rules", label: "Regler" },
-    { href: "/help", label: "Hjälp" },
-    { href: "/medlemmar", label: "Medlemmar" },
-    { href: "/league", label: "Ligor" },
-    { href: "/varva", label: "Värva medlemmar" },
-    { href: "/lag", label: "Lag & spelare" },
-    { href: "/tv-guide", label: "TV-guide" },
-  ];
+  { href: "/rules", label: "Regler" },
+  { href: "/help", label: "Hjälp" },
+  { href: "/medlemmar", label: "Medlemmar" },
+  { href: "/league", label: "Ligor" },
+  { href: "/om", label: "Om mig" },
+  { href: "/varva", label: "Värva medlemmar" },
+  { href: "/lag", label: "Lag & spelare" },
+  { href: "/tv-guide", label: "TV-guide" },
+];
 
   return (
     <main className="min-h-screen bg-[#020617] pb-24 md:pb-0">
