@@ -6,19 +6,22 @@ type Props = {
   title: string;
   excerpt?: string | null;
   imageUrl?: string | null;
+  safeImageSrc?: string | null;
   variant?: "post" | "story";
-  onImageReady?: () => void;
+  onImageReady?: (src: string) => void;
 };
 
 export default function InstagramNewsCard({
   title,
   excerpt,
   imageUrl,
+  safeImageSrc,
   variant = "post",
   onImageReady,
 }: Props) {
   const isStory = variant === "story";
-  const [safeImageSrc, setSafeImageSrc] = useState<string | null>(null);
+  const [internalSrc, setInternalSrc] = useState<string | null>(null);
+  const finalSrc = safeImageSrc ?? internalSrc;
 
   useEffect(() => {
     let cancelled = false;
@@ -42,10 +45,10 @@ export default function InstagramNewsCard({
             const result =
               typeof reader.result === "string" ? reader.result : null;
 
-            setSafeImageSrc(result);
+            setInternalSrc(result);
 
             if (result) {
-              onImageReady?.();
+              onImageReady?.(result);
             }
           }
         };
@@ -54,20 +57,25 @@ export default function InstagramNewsCard({
       } catch (err) {
         console.error("Kunde inte läsa bild för export:", err);
         if (!cancelled) {
-          setSafeImageSrc(null);
+          setInternalSrc(null);
         }
       }
     }
 
-    setSafeImageSrc(null);
+    if (safeImageSrc) {
+      setInternalSrc(null);
+      return;
+    }
+
+    setInternalSrc(null);
 
     if (!imageUrl) {
       return;
     }
 
     if (imageUrl.startsWith("data:")) {
-      setSafeImageSrc(imageUrl);
-      onImageReady?.();
+      setInternalSrc(imageUrl);
+      onImageReady?.(imageUrl);
       return;
     }
 
@@ -76,7 +84,11 @@ export default function InstagramNewsCard({
     return () => {
       cancelled = true;
     };
-  }, [imageUrl, onImageReady]);
+  }, [imageUrl, safeImageSrc, onImageReady]);
+
+  const storyExcerpt = excerpt
+    ? "Vi är redan 67 anmälda – nu jagar vi rekordet på 166. Gå in och var med."
+    : null;
 
   return (
     <div
@@ -107,39 +119,39 @@ export default function InstagramNewsCard({
           </div>
         </div>
 
-        <div className={isStory ? "mt-12" : "mt-10"}>
+        <div className={isStory ? "mt-8" : "mt-10"}>
           <h1
             className={
               isStory
-                ? "max-w-[900px] text-[88px] font-black leading-[0.95] tracking-[-0.03em] text-white"
+                ? "max-w-[920px] text-[92px] font-black leading-[0.92] tracking-[-0.03em] text-white"
                 : "max-w-[920px] text-[78px] font-black leading-[0.98] tracking-[-0.03em] text-white"
             }
           >
             {title}
           </h1>
 
-          {excerpt ? (
+          {(isStory ? storyExcerpt : excerpt) ? (
             <p
               className={
                 isStory
-                  ? "mt-7 max-w-[860px] text-[34px] leading-[1.4] text-white/78"
+                  ? "mt-5 max-w-[900px] text-[32px] leading-[1.35] text-white/82"
                   : "mt-6 max-w-[860px] text-[30px] leading-[1.45] text-white/74"
               }
             >
-              {excerpt}
+              {isStory ? storyExcerpt : excerpt}
             </p>
           ) : null}
         </div>
 
-        <div className={isStory ? "mt-12" : "mt-10"}>
+        <div className={isStory ? "mt-6" : "mt-10"}>
           <div className="relative overflow-hidden rounded-[42px] border border-white/10 bg-white/[0.04] shadow-[0_25px_80px_rgba(0,0,0,0.45)]">
-            {safeImageSrc ? (
+            {finalSrc ? (
               <img
-                src={safeImageSrc}
+                src={finalSrc}
                 alt={title}
                 className={
                   isStory
-                    ? "h-[760px] w-full object-cover"
+                    ? "h-[900px] w-full object-cover"
                     : "h-[560px] w-full object-cover"
                 }
               />
@@ -147,7 +159,7 @@ export default function InstagramNewsCard({
               <div
                 className={
                   isStory
-                    ? "flex h-[760px] w-full items-center justify-center bg-[linear-gradient(135deg,rgba(16,185,129,0.10),rgba(255,255,255,0.02))]"
+                    ? "flex h-[900px] w-full items-center justify-center bg-[linear-gradient(135deg,rgba(16,185,129,0.10),rgba(255,255,255,0.02))]"
                     : "flex h-[560px] w-full items-center justify-center bg-[linear-gradient(135deg,rgba(16,185,129,0.10),rgba(255,255,255,0.02))]"
                 }
               >
@@ -167,6 +179,17 @@ export default function InstagramNewsCard({
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
           </div>
         </div>
+
+        {isStory ? (
+          <div className="mt-6 rounded-[28px] border border-emerald-300/20 bg-emerald-500/10 px-6 py-5 text-center">
+            <div className="text-[34px] font-black text-emerald-300">
+              Gå in på sidan och var med
+            </div>
+            <div className="mt-2 text-[24px] text-white/78">
+              Länk i story
+            </div>
+          </div>
+        ) : null}
 
         <div className="mt-auto flex items-end justify-between gap-6 pt-10">
           <div className="max-w-[720px]">
