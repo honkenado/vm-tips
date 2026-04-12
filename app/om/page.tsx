@@ -110,60 +110,40 @@ export default function PlacementsSection() {
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {placements.map((item) => {
-          const isWinner = item.placement.includes("Vinnare");
+        {placements.map((item) => (
+          <article
+            key={`${item.year}-${item.placement}`}
+            className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.04] shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl"
+          >
+            <div className="relative">
+              <img
+                src={item.image}
+                alt={item.placement}
+                className={`h-[260px] w-full object-cover ${
+                  item.imageClassName ?? "object-center"
+                }`}
+              />
 
-          return (
-            <article
-              key={`${item.year}-${item.placement}`}
-              className={`group overflow-hidden rounded-[1.5rem] border text-white backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:scale-[1.02] ${
-                isWinner
-                  ? "border-emerald-400/30 bg-emerald-500/[0.08] shadow-[0_18px_50px_rgba(16,185,129,0.16)] hover:shadow-[0_24px_70px_rgba(16,185,129,0.22)]"
-                  : "border-white/10 bg-white/[0.04] shadow-[0_12px_40px_rgba(0,0,0,0.28)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.4)]"
-              }`}
-            >
-              <div className="relative overflow-hidden">
-                <img
-                  src={item.image}
-                  alt={item.placement}
-                  className={`h-[260px] w-full object-cover transition duration-500 group-hover:scale-110 ${
-                    item.imageClassName ?? "object-center"
-                  }`}
-                />
-
-                <div className="absolute left-3 top-3 rounded-full border border-white/10 bg-[#020617]/80 px-3 py-1 text-xs font-bold text-white backdrop-blur-xl">
-                  {item.year}
-                </div>
-
-                {isWinner ? (
-                  <div className="absolute right-3 top-3 rounded-full border border-emerald-400/30 bg-emerald-500/20 px-3 py-1 text-xs font-bold text-emerald-100 backdrop-blur-xl">
-                    Vinnare
-                  </div>
-                ) : null}
-
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#020617]/70 via-transparent to-transparent opacity-80" />
+              <div className="absolute left-3 top-3 rounded-full border border-white/10 bg-[#020617]/80 px-3 py-1 text-xs font-bold text-white backdrop-blur-xl">
+                {item.year}
               </div>
+            </div>
 
-              <div className="p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/48">
-                  {item.tournament}
-                </p>
+            <div className="p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/48">
+                {item.tournament}
+              </p>
 
-                <h3 className="mt-2 text-xl font-black text-white">
-                  {item.placement}
-                </h3>
+              <h3 className="mt-2 text-xl font-black text-white">
+                {item.placement}
+              </h3>
 
-                <p
-                  className={`mt-1 text-sm font-semibold ${
-                    isWinner ? "text-emerald-200" : "text-emerald-300"
-                  }`}
-                >
-                  {item.name}
-                </p>
-              </div>
-            </article>
-          );
-        })}
+              <p className="mt-1 text-sm text-emerald-300">
+                {item.name}
+              </p>
+            </div>
+          </article>
+        ))}
       </div>
     </section>
   );
