@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import InstagramExportPanel from "@/components/admin/InstagramExportPanel";
 
 type NewsPost = {
   id: string;
@@ -167,6 +168,11 @@ export default function AdminNewsPage() {
     }
   }
 
+  const previewExcerpt =
+    content.trim().length > 180
+      ? `${content.trim().slice(0, 180)}...`
+      : content.trim();
+
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 md:px-6">
       <div className="mx-auto max-w-6xl space-y-8">
@@ -282,6 +288,15 @@ export default function AdminNewsPage() {
                 ) : null}
               </div>
             </form>
+
+            {(title.trim() || content.trim() || imageUrl.trim()) && (
+              <InstagramExportPanel
+                title={title || "Rubrik saknas"}
+                excerpt={previewExcerpt || "Kort text saknas"}
+                imageUrl={imageUrl || null}
+                id={editingPostId}
+              />
+            )}
           </section>
 
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
