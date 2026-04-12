@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createServerClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 function sanitizeFileName(name: string) {
   return name
@@ -10,6 +11,33 @@ function sanitizeFileName(name: string) {
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createServerClient();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "Du måste vara inloggad." },
+        { status: 401 }
+      );
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile?.is_admin) {
+      return NextResponse.json(
+        { error: "Du har inte behörighet att ladda upp bilder." },
+        { status: 403 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file");
 
@@ -35,7 +63,17 @@ export async function POST(req: Request) {
       );
     }
 
-    const supabase = await createClient();
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      return NextResponse.json(
+        { error: "Supabase servermiljö saknas." },
+        { status: 500 }
+      );
+    }
+
+    const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
@@ -44,7 +82,7 @@ export async function POST(req: Request) {
     const safeName = sanitizeFileName(file.name);
     const filePath = `news/${timestamp}-${safeName}`;
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabaseAdmin.storage
       .from("news-images")
       .upload(filePath, buffer, {
         contentType: file.type,
@@ -58,7 +96,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data: publicUrlData } = supabase.storage
+    const { data: publicUrlData } = supabaseAdmin.storage
       .from("news-images")
       .getPublicUrl(filePath);
 
@@ -68,7 +106,7 @@ export async function POST(req: Request) {
       publicUrl: publicUrlData.publicUrl,
     });
   } catch (error) {
-    console.error(error);
+    console.error("news-upload error:", error);
     return NextResponse.json(
       { error: "Något gick fel vid uppladdning." },
       { status: 500 }
