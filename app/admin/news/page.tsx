@@ -299,15 +299,24 @@ export default function AdminNewsPage() {
                   </label>
 
                   <input
-                    id="imageFile"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] ?? null;
-                      setSelectedFile(file);
-                    }}
-                    className="block w-full text-sm text-slate-700"
-                  />
+  id="imageFile"
+  type="file"
+  accept="image/*"
+  onChange={(e) => {
+    const file = e.target.files?.[0] ?? null;
+    setSelectedFile(file);
+  }}
+  className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-emerald-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-emerald-700"
+/>
+{selectedFile ? (
+  <p className="mt-2 text-sm text-emerald-700">
+    Vald bild: {selectedFile.name}
+  </p>
+) : (
+  <p className="mt-2 text-xs text-slate-500">
+    Ingen bild vald ännu.
+  </p>
+)}
                 </div>
 
                 <div className="flex flex-wrap gap-3">
