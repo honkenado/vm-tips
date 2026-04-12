@@ -154,7 +154,7 @@ export default function InstagramExportPanel({
           </div>
         ) : null}
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[260px_minmax(0,1fr)]">
+        <div className="mt-6 grid gap-6 2xl:grid-cols-[260px_minmax(0,1fr)]">
           <div>
             <div className="mb-3">
               <div className="text-sm font-semibold text-slate-900">
@@ -180,7 +180,7 @@ export default function InstagramExportPanel({
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4">
             <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
               <div className="text-sm font-semibold text-slate-900">
                 Caption

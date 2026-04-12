@@ -16,6 +16,10 @@ export default function AdminNewsPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -52,17 +56,69 @@ export default function AdminNewsPage() {
     setTitle("");
     setContent("");
     setImageUrl("");
+    setSelectedFile(null);
     setEditingPostId(null);
+
+    const fileInput = document.getElementById(
+      "imageFile"
+    ) as HTMLInputElement | null;
+    if (fileInput) {
+      fileInput.value = "";
+    }
   }
 
   function startEditing(post: NewsPost) {
     setTitle(post.title);
     setContent(post.content);
     setImageUrl(post.image_url ?? "");
+    setSelectedFile(null);
     setEditingPostId(post.id);
     setMessage(null);
     setError(null);
+
+    const fileInput = document.getElementById(
+      "imageFile"
+    ) as HTMLInputElement | null;
+    if (fileInput) {
+      fileInput.value = "";
+    }
+
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function handleImageUpload() {
+    if (!selectedFile) {
+      setError("Välj en bild först.");
+      return;
+    }
+
+    setUploadingImage(true);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const res = await fetch("/api/admin/news-upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Kunde inte ladda upp bilden");
+      }
+
+      setImageUrl(data.publicUrl ?? "");
+      setMessage("Bilden laddades upp.");
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Kunde inte ladda upp bilden");
+    } finally {
+      setUploadingImage(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -82,7 +138,7 @@ export default function AdminNewsPage() {
           body: JSON.stringify({
             title,
             content,
-            image_url: imageUrl,
+            image_url: imageUrl || null,
             is_published: true,
           }),
         });
@@ -112,7 +168,7 @@ export default function AdminNewsPage() {
         body: JSON.stringify({
           title,
           content,
-          image_url: imageUrl,
+          image_url: imageUrl || null,
           is_published: true,
         }),
       });
@@ -233,6 +289,62 @@ export default function AdminNewsPage() {
                 />
               </div>
 
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-3">
+                  <label
+                    htmlFor="imageFile"
+                    className="mb-2 block text-sm font-medium text-slate-700"
+                  >
+                    Ladda upp bild
+                  </label>
+
+                  <input
+                    id="imageFile"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      setSelectedFile(file);
+                    }}
+                    className="block w-full text-sm text-slate-700"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={handleImageUpload}
+                    disabled={!selectedFile || uploadingImage}
+                    className="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {uploadingImage ? "Laddar upp..." : "Ladda upp bild"}
+                  </button>
+
+                  {imageUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageUrl("");
+                        setSelectedFile(null);
+                        const fileInput = document.getElementById(
+                          "imageFile"
+                        ) as HTMLInputElement | null;
+                        if (fileInput) {
+                          fileInput.value = "";
+                        }
+                      }}
+                      className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                    >
+                      Ta bort bild
+                    </button>
+                  ) : null}
+                </div>
+
+                <p className="mt-3 text-xs text-slate-500">
+                  Rekommendation: ladda upp bilden här i stället för att använda externa bildlänkar.
+                </p>
+              </div>
+
               <div>
                 <label
                   htmlFor="imageUrl"
@@ -248,7 +360,20 @@ export default function AdminNewsPage() {
                   placeholder="https://..."
                   className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                 />
+                <p className="mt-2 text-xs text-slate-500">
+                  Fylls i automatiskt efter uppladdning, men kan fortfarande ändras manuellt.
+                </p>
               </div>
+
+              {imageUrl ? (
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                  <img
+                    src={imageUrl}
+                    alt="Förhandsvisning"
+                    className="max-h-72 w-full object-cover"
+                  />
+                </div>
+              ) : null}
 
               {message ? (
                 <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
