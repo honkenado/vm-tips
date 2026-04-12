@@ -73,7 +73,16 @@ export async function POST(req: Request) {
       );
     }
 
-    const supabaseAdmin = createSupabaseClient(supabaseUrl, serviceRoleKey);
+    const supabaseAdmin = createSupabaseClient(
+      supabaseUrl,
+      serviceRoleKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
