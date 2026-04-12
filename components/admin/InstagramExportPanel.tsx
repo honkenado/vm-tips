@@ -213,25 +213,33 @@ export default function InstagramExportPanel({
           </div>
         </div>
 
-        <div className="absolute -left-[9999px] top-0">
-          <div ref={postRef}>
-            <InstagramNewsCard
-              title={safeTitle}
-              excerpt={safeExcerpt}
-              imageUrl={imageUrl}
-              variant="post"
-            />
-          </div>
+        <div
+  style={{
+    position: "fixed",
+    left: "-99999px",
+    top: 0,
+    pointerEvents: "none",
+    opacity: 0,
+  }}
+>
+  <div ref={postRef}>
+    <InstagramNewsCard
+      title={safeTitle}
+      excerpt={safeExcerpt}
+      imageUrl={imageUrl}
+      variant="post"
+    />
+  </div>
 
-          <div ref={storyRef}>
-            <InstagramNewsCard
-              title={safeTitle}
-              excerpt={safeExcerpt}
-              imageUrl={imageUrl}
-              variant="story"
-            />
-          </div>
-        </div>
+  <div ref={storyRef}>
+    <InstagramNewsCard
+      title={safeTitle}
+      excerpt={safeExcerpt}
+      imageUrl={imageUrl}
+      variant="story"
+    />
+  </div>
+</div>
       </div>
     </div>
   );
