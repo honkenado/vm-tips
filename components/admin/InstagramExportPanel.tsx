@@ -38,74 +38,74 @@ export default function InstagramExportPanel({
     });
   }, [safeTitle, safeExcerpt, id]);
 
- async function waitForImages(container: HTMLElement) {
-  const images = Array.from(container.querySelectorAll("img"));
+  async function waitForImages(container: HTMLElement) {
+    const images = Array.from(container.querySelectorAll("img"));
 
-  await Promise.all(
-    images.map((img) => {
-      if (img.complete && img.naturalWidth > 0) {
-        return Promise.resolve();
-      }
+    await Promise.all(
+      images.map((img) => {
+        if (img.complete && img.naturalWidth > 0) {
+          return Promise.resolve();
+        }
 
-      return new Promise<void>((resolve) => {
-        const done = () => resolve();
-        img.addEventListener("load", done, { once: true });
-        img.addEventListener("error", done, { once: true });
-      });
-    })
-  );
-}
-
-async function downloadImage(
-  ref: React.RefObject<HTMLDivElement | null>,
-  filename: string,
-  kind: "post" | "story"
-) {
-  if (!ref.current) return;
-
-  setErrorMessage(null);
-  setStatusMessage(null);
-
-  if (kind === "post") {
-    setIsDownloadingPost(true);
-  } else {
-    setIsDownloadingStory(true);
+        return new Promise<void>((resolve) => {
+          const done = () => resolve();
+          img.addEventListener("load", done, { once: true });
+          img.addEventListener("error", done, { once: true });
+        });
+      })
+    );
   }
 
-  try {
-    await waitForImages(ref.current);
-    await new Promise((resolve) => setTimeout(resolve, 150));
+  async function downloadImage(
+    ref: React.RefObject<HTMLDivElement | null>,
+    filename: string,
+    kind: "post" | "story"
+  ) {
+    if (!ref.current) return;
 
-    const dataUrl = await toPng(ref.current, {
-      cacheBust: true,
-      pixelRatio: 2,
-      backgroundColor: "#020617",
-      includeQueryParams: true,
-    });
+    setErrorMessage(null);
+    setStatusMessage(null);
 
-    const link = document.createElement("a");
-    link.download = filename;
-    link.href = dataUrl;
-    link.click();
-
-    setStatusMessage(
-      kind === "post"
-        ? "Instagram-post nedladdad."
-        : "Instagram-story nedladdad."
-    );
-  } catch (error) {
-    console.error(error);
-    setErrorMessage(
-      "Kunde inte skapa bilden. Kontrollera att bilden hunnit laddas klart och testa igen."
-    );
-  } finally {
     if (kind === "post") {
-      setIsDownloadingPost(false);
+      setIsDownloadingPost(true);
     } else {
-      setIsDownloadingStory(false);
+      setIsDownloadingStory(true);
+    }
+
+    try {
+      await waitForImages(ref.current);
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      const dataUrl = await toPng(ref.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#020617",
+        includeQueryParams: true,
+      });
+
+      const link = document.createElement("a");
+      link.download = filename;
+      link.href = dataUrl;
+      link.click();
+
+      setStatusMessage(
+        kind === "post"
+          ? "Instagram-post nedladdad."
+          : "Instagram-story nedladdad."
+      );
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(
+        "Kunde inte skapa bilden. Kontrollera att bilden hunnit laddas klart och testa igen."
+      );
+    } finally {
+      if (kind === "post") {
+        setIsDownloadingPost(false);
+      } else {
+        setIsDownloadingStory(false);
+      }
     }
   }
-}
 
   async function copyCaption() {
     setErrorMessage(null);
@@ -213,9 +213,7 @@ async function downloadImage(
             </div>
 
             <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-              <div className="text-sm font-semibold text-slate-900">
-                Info
-              </div>
+              <div className="text-sm font-semibold text-slate-900">Info</div>
 
               <div className="mt-2 space-y-2 text-sm text-slate-600">
                 <p>
@@ -236,32 +234,37 @@ async function downloadImage(
         </div>
 
         <div
-  style={{
-    position: "fixed",
-    left: "-99999px",
-    top: 0,
-    pointerEvents: "none",
-    opacity: 0,
-  }}
->
-  <div ref={postRef}>
-    <InstagramNewsCard
-      title={safeTitle}
-      excerpt={safeExcerpt}
-      imageUrl={imageUrl}
-      variant="post"
-    />
-  </div>
+          style={{
+            position: "fixed",
+            left: "-99999px",
+            top: 0,
+            pointerEvents: "none",
+            opacity: 0,
+            width: 0,
+            height: 0,
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ contain: "strict" }}>
+            <div ref={postRef}>
+              <InstagramNewsCard
+                title={safeTitle}
+                excerpt={safeExcerpt}
+                imageUrl={imageUrl}
+                variant="post"
+              />
+            </div>
 
-  <div ref={storyRef}>
-    <InstagramNewsCard
-      title={safeTitle}
-      excerpt={safeExcerpt}
-      imageUrl={imageUrl}
-      variant="story"
-    />
-  </div>
-</div>
+            <div ref={storyRef}>
+              <InstagramNewsCard
+                title={safeTitle}
+                excerpt={safeExcerpt}
+                imageUrl={imageUrl}
+                variant="story"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
