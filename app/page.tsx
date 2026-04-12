@@ -150,6 +150,7 @@ export default async function HomePage() {
                   <div className="truncate text-xl font-black text-white">
                     {displayName}
                   </div>
+
                   <div className="mt-2 flex flex-wrap gap-2">
                     {profile?.payment_code ? (
                       <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-sm font-bold text-white/90">
@@ -183,7 +184,9 @@ export default async function HomePage() {
                 <summary className="cursor-pointer list-none rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm font-semibold text-white/85 transition hover:bg-white/[0.08]">
                   <div className="flex items-center justify-between gap-3">
                     <span>Konto & betalning</span>
-                    <span className="text-white/45 group-open:rotate-180 transition">˅</span>
+                    <span className="text-white/45 transition group-open:rotate-180">
+                      ˅
+                    </span>
                   </div>
                 </summary>
 
@@ -247,22 +250,22 @@ export default async function HomePage() {
                 </div>
 
                 <div className="max-w-3xl">
-                  <h1 className="text-[2.4rem] font-black leading-[0.95] tracking-tight text-white sm:text-[3.1rem] md:text-6xl xl:text-7xl">
+                  <h1 className="text-[2.25rem] font-black leading-[0.95] tracking-tight text-white sm:text-[2.8rem] md:text-6xl xl:text-7xl">
                     Välkommen till
                     <br />
                     Addes VM-tips
                   </h1>
 
-                  <p className="mt-4 max-w-2xl text-[1.05rem] leading-8 text-white/90 md:text-lg">
+                  <p className="mt-3 max-w-2xl text-base leading-7 text-white/90 md:mt-4 md:text-lg md:leading-8">
                     Lägg dina tips, följ spänningen i fotbolls-VM och tävla mot
                     andra om ära, poäng och topplaceringar i tabellen.
                   </p>
 
-                  <p className="mt-2 text-sm leading-7 text-white/78">
+                  <p className="mt-2 text-sm leading-6 text-white/78 md:leading-7">
                     Tippa gruppspel, slutspel och hela vägen fram till världsmästaren.
                   </p>
 
-                  <div className="mt-6 grid grid-cols-2 gap-3 md:flex md:flex-wrap">
+                  <div className="mt-5 grid grid-cols-2 gap-3 md:mt-6 md:flex md:flex-wrap">
                     <Link
                       href="/medlemmar"
                       className="relative z-10 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-white/20 hover:bg-white/[0.08]"
@@ -286,7 +289,7 @@ export default async function HomePage() {
                     </div>
                   </div>
 
-                  <div className="mt-6 md:mt-7">
+                  <div className="mt-5 md:mt-7">
                     {isLoggedIn ? (
                       <Link
                         href="/tips"
@@ -411,6 +414,59 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+
+        <div className="mt-4 grid gap-4 md:hidden">
+          <section className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-emerald-400/90">
+                  Matchdag
+                </p>
+                <h2 className="mt-1 text-xl font-black text-white">Nästa match</h2>
+              </div>
+
+              <Link
+                href="/tv-guide"
+                className="text-xs font-semibold text-white/72 hover:text-white hover:underline"
+              >
+                Se allt
+              </Link>
+            </div>
+
+            {featuredMatch ? (
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                <div className="text-base font-black text-white">
+                  {featuredMatch.homeTeam} - {featuredMatch.awayTeam}
+                </div>
+
+                <div className="mt-1 text-xs text-white/82">
+                  {featuredMatch.date} · {featuredMatch.time}
+                </div>
+
+                <div className="mt-1 text-xs text-white/72">
+                  {featuredMatch.groupName}
+                </div>
+
+                <div className="mt-1 text-xs text-white/82">
+                  {featuredMatch.tvChannel || "TV-kanal saknas"}
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs text-white/72">
+                Ingen match hittades i spelschemat
+              </div>
+            )}
+
+            <Link
+              href="/tv-guide"
+              className="mt-3 block w-full rounded-xl bg-white/[0.07] py-2.5 text-center text-sm font-bold text-white transition hover:bg-white/[0.11]"
+            >
+              TV-guide
+            </Link>
+          </section>
+
+          <OnlineNow isLoggedIn={isLoggedIn} />
+        </div>
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
           <div className="min-w-0">
