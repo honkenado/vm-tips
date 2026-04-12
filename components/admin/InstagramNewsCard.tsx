@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 type Props = {
   title: string;
   excerpt?: string | null;
@@ -14,6 +16,58 @@ export default function InstagramNewsCard({
   variant = "post",
 }: Props) {
   const isStory = variant === "story";
+  const [safeImageSrc, setSafeImageSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadImageAsDataUrl(url: string) {
+      try {
+        const res = await fetch(url, {
+          mode: "cors",
+          credentials: "omit",
+        });
+
+        if (!res.ok) {
+          throw new Error("Kunde inte hämta bilden");
+        }
+
+        const blob = await res.blob();
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (!cancelled) {
+            setSafeImageSrc(
+              typeof reader.result === "string" ? reader.result : null
+            );
+          }
+        };
+        reader.readAsDataURL(blob);
+      } catch (error) {
+        console.error("Kunde inte läsa bild för export:", error);
+        if (!cancelled) {
+          setSafeImageSrc(null);
+        }
+      }
+    }
+
+    setSafeImageSrc(null);
+
+    if (!imageUrl) {
+      return;
+    }
+
+    if (imageUrl.startsWith("data:")) {
+      setSafeImageSrc(imageUrl);
+      return;
+    }
+
+    loadImageAsDataUrl(imageUrl);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [imageUrl]);
 
   return (
     <div
@@ -70,11 +124,10 @@ export default function InstagramNewsCard({
 
         <div className={isStory ? "mt-12" : "mt-10"}>
           <div className="relative overflow-hidden rounded-[42px] border border-white/10 bg-white/[0.04] shadow-[0_25px_80px_rgba(0,0,0,0.45)]">
-            {imageUrl ? (
+            {safeImageSrc ? (
               <img
-                src={imageUrl}
+                src={safeImageSrc}
                 alt={title}
-                crossOrigin="anonymous"
                 className={
                   isStory
                     ? "h-[760px] w-full object-cover"
@@ -93,7 +146,6 @@ export default function InstagramNewsCard({
                   <img
                     src="/logo.png"
                     alt="Addes VM-tips"
-                    crossOrigin="anonymous"
                     className="mb-6 h-28 w-auto object-contain opacity-90"
                   />
                   <div className="text-3xl font-semibold text-white/75">

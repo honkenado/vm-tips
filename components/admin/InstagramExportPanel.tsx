@@ -56,6 +56,10 @@ export default function InstagramExportPanel({
     );
   }
 
+  async function wait(ms: number) {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
   async function downloadImage(
     ref: React.RefObject<HTMLDivElement | null>,
     filename: string,
@@ -74,7 +78,10 @@ export default function InstagramExportPanel({
 
     try {
       await waitForImages(ref.current);
-      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      await wait(400);
+      await document.fonts?.ready;
+      await wait(150);
 
       const dataUrl = await toPng(ref.current, {
         cacheBust: true,
@@ -82,6 +89,10 @@ export default function InstagramExportPanel({
         backgroundColor: "#020617",
         includeQueryParams: true,
       });
+
+      if (!dataUrl.startsWith("data:image/png")) {
+        throw new Error("Ogiltig bilddata skapades.");
+      }
 
       const link = document.createElement("a");
       link.download = filename;
