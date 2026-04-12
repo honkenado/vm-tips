@@ -65,67 +65,65 @@ export default function InstagramExportPanel({
   }
 
   async function downloadImage(
-    ref: React.RefObject<HTMLDivElement | null>,
-    filename: string,
-    kind: "post" | "story"
-  ) {
-    if (!ref.current) return;
+  ref: React.RefObject<HTMLDivElement | null>,
+  filename: string,
+  kind: "post" | "story"
+) {
+  if (!ref.current) return;
 
-    setErrorMessage(null);
-    setStatusMessage(null);
+  setErrorMessage(null);
+  setStatusMessage(null);
 
-    if (kind === "post") {
-      if (imageUrl && !isPostImageReady) {
-        setErrorMessage("Bilden laddas fortfarande. Testa igen om en sekund.");
-        return;
-      }
-      setIsDownloadingPost(true);
-    } else {
-      if (imageUrl && !isStoryImageReady) {
-        setErrorMessage("Bilden laddas fortfarande. Testa igen om en sekund.");
-        return;
-      }
-      setIsDownloadingStory(true);
+  if (kind === "post") {
+    if (imageUrl && !isPostImageReady) {
+      setErrorMessage("Bilden laddas fortfarande. Testa igen om en sekund.");
+      return;
     }
+    setIsDownloadingPost(true);
+  } else {
+    if (imageUrl && !isStoryImageReady) {
+      setErrorMessage("Bilden laddas fortfarande. Testa igen om en sekund.");
+      return;
+    }
+    setIsDownloadingStory(true);
+  }
 
-    try {
-      await waitForImages(ref.current);
-      await document.fonts?.ready;
+  try {
+    await waitForImages(ref.current);
+    await document.fonts?.ready;
 
-      const dataUrl = await toPng(ref.current, {
-        cacheBust: true,
-        pixelRatio: 2,
-        backgroundColor: "#020617",
-        includeQueryParams: true,
-      });
+    const dataUrl = await toPng(ref.current, {
+      cacheBust: true,
+      pixelRatio: 2,
+      backgroundColor: "#020617",
+      includeQueryParams: true,
+    });
 
-      if (!dataUrl.startsWith("data:image/png")) {
-        throw new Error("Ogiltig bilddata skapades.");
-      }
+    console.log("EXPORT OK", dataUrl.slice(0, 80));
 
-      const link = document.createElement("a");
-      link.download = filename;
-      link.href = dataUrl;
-      link.click();
+    const link = document.createElement("a");
+    link.download = filename;
+    link.href = dataUrl;
+    link.click();
 
-      setStatusMessage(
-        kind === "post"
-          ? "Instagram-post nedladdad."
-          : "Instagram-story nedladdad."
-      );
-    } catch (error) {
-      console.error(error);
-      setErrorMessage(
-        "Kunde inte skapa bilden. Kontrollera att bilden hunnit laddas klart och testa igen."
-      );
-    } finally {
-      if (kind === "post") {
-        setIsDownloadingPost(false);
-      } else {
-        setIsDownloadingStory(false);
-      }
+    setStatusMessage(
+      kind === "post"
+        ? "Instagram-post nedladdad."
+        : "Instagram-story nedladdad."
+    );
+  } catch (error) {
+    console.error("EXPORT FEL:", error);
+    setErrorMessage(
+      "Kunde inte skapa bilden. Kontrollera att bilden hunnit laddas klart och testa igen."
+    );
+  } finally {
+    if (kind === "post") {
+      setIsDownloadingPost(false);
+    } else {
+      setIsDownloadingStory(false);
     }
   }
+}
 
   async function copyCaption() {
     setErrorMessage(null);
@@ -260,39 +258,37 @@ export default function InstagramExportPanel({
         </div>
 
         <div
-          style={{
-            position: "fixed",
-            left: "-99999px",
-            top: 0,
-            pointerEvents: "none",
-            opacity: 0,
-            width: 0,
-            height: 0,
-            overflow: "hidden",
-          }}
-        >
-          <div style={{ contain: "strict" }}>
-            <div ref={postRef}>
-              <InstagramNewsCard
-                title={safeTitle}
-                excerpt={safeExcerpt}
-                imageUrl={imageUrl}
-                variant="post"
-                onImageReady={() => setIsPostImageReady(true)}
-              />
-            </div>
+  style={{
+    position: "fixed",
+    left: "-10000px",
+    top: 0,
+    pointerEvents: "none",
+    opacity: 1,
+    zIndex: -1,
+  }}
+>
+  <div>
+    <div ref={postRef}>
+      <InstagramNewsCard
+        title={safeTitle}
+        excerpt={safeExcerpt}
+        imageUrl={imageUrl}
+        variant="post"
+        onImageReady={() => setIsPostImageReady(true)}
+      />
+    </div>
 
-            <div ref={storyRef}>
-              <InstagramNewsCard
-                title={safeTitle}
-                excerpt={safeExcerpt}
-                imageUrl={imageUrl}
-                variant="story"
-                onImageReady={() => setIsStoryImageReady(true)}
-              />
-            </div>
-          </div>
-        </div>
+    <div ref={storyRef}>
+      <InstagramNewsCard
+        title={safeTitle}
+        excerpt={safeExcerpt}
+        imageUrl={imageUrl}
+        variant="story"
+        onImageReady={() => setIsStoryImageReady(true)}
+      />
+    </div>
+  </div>
+</div>
       </div>
     </div>
   );
