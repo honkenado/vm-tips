@@ -38,52 +38,74 @@ export default function InstagramExportPanel({
     });
   }, [safeTitle, safeExcerpt, id]);
 
-  async function downloadImage(
-    ref: React.RefObject<HTMLDivElement | null>,
-    filename: string,
-    kind: "post" | "story"
-  ) {
-    if (!ref.current) return;
+ async function waitForImages(container: HTMLElement) {
+  const images = Array.from(container.querySelectorAll("img"));
 
-    setErrorMessage(null);
-    setStatusMessage(null);
-
-    if (kind === "post") {
-      setIsDownloadingPost(true);
-    } else {
-      setIsDownloadingStory(true);
-    }
-
-    try {
-      const dataUrl = await toPng(ref.current, {
-        cacheBust: true,
-        pixelRatio: 2,
-        backgroundColor: "#020617",
-      });
-
-      const link = document.createElement("a");
-      link.download = filename;
-      link.href = dataUrl;
-      link.click();
-
-      setStatusMessage(
-        kind === "post"
-          ? "Instagram-post nedladdad."
-          : "Instagram-story nedladdad."
-      );
-    } catch (error) {
-      console.error(error);
-      setErrorMessage(
-        "Kunde inte skapa bilden. Testa igen eller kontrollera bild-URL:en."
-      );
-    } finally {
-      if (kind === "post") {
-        setIsDownloadingPost(false);
-      } else {
-        setIsDownloadingStory(false);
+  await Promise.all(
+    images.map((img) => {
+      if (img.complete && img.naturalWidth > 0) {
+        return Promise.resolve();
       }
+
+      return new Promise<void>((resolve) => {
+        const done = () => resolve();
+        img.addEventListener("load", done, { once: true });
+        img.addEventListener("error", done, { once: true });
+      });
+    })
+  );
+}
+
+async function downloadImage(
+  ref: React.RefObject<HTMLDivElement | null>,
+  filename: string,
+  kind: "post" | "story"
+) {
+  if (!ref.current) return;
+
+  setErrorMessage(null);
+  setStatusMessage(null);
+
+  if (kind === "post") {
+    setIsDownloadingPost(true);
+  } else {
+    setIsDownloadingStory(true);
+  }
+
+  try {
+    await waitForImages(ref.current);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    const dataUrl = await toPng(ref.current, {
+      cacheBust: true,
+      pixelRatio: 2,
+      backgroundColor: "#020617",
+      includeQueryParams: true,
+    });
+
+    const link = document.createElement("a");
+    link.download = filename;
+    link.href = dataUrl;
+    link.click();
+
+    setStatusMessage(
+      kind === "post"
+        ? "Instagram-post nedladdad."
+        : "Instagram-story nedladdad."
+    );
+  } catch (error) {
+    console.error(error);
+    setErrorMessage(
+      "Kunde inte skapa bilden. Kontrollera att bilden hunnit laddas klart och testa igen."
+    );
+  } finally {
+    if (kind === "post") {
+      setIsDownloadingPost(false);
+    } else {
+      setIsDownloadingStory(false);
     }
   }
+}
 
   async function copyCaption() {
     setErrorMessage(null);
