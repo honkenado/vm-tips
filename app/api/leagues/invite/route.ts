@@ -37,19 +37,25 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data: league, error: leagueError } = await supabase
+    const { data: leagues, error: leagueError } = await supabase
       .from("leagues")
       .select("id, name, created_by")
-      .eq("id", leagueId)
-      .single();
+      .eq("id", leagueId);
 
-    if (leagueError || !league) {
+    if (leagueError) {
+      console.error("Fel vid hämtning av liga:", leagueError);
+      return NextResponse.json({ error: "Kunde inte hämta ligan" }, { status: 500 });
+    }
+
+    const league = (leagues ?? [])[0];
+
+    if (!league) {
       return NextResponse.json({ error: "Ligan hittades inte" }, { status: 404 });
     }
 
     if (league.created_by !== user.id) {
       return NextResponse.json(
-        { error: "Endast skaparen av ligan kan bjuda in" },
+        { error: "Endast ligans skapare kan bjuda in deltagare" },
         { status: 403 }
       );
     }
@@ -85,7 +91,7 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (inviteCheckError) {
-      console.error("Fel vid kontroll av befintlig inbjudan:", inviteCheckError);
+      console.error("Fel vid kontroll av inbjudan:", inviteCheckError);
       return NextResponse.json(
         { error: "Kunde inte kontrollera befintliga inbjudningar" },
         { status: 500 }

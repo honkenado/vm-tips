@@ -11,33 +11,23 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      console.log("❌ No user");
       return NextResponse.json({ leagues: [] });
     }
-
-    console.log("✅ USER ID:", user.id);
 
     const { data, error } = await supabase
       .from("leagues")
       .select("*");
 
     if (error) {
-      console.error("DB error:", error);
+      console.error("DB error i /api/leagues/my-owned:", error);
       return NextResponse.json({ leagues: [] });
     }
 
-    console.log("ALL LEAGUES:", data);
-
-    // 🔥 filtrera i kod istället (mycket säkrare)
-    const owned = (data ?? []).filter(
-      (l) => l.created_by === user.id
-    );
-
-    console.log("OWNED LEAGUES:", owned);
+    const owned = (data ?? []).filter((league) => league.created_by === user.id);
 
     return NextResponse.json({ leagues: owned });
-  } catch (err) {
-    console.error("Server error:", err);
+  } catch (error) {
+    console.error("Server error i /api/leagues/my-owned:", error);
     return NextResponse.json({ leagues: [] });
   }
 }

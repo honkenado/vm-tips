@@ -36,6 +36,18 @@ type MeResponse = {
   error?: string;
 };
 
+type SentInvite = {
+  id: string;
+  league_id: string;
+  invited_user_id: string;
+  status: string;
+};
+
+type SentInvitesResponse = {
+  invites?: SentInvite[];
+  error?: string;
+};
+
 export default function MembersListSection() {
   const [members, setMembers] = useState<MemberEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,21 +61,26 @@ export default function MembersListSection() {
   const [inviteLoadingId, setInviteLoadingId] = useState<string | null>(null);
   const [inviteMessage, setInviteMessage] = useState<string | null>(null);
 
+  const [sentInvites, setSentInvites] = useState<SentInvite[]>([]);
+
   useEffect(() => {
     async function loadAll() {
       try {
         setLoading(true);
         setErrorMessage(null);
 
-        const [membersRes, leaguesRes, meRes] = await Promise.all([
-          fetch("/api/members", { cache: "no-store" }),
-          fetch("/api/leagues/my-owned", { cache: "no-store" }),
-          fetch("/api/me", { cache: "no-store" }),
-        ]);
+        const [membersRes, leaguesRes, meRes, sentInvitesRes] =
+          await Promise.all([
+            fetch("/api/members", { cache: "no-store" }),
+            fetch("/api/leagues/my-owned", { cache: "no-store" }),
+            fetch("/api/me", { cache: "no-store" }),
+            fetch("/api/leagues/invites/sent", { cache: "no-store" }),
+          ]);
 
         const membersData: MembersResponse = await membersRes.json();
         const leaguesData: OwnedLeaguesResponse = await leaguesRes.json();
         const meData: MeResponse = await meRes.json();
+        const sentInvitesData: SentInvitesResponse = await sentInvitesRes.json();
 
         if (!membersRes.ok) {
           setErrorMessage(membersData.error || "Kunde inte hämta medlemmar");
@@ -80,12 +97,16 @@ export default function MembersListSection() {
           setOwnedLeagues(leagues);
 
           if (leagues.length > 0) {
-            setSelectedLeagueId(leagues[0].id);
+            setSelectedLeagueId((prev) => prev || leagues[0].id);
           }
         }
 
         if (meRes.ok) {
           setCurrentUserId(meData.user?.id ?? null);
+        }
+
+        if (sentInvitesRes.ok) {
+          setSentInvites(sentInvitesData.invites ?? []);
         }
       } catch {
         setErrorMessage("Kunde inte hämta medlemmar");
@@ -129,6 +150,15 @@ export default function MembersListSection() {
   const selectedLeague =
     ownedLeagues.find((league) => league.id === selectedLeagueId) ?? null;
 
+  function getPendingInviteForMember(memberId: string) {
+    return sentInvites.find(
+      (invite) =>
+        invite.invited_user_id === memberId &&
+        invite.league_id === selectedLeagueId &&
+        invite.status === "pending"
+    );
+  }
+
   async function inviteToLeague(memberId: string, displayName: string) {
     if (!selectedLeagueId) return;
 
@@ -154,6 +184,15 @@ export default function MembersListSection() {
         return;
       }
 
+      const sentRes = await fetch("/api/leagues/invites/sent", {
+        cache: "no-store",
+      });
+      const sentData: SentInvitesResponse = await sentRes.json();
+
+      if (sentRes.ok) {
+        setSentInvites(sentData.invites ?? []);
+      }
+
       setInviteMessage(
         `Inbjudan skickad till ${displayName}${
           selectedLeague ? ` (${selectedLeague.name})` : ""
@@ -161,6 +200,36 @@ export default function MembersListSection() {
       );
     } catch {
       setInviteMessage("Kunde inte skicka inbjudan");
+    } finally {
+      setInviteLoadingId(null);
+    }
+  }
+
+  async function undoInvite(inviteId: string, displayName: string) {
+    setInviteLoadingId(inviteId);
+    setInviteMessage(null);
+
+    try {
+      const res = await fetch(`/api/leagues/invite/${inviteId}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setInviteMessage(data.error || "Kunde inte ångra inbjudan");
+        return;
+      }
+
+      setSentInvites((prev) => prev.filter((invite) => invite.id !== inviteId));
+
+      setInviteMessage(
+        `Inbjudan till ${displayName} har tagits bort${
+          selectedLeague ? ` från ${selectedLeague.name}` : ""
+        }.`
+      );
+    } catch {
+      setInviteMessage("Kunde inte ångra inbjudan");
     } finally {
       setInviteLoadingId(null);
     }
@@ -260,6 +329,10 @@ export default function MembersListSection() {
           {filteredMembers.map((member) => {
             const isSelf = currentUserId === member.id;
             const canInvite = ownedLeagues.length > 0 && !isSelf;
+            const pendingInvite = getPendingInviteForMember(member.id);
+            const isUndoLoading = inviteLoadingId === pendingInvite?.id;
+            const isInviteLoading =
+              inviteLoadingId === member.id && !pendingInvite;
 
             return (
               <div
@@ -306,18 +379,39 @@ export default function MembersListSection() {
                 </div>
 
                 {canInvite ? (
-                  <div className="mt-4">
-                    <button
-                      type="button"
-                      onClick={() => inviteToLeague(member.id, member.display_name)}
-                      disabled={inviteLoadingId === member.id}
-                      className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {inviteLoadingId === member.id
-                        ? "Skickar..."
-                        : "Bjud in till vald liga"}
-                    </button>
-                  </div>
+                  pendingInvite ? (
+                    <div className="mt-4 space-y-2">
+                      <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-center text-xs font-semibold text-emerald-200">
+                        Inbjudan skickad
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          undoInvite(pendingInvite.id, member.display_name)
+                        }
+                        disabled={isUndoLoading}
+                        className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isUndoLoading ? "Ångrar..." : "Ångra inbjudan"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          inviteToLeague(member.id, member.display_name)
+                        }
+                        disabled={isInviteLoading}
+                        className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isInviteLoading
+                          ? "Skickar..."
+                          : "Bjud in till vald liga"}
+                      </button>
+                    </div>
+                  )
                 ) : isSelf ? (
                   <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-center text-xs text-white/45">
                     Du kan inte bjuda in dig själv
