@@ -315,13 +315,13 @@ export default function GlobalChat({
                 const canDelete = isAdmin || isOwner;
 
                 return (
-                  <div
-                    key={item.id}
-                    className="border-b border-white/8 pb-2 last:border-b-0 last:pb-0"
-                  >
+                 <div
+  key={item.id}
+  className="border-b border-white/8 py-2 last:border-b-0"
+>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <div className="flex items-center gap-2">
                           <span className="text-sm font-bold text-white">
                             {getDisplayName(item)}
                           </span>
@@ -330,11 +330,11 @@ export default function GlobalChat({
                           </span>
                         </div>
 
-                        <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-white/82">
+                        <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-5 text-white/85">
                           {item.message}
                         </p>
 
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
                           {REACTION_OPTIONS.map((emoji) => {
                             const count = getReactionCount(item, emoji);
                             const active = hasReacted(item, emoji);
