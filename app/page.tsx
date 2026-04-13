@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import NewsPreview from "@/components/NewsPreview";
 import GlobalChat from "@/components/chat/GlobalChat";
+import LeagueInviteBadge from "@/components/leagues/LeagueInviteBadge";
 import { getGroupStageSchedule } from "@/lib/match-schedule";
 import { getUpcomingMatches } from "@/lib/match-utils";
 import AuthStatus from "@/components/auth-status";
@@ -129,15 +130,15 @@ export default async function HomePage() {
     : "VM-tipset är öppet";
 
   const navItems = [
-  { href: "/rules", label: "Regler" },
-  { href: "/help", label: "Hjälp" },
-  { href: "/medlemmar", label: "Medlemmar" },
-  { href: "/league", label: "Ligor" },
-  { href: "/om", label: "Om mig" },
-  { href: "/varva", label: "Värva medlemmar" },
-  { href: "/lag", label: "Lag & spelare" },
-  { href: "/tv-guide", label: "TV-guide" },
-];
+    { href: "/rules", label: "Regler" },
+    { href: "/help", label: "Hjälp" },
+    { href: "/medlemmar", label: "Medlemmar" },
+    { href: "/league", label: "Ligor" },
+    { href: "/om", label: "Om mig" },
+    { href: "/varva", label: "Värva medlemmar" },
+    { href: "/lag", label: "Lag & spelare" },
+    { href: "/tv-guide", label: "TV-guide" },
+  ];
 
   return (
     <main className="min-h-screen bg-[#020617] pb-24 md:pb-0">
@@ -315,15 +316,20 @@ export default async function HomePage() {
                 </p>
 
                 <div className="flex flex-wrap gap-2.5">
-                  {navItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-xl transition hover:border-white/20 hover:bg-white/[0.08]"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
+                  {navItems.map((item) => {
+                    const isLeague = item.href === "/league";
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="relative rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-xl transition hover:border-white/20 hover:bg-white/[0.08]"
+                      >
+                        {item.label}
+                        {isLeague && isLoggedIn ? <LeagueInviteBadge /> : null}
+                      </Link>
+                    );
+                  })}
 
                   {isLoggedIn ? (
                     <Link
