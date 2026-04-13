@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-type LeagueRow = {
-  id: string;
-  name: string;
-  join_code: string;
-  created_by: string | null;
-  created_at: string | null;
-};
-
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -19,28 +11,33 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      return NextResponse.json({ error: "Inte inloggad" }, { status: 401 });
+      console.log("❌ No user");
+      return NextResponse.json({ leagues: [] });
     }
+
+    console.log("✅ USER ID:", user.id);
 
     const { data, error } = await supabase
       .from("leagues")
-      .select("id, name, join_code, created_by, created_at")
-      .eq("created_by", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .select("*");
 
     if (error) {
-      console.error("Fel i /api/leagues/my-owned:", error);
-      return NextResponse.json(
-        { error: "Kunde inte hämta din liga" },
-        { status: 500 }
-      );
+      console.error("DB error:", error);
+      return NextResponse.json({ leagues: [] });
     }
 
-    return NextResponse.json({ league: (data as LeagueRow | null) ?? null });
-  } catch (error) {
-    console.error("Serverfel i /api/leagues/my-owned:", error);
-    return NextResponse.json({ error: "Serverfel" }, { status: 500 });
+    console.log("ALL LEAGUES:", data);
+
+    // 🔥 filtrera i kod istället (mycket säkrare)
+    const owned = (data ?? []).filter(
+      (l) => l.created_by === user.id
+    );
+
+    console.log("OWNED LEAGUES:", owned);
+
+    return NextResponse.json({ leagues: owned });
+  } catch (err) {
+    console.error("Server error:", err);
+    return NextResponse.json({ leagues: [] });
   }
 }
