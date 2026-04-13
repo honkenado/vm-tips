@@ -48,6 +48,11 @@ type SentInvitesResponse = {
   error?: string;
 };
 
+type MemberIdsResponse = {
+  memberIds?: string[];
+  error?: string;
+};
+
 export default function MembersListSection() {
   const [members, setMembers] = useState<MemberEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +67,9 @@ export default function MembersListSection() {
   const [inviteMessage, setInviteMessage] = useState<string | null>(null);
 
   const [sentInvites, setSentInvites] = useState<SentInvite[]>([]);
+  const [selectedLeagueMemberIds, setSelectedLeagueMemberIds] = useState<string[]>(
+    []
+  );
 
   useEffect(() => {
     async function loadAll() {
@@ -118,6 +126,34 @@ export default function MembersListSection() {
     loadAll();
   }, []);
 
+  useEffect(() => {
+    async function loadSelectedLeagueMembers() {
+      if (!selectedLeagueId) {
+        setSelectedLeagueMemberIds([]);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/leagues/${selectedLeagueId}/member-ids`, {
+          cache: "no-store",
+        });
+
+        const data: MemberIdsResponse = await res.json();
+
+        if (!res.ok) {
+          setSelectedLeagueMemberIds([]);
+          return;
+        }
+
+        setSelectedLeagueMemberIds(data.memberIds ?? []);
+      } catch {
+        setSelectedLeagueMemberIds([]);
+      }
+    }
+
+    loadSelectedLeagueMembers();
+  }, [selectedLeagueId]);
+
   const filteredMembers = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return members;
@@ -159,6 +195,40 @@ export default function MembersListSection() {
     );
   }
 
+  function isAlreadyMember(memberId: string) {
+    return selectedLeagueMemberIds.includes(memberId);
+  }
+
+  async function refreshSentInvites() {
+    try {
+      const sentRes = await fetch("/api/leagues/invites/sent", {
+        cache: "no-store",
+      });
+
+      const sentData: SentInvitesResponse = await sentRes.json();
+
+      if (sentRes.ok) {
+        setSentInvites(sentData.invites ?? []);
+      }
+    } catch {}
+  }
+
+  async function refreshSelectedLeagueMembers() {
+    if (!selectedLeagueId) return;
+
+    try {
+      const res = await fetch(`/api/leagues/${selectedLeagueId}/member-ids`, {
+        cache: "no-store",
+      });
+
+      const data: MemberIdsResponse = await res.json();
+
+      if (res.ok) {
+        setSelectedLeagueMemberIds(data.memberIds ?? []);
+      }
+    } catch {}
+  }
+
   async function inviteToLeague(memberId: string, displayName: string) {
     if (!selectedLeagueId) return;
 
@@ -184,14 +254,7 @@ export default function MembersListSection() {
         return;
       }
 
-      const sentRes = await fetch("/api/leagues/invites/sent", {
-        cache: "no-store",
-      });
-      const sentData: SentInvitesResponse = await sentRes.json();
-
-      if (sentRes.ok) {
-        setSentInvites(sentData.invites ?? []);
-      }
+      await refreshSentInvites();
 
       setInviteMessage(
         `Inbjudan skickad till ${displayName}${
@@ -328,8 +391,11 @@ export default function MembersListSection() {
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filteredMembers.map((member) => {
             const isSelf = currentUserId === member.id;
-            const canInvite = ownedLeagues.length > 0 && !isSelf;
+            const alreadyMember = isAlreadyMember(member.id);
             const pendingInvite = getPendingInviteForMember(member.id);
+            const canInvite =
+              ownedLeagues.length > 0 && !isSelf && !alreadyMember;
+
             const isUndoLoading = inviteLoadingId === pendingInvite?.id;
             const isInviteLoading =
               inviteLoadingId === member.id && !pendingInvite;
@@ -378,43 +444,45 @@ export default function MembersListSection() {
                   ) : null}
                 </div>
 
-                {canInvite ? (
-                  pendingInvite ? (
-                    <div className="mt-4 space-y-2">
-                      <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-center text-xs font-semibold text-emerald-200">
-                        Inbjudan skickad
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          undoInvite(pendingInvite.id, member.display_name)
-                        }
-                        disabled={isUndoLoading}
-                        className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {isUndoLoading ? "Ångrar..." : "Ångra inbjudan"}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="mt-4">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          inviteToLeague(member.id, member.display_name)
-                        }
-                        disabled={isInviteLoading}
-                        className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {isInviteLoading
-                          ? "Skickar..."
-                          : "Bjud in till vald liga"}
-                      </button>
-                    </div>
-                  )
-                ) : isSelf ? (
+                {isSelf ? (
                   <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-center text-xs text-white/45">
                     Du kan inte bjuda in dig själv
+                  </div>
+                ) : alreadyMember ? (
+                  <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-center text-xs font-semibold text-cyan-100">
+                    Redan med i ligan
+                  </div>
+                ) : pendingInvite ? (
+                  <div className="mt-4 space-y-2">
+                    <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-center text-xs font-semibold text-emerald-200">
+                      Inbjudan skickad
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        undoInvite(pendingInvite.id, member.display_name)
+                      }
+                      disabled={isUndoLoading}
+                      className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isUndoLoading ? "Ångrar..." : "Ångra inbjudan"}
+                    </button>
+                  </div>
+                ) : canInvite ? (
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        inviteToLeague(member.id, member.display_name)
+                      }
+                      disabled={isInviteLoading}
+                      className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isInviteLoading
+                        ? "Skickar..."
+                        : "Bjud in till vald liga"}
+                    </button>
                   </div>
                 ) : null}
               </div>
