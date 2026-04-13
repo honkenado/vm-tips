@@ -152,3 +152,104 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "Du måste vara inloggad för att radera meddelanden." },
+        { status: 401 }
+      );
+    }
+
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("id, role, is_admin")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error("DELETE /api/chat/global profile error:", profileError);
+      return NextResponse.json(
+        { error: "Kunde inte kontrollera behörighet." },
+        { status: 500 }
+      );
+    }
+
+    const isAdmin = profile?.role === "admin" || profile?.is_admin === true;
+
+    if (!isAdmin) {
+      return NextResponse.json(
+        { error: "Du har inte behörighet att radera meddelanden." },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json();
+    const messageId =
+      typeof body.messageId === "string" ? body.messageId.trim() : "";
+
+    if (!messageId) {
+      return NextResponse.json(
+        { error: "Meddelande-id saknas." },
+        { status: 400 }
+      );
+    }
+
+    const { data: existingMessage, error: existingError } = await supabaseAdmin
+      .from("chat_messages")
+      .select("id, scope")
+      .eq("id", messageId)
+      .maybeSingle();
+
+    if (existingError) {
+      console.error("DELETE /api/chat/global existing error:", existingError);
+      return NextResponse.json(
+        { error: "Kunde inte kontrollera meddelandet." },
+        { status: 500 }
+      );
+    }
+
+    if (!existingMessage) {
+      return NextResponse.json(
+        { error: "Meddelandet hittades inte." },
+        { status: 404 }
+      );
+    }
+
+    if (existingMessage.scope !== "global") {
+      return NextResponse.json(
+        { error: "Detta meddelande tillhör inte global chat." },
+        { status: 400 }
+      );
+    }
+
+    const { error: deleteError } = await supabaseAdmin
+      .from("chat_messages")
+      .delete()
+      .eq("id", messageId);
+
+    if (deleteError) {
+      console.error("DELETE /api/chat/global delete error:", deleteError);
+      return NextResponse.json(
+        { error: "Kunde inte radera meddelandet." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("DELETE /api/chat/global crash:", error);
+    return NextResponse.json(
+      { error: "Något gick fel när meddelandet skulle raderas." },
+      { status: 500 }
+    );
+  }
+}
