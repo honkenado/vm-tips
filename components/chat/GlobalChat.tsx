@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+type ChatReaction = {
+  emoji: string;
+  count: number;
+  user_ids: string[];
+};
 
 type ChatMessage = {
   id: string;
@@ -10,7 +17,10 @@ type ChatMessage = {
   username: string | null;
   first_name: string | null;
   last_name: string | null;
+  reactions: ChatReaction[];
 };
+
+const REACTION_OPTIONS = ["👍", "🔥", "😂", "❤️"];
 
 function getDisplayName(message: ChatMessage) {
   const fullName = `${message.first_name ?? ""} ${message.last_name ?? ""}`.trim();
@@ -31,9 +41,11 @@ function formatTime(dateString: string) {
 export default function GlobalChat({
   isLoggedIn,
   isAdmin = false,
+  currentUserId = null,
 }: {
   isLoggedIn: boolean;
   isAdmin?: boolean;
+  currentUserId?: string | null;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState("");
@@ -41,6 +53,7 @@ export default function GlobalChat({
   const [sending, setSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [reactingKey, setReactingKey] = useState<string | null>(null);
 
   const listRef = useRef<HTMLDivElement | null>(null);
   const hasLoadedInitiallyRef = useRef(false);
@@ -83,9 +96,48 @@ export default function GlobalChat({
   }, []);
 
   useEffect(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!url || !anonKey) return;
+
+    const supabase = createClient(url, anonKey);
+
+    const channel = supabase
+      .channel("global-chat-live")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "chat_messages",
+        },
+        () => {
+          loadMessages({ silent: true });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "chat_message_reactions",
+        },
+        () => {
+          loadMessages({ silent: true });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
     const interval = window.setInterval(() => {
       loadMessages({ silent: true });
-    }, 10000);
+    }, 30000);
 
     return () => window.clearInterval(interval);
   }, []);
@@ -128,13 +180,8 @@ export default function GlobalChat({
         return;
       }
 
-      if (data.message) {
-        setMessages((prev) => [...prev, data.message]);
-      } else {
-        await loadMessages({ silent: true });
-      }
-
       setMessage("");
+      await loadMessages({ silent: true });
     } catch (error) {
       console.error("Fel vid skickande av global chat", error);
       setErrorMessage("Kunde inte skicka meddelandet.");
@@ -144,7 +191,11 @@ export default function GlobalChat({
   }
 
   async function handleDeleteMessage(messageId: string) {
-    if (!isAdmin || !messageId || deletingId) return;
+    const target = messages.find((item) => item.id === messageId);
+    const isOwner = target?.user_id === currentUserId;
+    const canDelete = isAdmin || isOwner;
+
+    if (!canDelete || !messageId || deletingId) return;
 
     const confirmed = window.confirm(
       "Är du säker på att du vill radera detta meddelande?"
@@ -167,6 +218,7 @@ export default function GlobalChat({
       const data = await res.json();
 
       if (!res.ok) {
+        console.error("Delete failed:", data);
         setErrorMessage(data.error || "Kunde inte radera meddelandet.");
         return;
       }
@@ -178,6 +230,49 @@ export default function GlobalChat({
     } finally {
       setDeletingId(null);
     }
+  }
+
+  async function handleToggleReaction(messageId: string, emoji: string) {
+    if (!isLoggedIn) return;
+
+    const key = `${messageId}-${emoji}`;
+
+    try {
+      setReactingKey(key);
+      setErrorMessage(null);
+
+      const res = await fetch("/api/chat/global/reactions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messageId, emoji }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorMessage(data.error || "Kunde inte uppdatera reaction.");
+        return;
+      }
+
+      await loadMessages({ silent: true });
+    } catch (error) {
+      console.error("Fel vid reaction:", error);
+      setErrorMessage("Kunde inte uppdatera reaction.");
+    } finally {
+      setReactingKey(null);
+    }
+  }
+
+  function hasReacted(item: ChatMessage, emoji: string) {
+    const reaction = item.reactions?.find((entry) => entry.emoji === emoji);
+    if (!reaction || !currentUserId) return false;
+    return reaction.user_ids.includes(currentUserId);
+  }
+
+  function getReactionCount(item: ChatMessage, emoji: string) {
+    return item.reactions?.find((entry) => entry.emoji === emoji)?.count ?? 0;
   }
 
   return (
@@ -215,40 +310,69 @@ export default function GlobalChat({
                 Inga meddelanden ännu. Bli först att skriva något ⚽
               </div>
             ) : (
-              messages.map((item) => (
-                <div
-                  key={item.id}
-                  className="border-b border-white/8 pb-2 last:border-b-0 last:pb-0"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <span className="text-sm font-bold text-white">
-                          {getDisplayName(item)}
-                        </span>
-                        <span className="text-xs text-white/40">
-                          {formatTime(item.created_at)}
-                        </span>
+              messages.map((item) => {
+                const isOwner = item.user_id === currentUserId;
+                const canDelete = isAdmin || isOwner;
+
+                return (
+                  <div
+                    key={item.id}
+                    className="border-b border-white/8 pb-2 last:border-b-0 last:pb-0"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="text-sm font-bold text-white">
+                            {getDisplayName(item)}
+                          </span>
+                          <span className="text-xs text-white/40">
+                            {formatTime(item.created_at)}
+                          </span>
+                        </div>
+
+                        <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-white/82">
+                          {item.message}
+                        </p>
+
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          {REACTION_OPTIONS.map((emoji) => {
+                            const count = getReactionCount(item, emoji);
+                            const active = hasReacted(item, emoji);
+                            const key = `${item.id}-${emoji}`;
+
+                            return (
+                              <button
+                                key={emoji}
+                                type="button"
+                                onClick={() => handleToggleReaction(item.id, emoji)}
+                                disabled={!isLoggedIn || reactingKey === key}
+                                className={`rounded-full border px-2.5 py-1 text-xs font-bold transition ${
+                                  active
+                                    ? "border-emerald-400/25 bg-emerald-500/12 text-emerald-100"
+                                    : "border-white/10 bg-white/[0.04] text-white/75 hover:bg-white/[0.08]"
+                                } disabled:cursor-not-allowed disabled:opacity-60`}
+                              >
+                                {emoji} {count > 0 ? count : ""}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
 
-                      <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-white/82">
-                        {item.message}
-                      </p>
+                      {canDelete ? (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteMessage(item.id)}
+                          disabled={deletingId === item.id}
+                          className="shrink-0 rounded-full border border-red-400/20 bg-red-500/10 px-2.5 py-1 text-[11px] font-bold text-red-100 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {deletingId === item.id ? "..." : "Radera"}
+                        </button>
+                      ) : null}
                     </div>
-
-                    {isAdmin ? (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteMessage(item.id)}
-                        disabled={deletingId === item.id}
-                        className="shrink-0 rounded-full border border-red-400/20 bg-red-500/10 px-2.5 py-1 text-[11px] font-bold text-red-100 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {deletingId === item.id ? "..." : "Radera"}
-                      </button>
-                    ) : null}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

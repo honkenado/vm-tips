@@ -2,6 +2,20 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
+type ProfileRow = {
+  id: string;
+  username: string | null;
+  first_name: string | null;
+  last_name: string | null;
+};
+
+type ReactionRow = {
+  id: string;
+  message_id: string;
+  user_id: string;
+  emoji: string;
+};
+
 export async function GET(_req: Request) {
   try {
     const supabase = await createClient();
@@ -22,15 +36,10 @@ export async function GET(_req: Request) {
     }
 
     const userIds = [...new Set((messages ?? []).map((message) => message.user_id))];
+    const messageIds = [...new Set((messages ?? []).map((message) => message.id))];
 
-    let profiles:
-      | Array<{
-          id: string;
-          username: string | null;
-          first_name: string | null;
-          last_name: string | null;
-        }>
-      | null = [];
+    let profiles: ProfileRow[] = [];
+    let reactions: ReactionRow[] = [];
 
     if (userIds.length > 0) {
       const { data: profileRows, error: profilesError } = await supabaseAdmin
@@ -46,10 +55,50 @@ export async function GET(_req: Request) {
         );
       }
 
-      profiles = profileRows;
+      profiles = profileRows ?? [];
     }
 
-    const profileMap = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+    if (messageIds.length > 0) {
+      const { data: reactionRows, error: reactionsError } = await supabaseAdmin
+        .from("chat_message_reactions")
+        .select("id, message_id, user_id, emoji")
+        .in("message_id", messageIds);
+
+      if (reactionsError) {
+        console.error("GET /api/chat/global reactions error:", reactionsError);
+        return NextResponse.json(
+          { error: "Kunde inte hämta reactions." },
+          { status: 500 }
+        );
+      }
+
+      reactions = reactionRows ?? [];
+    }
+
+    const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
+
+    const reactionsByMessage = new Map<
+      string,
+      Array<{ emoji: string; count: number; user_ids: string[] }>
+    >();
+
+    for (const reaction of reactions) {
+      const current = reactionsByMessage.get(reaction.message_id) ?? [];
+      const existing = current.find((item) => item.emoji === reaction.emoji);
+
+      if (existing) {
+        existing.count += 1;
+        existing.user_ids.push(reaction.user_id);
+      } else {
+        current.push({
+          emoji: reaction.emoji,
+          count: 1,
+          user_ids: [reaction.user_id],
+        });
+      }
+
+      reactionsByMessage.set(reaction.message_id, current);
+    }
 
     const hydratedMessages = (messages ?? []).map((message) => {
       const profile = profileMap.get(message.user_id);
@@ -62,6 +111,7 @@ export async function GET(_req: Request) {
         username: profile?.username ?? null,
         first_name: profile?.first_name ?? null,
         last_name: profile?.last_name ?? null,
+        reactions: reactionsByMessage.get(message.id) ?? [],
       };
     });
 
@@ -142,6 +192,7 @@ export async function POST(req: Request) {
         username: profile?.username ?? null,
         first_name: profile?.first_name ?? null,
         last_name: profile?.last_name ?? null,
+        reactions: [],
       },
     });
   } catch (error) {
@@ -185,13 +236,6 @@ export async function DELETE(req: Request) {
 
     const isAdmin = profile?.role === "admin" || profile?.is_admin === true;
 
-    if (!isAdmin) {
-      return NextResponse.json(
-        { error: "Du har inte behörighet att radera meddelanden." },
-        { status: 403 }
-      );
-    }
-
     const body = await req.json();
     const messageId =
       typeof body.messageId === "string" ? body.messageId.trim() : "";
@@ -205,7 +249,7 @@ export async function DELETE(req: Request) {
 
     const { data: existingMessage, error: existingError } = await supabaseAdmin
       .from("chat_messages")
-      .select("id, scope")
+      .select("id, scope, user_id")
       .eq("id", messageId)
       .maybeSingle();
 
@@ -228,6 +272,15 @@ export async function DELETE(req: Request) {
       return NextResponse.json(
         { error: "Detta meddelande tillhör inte global chat." },
         { status: 400 }
+      );
+    }
+
+    const isOwner = existingMessage.user_id === user.id;
+
+    if (!isAdmin && !isOwner) {
+      return NextResponse.json(
+        { error: "Du har inte behörighet att radera detta meddelande." },
+        { status: 403 }
       );
     }
 

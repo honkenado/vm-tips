@@ -476,7 +476,11 @@ export default async function HomePage() {
           </div>
 
           <div className="min-w-0">
-            <GlobalChat isLoggedIn={isLoggedIn} isAdmin={isAdmin} />
+            <GlobalChat
+  isLoggedIn={isLoggedIn}
+  isAdmin={isAdmin}
+  currentUserId={user?.id ?? null}
+/>
           </div>
         </div>
       </div>
