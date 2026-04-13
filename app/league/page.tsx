@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import LeagueInvitesPanel from "@/components/leagues/LeagueInvitesPanel";
 
 type League = {
   id: string;
@@ -256,6 +257,10 @@ export default function LeagueHubPage() {
           </div>
         </section>
 
+        <div className="mb-4">
+          <LeagueInvitesPanel />
+        </div>
+
         <section className="card-premium mb-4 p-5 sm:p-6">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
@@ -314,7 +319,10 @@ export default function LeagueHubPage() {
                       {league.name}
                     </div>
                     <div className="text-muted-premium mt-1 text-sm">
-                      Kod: <span className="font-bold text-white">{league.join_code}</span>
+                      Kod:{" "}
+                      <span className="font-bold text-white">
+                        {league.join_code}
+                      </span>
                     </div>
                   </div>
 
