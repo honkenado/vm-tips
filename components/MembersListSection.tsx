@@ -24,16 +24,10 @@ type OwnedLeague = {
   created_at: string | null;
 };
 
-type OwnedLeagueResponse = {
-  league?: OwnedLeague | null;
-  error?: string;
-};
-
 type MeResponse = {
   user?: {
     id: string;
   } | null;
-  error?: string;
 };
 
 export default function MembersListSection() {
@@ -41,7 +35,10 @@ export default function MembersListSection() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [ownedLeague, setOwnedLeague] = useState<OwnedLeague | null>(null);
+
+  const [ownedLeagues, setOwnedLeagues] = useState<OwnedLeague[]>([]);
+  const [selectedLeagueId, setSelectedLeagueId] = useState<string>("");
+
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [inviteLoadingId, setInviteLoadingId] = useState<string | null>(null);
   const [inviteMessage, setInviteMessage] = useState<string | null>(null);
@@ -49,14 +46,14 @@ export default function MembersListSection() {
   useEffect(() => {
     async function loadAll() {
       try {
-        const [membersRes, ownedLeagueRes, meRes] = await Promise.all([
+        const [membersRes, leaguesRes, meRes] = await Promise.all([
           fetch("/api/members", { cache: "no-store" }),
           fetch("/api/leagues/my-owned", { cache: "no-store" }),
           fetch("/api/me", { cache: "no-store" }),
         ]);
 
         const membersData: MembersResponse = await membersRes.json();
-        const ownedLeagueData: OwnedLeagueResponse = await ownedLeagueRes.json();
+        const leaguesData = await leaguesRes.json();
         const meData: MeResponse = await meRes.json();
 
         if (!membersRes.ok) {
@@ -66,13 +63,14 @@ export default function MembersListSection() {
 
         setMembers(membersData.members ?? []);
 
-        if (ownedLeagueRes.ok) {
-          setOwnedLeague(ownedLeagueData.league ?? null);
+        const leagues = leaguesData.leagues ?? [];
+        setOwnedLeagues(leagues);
+
+        if (leagues.length > 0) {
+          setSelectedLeagueId(leagues[0].id);
         }
 
-        if (meRes.ok) {
-          setCurrentUserId(meData.user?.id ?? null);
-        }
+        setCurrentUserId(meData.user?.id ?? null);
       } catch {
         setErrorMessage("Kunde inte hämta medlemmar");
       } finally {
@@ -113,7 +111,7 @@ export default function MembersListSection() {
   }
 
   async function inviteToLeague(memberId: string, displayName: string) {
-    if (!ownedLeague) return;
+    if (!selectedLeagueId) return;
 
     setInviteLoadingId(memberId);
     setInviteMessage(null);
@@ -125,7 +123,7 @@ export default function MembersListSection() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          leagueId: ownedLeague.id,
+          leagueId: selectedLeagueId,
           invitedUserId: memberId,
         }),
       });
@@ -147,7 +145,7 @@ export default function MembersListSection() {
 
   if (loading) {
     return (
-      <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+      <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5 text-white backdrop-blur-xl">
         <p className="text-sm text-white/70">Laddar medlemmar...</p>
       </div>
     );
@@ -155,14 +153,14 @@ export default function MembersListSection() {
 
   if (errorMessage) {
     return (
-      <div className="rounded-[1.75rem] border border-red-400/20 bg-red-500/10 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+      <div className="rounded-[1.75rem] border border-red-400/20 bg-red-500/10 p-5 backdrop-blur-xl">
         <p className="text-sm text-red-200">{errorMessage}</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-5 md:p-6">
+    <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4 text-white backdrop-blur-xl sm:p-5 md:p-6">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-xl font-black text-white sm:text-2xl">
@@ -171,11 +169,6 @@ export default function MembersListSection() {
           <p className="mt-1 text-sm text-white/60">
             {members.length} registrerade användare
           </p>
-          {ownedLeague ? (
-            <p className="mt-2 text-xs text-emerald-200/90">
-              Du kan bjuda in deltagare till <span className="font-bold">{ownedLeague.name}</span>.
-            </p>
-          ) : null}
         </div>
 
         <div className="rounded-full border border-emerald-400/20 bg-emerald-500/12 px-4 py-2 text-sm font-bold text-emerald-100">
@@ -183,21 +176,42 @@ export default function MembersListSection() {
         </div>
       </div>
 
+      {/* 🔥 Dropdown */}
+      {ownedLeagues.length > 0 && (
+        <div className="mb-5">
+          <label className="mb-2 block text-sm font-bold text-white">
+            Bjud in till liga
+          </label>
+
+          <select
+            value={selectedLeagueId}
+            onChange={(e) => setSelectedLeagueId(e.target.value)}
+            className="w-full rounded-2xl border border-white/10 bg-[#020617]/60 px-4 py-3 text-white focus:border-emerald-400/60 focus:outline-none"
+          >
+            {ownedLeagues.map((league) => (
+              <option key={league.id} value={league.id}>
+                {league.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="mb-5">
         <input
           type="text"
           placeholder="Sök deltagare..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-2xl border border-white/10 bg-[#020617]/60 px-4 py-3 text-base text-white placeholder:text-white/35 focus:border-emerald-400/60 focus:outline-none"
+          className="w-full rounded-2xl border border-white/10 bg-[#020617]/60 px-4 py-3 text-white placeholder:text-white/35 focus:border-emerald-400/60 focus:outline-none"
         />
       </div>
 
-      {inviteMessage ? (
+      {inviteMessage && (
         <div className="mb-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3">
           <p className="text-sm text-emerald-200">{inviteMessage}</p>
         </div>
-      ) : null}
+      )}
 
       {filteredMembers.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-8 text-center">
@@ -209,70 +223,39 @@ export default function MembersListSection() {
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filteredMembers.map((member) => {
             const isSelf = currentUserId === member.id;
-            const canInvite = Boolean(ownedLeague) && !isSelf;
+            const canInvite = ownedLeagues.length > 0 && !isSelf;
 
             return (
               <div
                 key={member.id}
-                className="group rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.06]"
+                className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-500/12 text-sm font-black text-emerald-100">
-                      {getInitials(member.display_name)}
-                    </div>
-
-                    <div className="min-w-0">
-                      <div className="truncate text-base font-bold text-white">
-                        {member.display_name}
-                      </div>
-                      <div className="mt-1 text-xs text-white/45">
-                        Medlem #{member.member_number}
-                      </div>
-                    </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/12 text-emerald-100 font-bold">
+                    {getInitials(member.display_name)}
                   </div>
 
-                  <span
-                    className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-bold ${getRoleClasses(
-                      member.role
-                    )}`}
+                  <div>
+                    <div className="font-bold">{member.display_name}</div>
+                    <div className="text-xs text-white/50">
+                      Medlem #{member.member_number}
+                    </div>
+                  </div>
+                </div>
+
+                {canInvite && (
+                  <button
+                    onClick={() =>
+                      inviteToLeague(member.id, member.display_name)
+                    }
+                    disabled={inviteLoadingId === member.id}
+                    className="mt-4 w-full rounded-xl bg-emerald-500 py-2 text-sm font-bold text-black"
                   >
-                    {getRoleLabel(member.role)}
-                  </span>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <div className="text-xs text-white/45">
-                    {member.role === "admin"
-                      ? "Driver och hanterar tipset"
-                      : "Deltar i årets VM-tips"}
-                  </div>
-
-                  {member.role === "admin" ? (
-                    <span className="rounded-full border border-emerald-400/20 bg-emerald-500/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-200">
-                      Admin
-                    </span>
-                  ) : null}
-                </div>
-
-                {canInvite ? (
-                  <div className="mt-4">
-                    <button
-                      type="button"
-                      onClick={() => inviteToLeague(member.id, member.display_name)}
-                      disabled={inviteLoadingId === member.id}
-                      className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {inviteLoadingId === member.id
-                        ? "Skickar..."
-                        : "Bjud in till min liga"}
-                    </button>
-                  </div>
-                ) : isSelf ? (
-                  <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-center text-xs text-white/45">
-                    Du kan inte bjuda in dig själv
-                  </div>
-                ) : null}
+                    {inviteLoadingId === member.id
+                      ? "Skickar..."
+                      : "Bjud in till min liga"}
+                  </button>
+                )}
               </div>
             );
           })}
