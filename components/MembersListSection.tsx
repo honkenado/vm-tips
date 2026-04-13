@@ -24,10 +24,16 @@ type OwnedLeague = {
   created_at: string | null;
 };
 
+type OwnedLeaguesResponse = {
+  leagues?: OwnedLeague[];
+  error?: string;
+};
+
 type MeResponse = {
   user?: {
     id: string;
   } | null;
+  error?: string;
 };
 
 export default function MembersListSection() {
@@ -46,6 +52,9 @@ export default function MembersListSection() {
   useEffect(() => {
     async function loadAll() {
       try {
+        setLoading(true);
+        setErrorMessage(null);
+
         const [membersRes, leaguesRes, meRes] = await Promise.all([
           fetch("/api/members", { cache: "no-store" }),
           fetch("/api/leagues/my-owned", { cache: "no-store" }),
@@ -53,7 +62,7 @@ export default function MembersListSection() {
         ]);
 
         const membersData: MembersResponse = await membersRes.json();
-        const leaguesData = await leaguesRes.json();
+        const leaguesData: OwnedLeaguesResponse = await leaguesRes.json();
         const meData: MeResponse = await meRes.json();
 
         if (!membersRes.ok) {
@@ -63,14 +72,21 @@ export default function MembersListSection() {
 
         setMembers(membersData.members ?? []);
 
-        const leagues = leaguesData.leagues ?? [];
-        setOwnedLeagues(leagues);
+        if (leaguesRes.ok) {
+          const leagues = Array.isArray(leaguesData.leagues)
+            ? leaguesData.leagues
+            : [];
 
-        if (leagues.length > 0) {
-          setSelectedLeagueId(leagues[0].id);
+          setOwnedLeagues(leagues);
+
+          if (leagues.length > 0) {
+            setSelectedLeagueId(leagues[0].id);
+          }
         }
 
-        setCurrentUserId(meData.user?.id ?? null);
+        if (meRes.ok) {
+          setCurrentUserId(meData.user?.id ?? null);
+        }
       } catch {
         setErrorMessage("Kunde inte hämta medlemmar");
       } finally {
@@ -110,6 +126,9 @@ export default function MembersListSection() {
       : "border-white/10 bg-white/[0.05] text-white/70";
   }
 
+  const selectedLeague =
+    ownedLeagues.find((league) => league.id === selectedLeagueId) ?? null;
+
   async function inviteToLeague(memberId: string, displayName: string) {
     if (!selectedLeagueId) return;
 
@@ -135,7 +154,11 @@ export default function MembersListSection() {
         return;
       }
 
-      setInviteMessage(`Inbjudan skickad till ${displayName}`);
+      setInviteMessage(
+        `Inbjudan skickad till ${displayName}${
+          selectedLeague ? ` (${selectedLeague.name})` : ""
+        }`
+      );
     } catch {
       setInviteMessage("Kunde inte skicka inbjudan");
     } finally {
@@ -145,7 +168,7 @@ export default function MembersListSection() {
 
   if (loading) {
     return (
-      <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5 text-white backdrop-blur-xl">
+      <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
         <p className="text-sm text-white/70">Laddar medlemmar...</p>
       </div>
     );
@@ -153,14 +176,14 @@ export default function MembersListSection() {
 
   if (errorMessage) {
     return (
-      <div className="rounded-[1.75rem] border border-red-400/20 bg-red-500/10 p-5 backdrop-blur-xl">
+      <div className="rounded-[1.75rem] border border-red-400/20 bg-red-500/10 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
         <p className="text-sm text-red-200">{errorMessage}</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4 text-white backdrop-blur-xl sm:p-5 md:p-6">
+    <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-5 md:p-6">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-xl font-black text-white sm:text-2xl">
@@ -176,8 +199,7 @@ export default function MembersListSection() {
         </div>
       </div>
 
-      {/* 🔥 Dropdown */}
-      {ownedLeagues.length > 0 && (
+      {ownedLeagues.length > 0 ? (
         <div className="mb-5">
           <label className="mb-2 block text-sm font-bold text-white">
             Bjud in till liga
@@ -194,6 +216,20 @@ export default function MembersListSection() {
               </option>
             ))}
           </select>
+
+          {selectedLeague ? (
+            <p className="mt-2 text-xs text-emerald-200/90">
+              Inbjudningar skickas just nu till{" "}
+              <span className="font-bold">{selectedLeague.name}</span>.
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <div className="mb-5 rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3">
+          <p className="text-sm text-amber-100">
+            Ingen egen liga hittades för ditt konto, så inbjudningsknappar visas
+            inte.
+          </p>
         </div>
       )}
 
@@ -203,15 +239,15 @@ export default function MembersListSection() {
           placeholder="Sök deltagare..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-2xl border border-white/10 bg-[#020617]/60 px-4 py-3 text-white placeholder:text-white/35 focus:border-emerald-400/60 focus:outline-none"
+          className="w-full rounded-2xl border border-white/10 bg-[#020617]/60 px-4 py-3 text-base text-white placeholder:text-white/35 focus:border-emerald-400/60 focus:outline-none"
         />
       </div>
 
-      {inviteMessage && (
+      {inviteMessage ? (
         <div className="mb-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3">
           <p className="text-sm text-emerald-200">{inviteMessage}</p>
         </div>
-      )}
+      ) : null}
 
       {filteredMembers.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-8 text-center">
@@ -228,34 +264,65 @@ export default function MembersListSection() {
             return (
               <div
                 key={member.id}
-                className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
+                className="group rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.06]"
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-500/12 text-emerald-100 font-bold">
-                    {getInitials(member.display_name)}
-                  </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-500/12 text-sm font-black text-emerald-100">
+                      {getInitials(member.display_name)}
+                    </div>
 
-                  <div>
-                    <div className="font-bold">{member.display_name}</div>
-                    <div className="text-xs text-white/50">
-                      Medlem #{member.member_number}
+                    <div className="min-w-0">
+                      <div className="truncate text-base font-bold text-white">
+                        {member.display_name}
+                      </div>
+                      <div className="mt-1 text-xs text-white/45">
+                        Medlem #{member.member_number}
+                      </div>
                     </div>
                   </div>
+
+                  <span
+                    className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-bold ${getRoleClasses(
+                      member.role
+                    )}`}
+                  >
+                    {getRoleLabel(member.role)}
+                  </span>
                 </div>
 
-                {canInvite && (
-                  <button
-                    onClick={() =>
-                      inviteToLeague(member.id, member.display_name)
-                    }
-                    disabled={inviteLoadingId === member.id}
-                    className="mt-4 w-full rounded-xl bg-emerald-500 py-2 text-sm font-bold text-black"
-                  >
-                    {inviteLoadingId === member.id
-                      ? "Skickar..."
-                      : "Bjud in till min liga"}
-                  </button>
-                )}
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <div className="text-xs text-white/45">
+                    {member.role === "admin"
+                      ? "Driver och hanterar tipset"
+                      : "Deltar i årets VM-tips"}
+                  </div>
+
+                  {member.role === "admin" ? (
+                    <span className="rounded-full border border-emerald-400/20 bg-emerald-500/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-200">
+                      Admin
+                    </span>
+                  ) : null}
+                </div>
+
+                {canInvite ? (
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      onClick={() => inviteToLeague(member.id, member.display_name)}
+                      disabled={inviteLoadingId === member.id}
+                      className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {inviteLoadingId === member.id
+                        ? "Skickar..."
+                        : "Bjud in till vald liga"}
+                    </button>
+                  </div>
+                ) : isSelf ? (
+                  <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-center text-xs text-white/45">
+                    Du kan inte bjuda in dig själv
+                  </div>
+                ) : null}
               </div>
             );
           })}
