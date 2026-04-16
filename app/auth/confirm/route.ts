@@ -1,6 +1,6 @@
 import { type EmailOtpType } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@supabase/ssr';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -13,27 +13,37 @@ export async function GET(request: NextRequest) {
     next = '/';
   }
 
-  const redirectTo = request.nextUrl.clone();
-  redirectTo.pathname = next;
-  redirectTo.searchParams.delete('token_hash');
-  redirectTo.searchParams.delete('type');
-  redirectTo.searchParams.delete('next');
-
-  if (token_hash && type) {
-    const supabase = await createClient();
-
-    const { error } = await supabase.auth.verifyOtp({
-      type,
-      token_hash,
-    });
-
-    if (!error) {
-      return NextResponse.redirect(redirectTo);
-    }
+  if (!token_hash || !type) {
+    return NextResponse.redirect(new URL('/login?error=missing-token', request.url));
   }
 
-  const errorUrl = request.nextUrl.clone();
-  errorUrl.pathname = '/login';
-  errorUrl.searchParams.set('error', 'reset-link-invalid');
-  return NextResponse.redirect(errorUrl);
+  const redirectResponse = NextResponse.redirect(new URL(next, request.url));
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            redirectResponse.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+
+  const { error } = await supabase.auth.verifyOtp({
+    type,
+    token_hash,
+  });
+
+  if (error) {
+    return NextResponse.redirect(new URL('/login?error=invalid-link', request.url));
+  }
+
+  return redirectResponse;
 }
