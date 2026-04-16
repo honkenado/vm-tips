@@ -7,7 +7,17 @@ export async function GET(request: NextRequest) {
 
   const token_hash = searchParams.get('token_hash');
   const type = searchParams.get('type') as EmailOtpType | null;
-  const next = searchParams.get('next') ?? '/';
+  let next = searchParams.get('next') ?? '/';
+
+  if (!next.startsWith('/')) {
+    next = '/';
+  }
+
+  const redirectTo = request.nextUrl.clone();
+  redirectTo.pathname = next;
+  redirectTo.searchParams.delete('token_hash');
+  redirectTo.searchParams.delete('type');
+  redirectTo.searchParams.delete('next');
 
   if (token_hash && type) {
     const supabase = await createClient();
@@ -18,9 +28,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!error) {
-      return NextResponse.redirect(new URL(next, request.url));
+      return NextResponse.redirect(redirectTo);
     }
   }
 
-  return NextResponse.redirect(new URL('/login?error=reset-link-invalid', request.url));
+  const errorUrl = request.nextUrl.clone();
+  errorUrl.pathname = '/login';
+  errorUrl.searchParams.set('error', 'reset-link-invalid');
+  return NextResponse.redirect(errorUrl);
 }

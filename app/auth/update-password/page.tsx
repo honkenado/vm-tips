@@ -30,7 +30,11 @@ export default function UpdatePasswordPage() {
     }
 
     setLoading(true);
+const {
+  data: { session },
+} = await supabase.auth.getSession();
 
+console.log('RESET SESSION', session);
     const { error } = await supabase.auth.updateUser({
       password,
     });
