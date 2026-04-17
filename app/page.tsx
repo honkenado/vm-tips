@@ -123,6 +123,25 @@ export default async function HomePage() {
   const isAdmin = profile?.role === "admin" || profile?.is_admin === true;
   const isPaid = profile?.payment_status === "paid";
 
+  let paidMembersCount = 0;
+  let unpaidMembersCount = 0;
+
+  if (isAdmin) {
+    const [{ count: paidCount }, { count: unpaidCount }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .eq("payment_status", "paid"),
+      supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .neq("payment_status", "paid"),
+    ]);
+
+    paidMembersCount = paidCount ?? 0;
+    unpaidMembersCount = unpaidCount ?? 0;
+  }
+
   const mobileHeaderNote = beforeDeadline
     ? `${daysLeft} dagar kvar till deadline`
     : featuredMatch
@@ -139,6 +158,43 @@ export default async function HomePage() {
     { href: "/lag", label: "Lag & spelare" },
     { href: "/tv-guide", label: "TV-guide" },
   ];
+
+  const adminPaymentCard = isAdmin ? (
+    <section className="rounded-[1.5rem] border border-emerald-400/15 bg-emerald-500/[0.08] p-4 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-emerald-300/85">
+            Endast admin
+          </p>
+          <h2 className="mt-1 text-lg font-black text-white">
+            Betalande medlemmar
+          </h2>
+          <p className="mt-2 text-sm text-white/75">
+            Snabb överblick över betalstatus direkt på startsidan.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-emerald-300/15 bg-white/[0.05] px-4 py-3 text-center">
+          <div className="text-3xl font-black text-white">{paidMembersCount}</div>
+          <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/60">
+            betalda
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+          <div className="text-xl font-black text-white">{paidMembersCount}</div>
+          <div className="text-xs text-white/65">Betalande</div>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+          <div className="text-xl font-black text-white">{unpaidMembersCount}</div>
+          <div className="text-xs text-white/65">Ej betalande</div>
+        </div>
+      </div>
+    </section>
+  ) : null;
 
   return (
     <main className="min-h-screen bg-[#020617] pb-24 md:pb-0">
@@ -223,6 +279,8 @@ export default async function HomePage() {
           <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/80 backdrop-blur-xl">
             {mobileHeaderNote}
           </div>
+
+          {adminPaymentCard ? <div className="mt-3">{adminPaymentCard}</div> : null}
         </div>
 
         <section className="relative overflow-hidden rounded-[2rem] border border-white/6 bg-[#020617] text-white shadow-[0_30px_100px_rgba(0,0,0,0.7)]">
@@ -372,6 +430,8 @@ export default async function HomePage() {
                 </div>
               )}
 
+              {adminPaymentCard}
+
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
                 <div className="mb-2 flex items-center justify-between">
                   <h2 className="text-xl font-black text-white">Nästa match</h2>
@@ -477,10 +537,10 @@ export default async function HomePage() {
 
           <div className="min-w-0">
             <GlobalChat
-  isLoggedIn={isLoggedIn}
-  isAdmin={isAdmin}
-  currentUserId={user?.id ?? null}
-/>
+              isLoggedIn={isLoggedIn}
+              isAdmin={isAdmin}
+              currentUserId={user?.id ?? null}
+            />
           </div>
         </div>
       </div>
