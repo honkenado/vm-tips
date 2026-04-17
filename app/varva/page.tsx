@@ -16,6 +16,7 @@ type ReferralLeaderboardRow = {
   last_name: string | null;
   referral_code: string | null;
   paid_referrals: number;
+  reached_current_paid_count_at: string | null;
 };
 
 type ReferralDetailRow = {
@@ -53,9 +54,23 @@ function getDisplayName(row: {
   return "Okänd användare";
 }
 
-function getPayoutForRow(rank: number, paidReferrals: number) {
+function getActualPayout(rank: number, paidReferrals: number) {
   if (rank !== 1 && rank !== 2) return 0;
   return Math.min(paidReferrals * 20, 500);
+}
+
+function getPotentialPayout(paidReferrals: number) {
+  return Math.min(paidReferrals * 20, 500);
+}
+
+function getStatusText(rank: number, paidReferrals: number) {
+  if (rank === 1 || rank === 2) {
+    return paidReferrals > 0 ? "Utbetalningsplats" : "Topp 2";
+  }
+  if (paidReferrals > 0) {
+    return "Utanför topp 2";
+  }
+  return "Ingen betalande än";
 }
 
 export default function ReferralPage() {
@@ -99,8 +114,9 @@ export default function ReferralPage() {
 
         const { data: leaderboardData, error: leaderboardError } = await supabase
           .from("referral_leaderboard")
-          .select("id, username, first_name, last_name, referral_code, paid_referrals")
-          .order("paid_referrals", { ascending: false });
+          .select(
+            "id, username, first_name, last_name, referral_code, paid_referrals, reached_current_paid_count_at"
+          );
 
         if (!leaderboardError && leaderboardData) {
           setLeaderboard(leaderboardData);
@@ -160,6 +176,19 @@ export default function ReferralPage() {
       if (b.paid_referrals !== a.paid_referrals) {
         return b.paid_referrals - a.paid_referrals;
       }
+
+      const aTime = a.reached_current_paid_count_at
+        ? new Date(a.reached_current_paid_count_at).getTime()
+        : Number.POSITIVE_INFINITY;
+
+      const bTime = b.reached_current_paid_count_at
+        ? new Date(b.reached_current_paid_count_at).getTime()
+        : Number.POSITIVE_INFINITY;
+
+      if (aTime !== bTime) {
+        return aTime - bTime;
+      }
+
       return getDisplayName(a).localeCompare(getDisplayName(b), "sv");
     });
   }, [leaderboard]);
@@ -176,7 +205,8 @@ export default function ReferralPage() {
   }, [profile?.id, sortedLeaderboard]);
 
   const myPaidReferrals = myEntry?.paid_referrals ?? 0;
-  const myPayout = myRank ? getPayoutForRow(myRank, myPaidReferrals) : 0;
+  const myPotentialPayout = getPotentialPayout(myPaidReferrals);
+  const myActualPayout = myRank ? getActualPayout(myRank, myPaidReferrals) : 0;
 
   async function copyText(value: string, message: string) {
     try {
@@ -294,7 +324,10 @@ export default function ReferralPage() {
                   Möjlig ersättning
                 </p>
                 <p className="mt-2 text-2xl font-black text-sky-900">
-                  {myPayout} kr
+                  {myPotentialPayout} kr
+                </p>
+                <p className="mt-2 text-xs text-sky-700/80">
+                  Utbetalas bara om du ligger topp 2. Just nu: {myActualPayout} kr
                 </p>
               </div>
             </div>
@@ -376,18 +409,31 @@ export default function ReferralPage() {
           </section>
 
           <section className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-2xl font-black tracking-tight text-slate-900">
-              Värvarligan
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-slate-700">
-              Klicka på ett namn för att se vilka personer som har värvats.
-            </p>
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h2 className="text-2xl font-black tracking-tight text-slate-900">
+                  Värvarligan
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-slate-700">
+                  Klicka på ett namn för att se vilka personer som har värvats.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <p className="font-bold">Tydligt att veta:</p>
+                <p className="mt-1">
+                  Betalande värvningar visas för alla. Endast topp 2 får utbetalning.
+                </p>
+              </div>
+            </div>
 
             <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
-              <div className="grid grid-cols-[56px_minmax(0,1fr)_110px] gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500">
+              <div className="hidden grid-cols-[56px_minmax(0,1fr)_110px_140px_160px] gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500 md:grid">
                 <div>Plats</div>
                 <div>Namn</div>
-                <div className="text-center">Pris</div>
+                <div className="text-center">Betalande</div>
+                <div className="text-center">Möjlig ersättning</div>
+                <div className="text-center">Status</div>
               </div>
 
               {sortedLeaderboard.length === 0 ? (
@@ -397,60 +443,185 @@ export default function ReferralPage() {
               ) : (
                 sortedLeaderboard.slice(0, 10).map((row, index) => {
                   const rank = index + 1;
-                  const payout = getPayoutForRow(rank, row.paid_referrals);
+                  const actualPayout = getActualPayout(rank, row.paid_referrals);
+                  const potentialPayout = getPotentialPayout(row.paid_referrals);
                   const referredPeople = referralsMap[row.id] ?? [];
                   const isOpen = openRow === row.id;
+                  const isTop2 = rank === 1 || rank === 2;
+                  const isMe = profile?.id === row.id;
+                  const statusText = getStatusText(rank, row.paid_referrals);
 
                   return (
                     <div key={row.id} className="border-b border-slate-100 last:border-b-0">
                       <button
                         type="button"
                         onClick={() => setOpenRow(isOpen ? null : row.id)}
-                        className={`grid w-full grid-cols-[56px_minmax(0,1fr)_110px] items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                          profile?.id === row.id
-                            ? "bg-emerald-50 hover:bg-emerald-100/60"
+                        className={`w-full px-4 py-4 text-left transition ${
+                          isTop2
+                            ? "bg-gradient-to-r from-emerald-50 via-white to-emerald-50 hover:from-emerald-100/70 hover:to-emerald-100/70"
+                            : isMe
+                            ? "bg-emerald-50/60 hover:bg-emerald-100/60"
                             : "bg-white hover:bg-slate-50"
                         }`}
                       >
-                        <div className="font-black text-slate-900">{rank}</div>
+                        <div className="hidden grid-cols-[56px_minmax(0,1fr)_110px_140px_160px] items-center gap-3 md:grid">
+                          <div className="font-black text-slate-900">
+                            {rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank}
+                          </div>
 
-                        <div className="min-w-0">
-  <div className="flex items-center gap-2">
-    <span className="font-semibold text-slate-800">
-      {getDisplayName(row)}
-    </span>
-    <span className="shrink-0 text-xs text-slate-400">
-      {isOpen ? "▲" : "▼"}
-    </span>
-  </div>
-</div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="truncate font-semibold text-slate-800">
+                                {getDisplayName(row)}
+                              </span>
 
-                        <div className="text-center font-bold text-emerald-700">
-                          {payout} kr
+                              {isTop2 && (
+                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
+                                  Topp 2
+                                </span>
+                              )}
+
+                              {isMe && (
+                                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-700">
+                                  Du
+                                </span>
+                              )}
+
+                              <span className="shrink-0 text-xs text-slate-400">
+                                {isOpen ? "▲" : "▼"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="text-center font-black text-emerald-700">
+                            {row.paid_referrals}
+                          </div>
+
+                          <div className="text-center font-black text-sky-700">
+                            {potentialPayout} kr
+                          </div>
+
+                          <div className="text-center">
+                            <span
+                              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
+                                isTop2
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-slate-100 text-slate-700"
+                              }`}
+                            >
+                              {statusText}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="md:hidden">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-black text-slate-900">
+                                  {rank === 1 ? "🥇" : rank === 2 ? "🥈" : `#${rank}`}
+                                </span>
+
+                                {isTop2 && (
+                                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
+                                    Topp 2
+                                  </span>
+                                )}
+
+                                {isMe && (
+                                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-700">
+                                    Du
+                                  </span>
+                                )}
+                              </div>
+
+                              <p className="mt-2 truncate font-semibold text-slate-800">
+                                {getDisplayName(row)}
+                              </p>
+                            </div>
+
+                            <span className="shrink-0 text-xs text-slate-400">
+                              {isOpen ? "▲" : "▼"}
+                            </span>
+                          </div>
+
+                          <div className="mt-3 grid grid-cols-3 gap-2">
+                            <div className="rounded-xl bg-slate-50 px-3 py-2">
+                              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                                Betalande
+                              </p>
+                              <p className="mt-1 text-sm font-black text-emerald-700">
+                                {row.paid_referrals}
+                              </p>
+                            </div>
+
+                            <div className="rounded-xl bg-slate-50 px-3 py-2">
+                              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                                Möjlig
+                              </p>
+                              <p className="mt-1 text-sm font-black text-sky-700">
+                                {potentialPayout} kr
+                              </p>
+                            </div>
+
+                            <div className="rounded-xl bg-slate-50 px-3 py-2">
+                              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                                Status
+                              </p>
+                              <p className="mt-1 text-sm font-black text-slate-800">
+                                {isTop2 ? "Topp 2" : "Utanför"}
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </button>
 
                       {isOpen && (
-                        <div className="bg-slate-50 px-4 py-3">
-                          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-                            Värvade personer
-                          </p>
+                        <div className="bg-slate-50 px-4 py-4">
+                          <div className="mb-3 flex flex-wrap items-center gap-2">
+                            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                              Värvade personer
+                            </p>
+
+                            <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-600">
+                              Betalande: {row.paid_referrals}
+                            </span>
+
+                            <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-600">
+                              Möjlig ersättning: {potentialPayout} kr
+                            </span>
+
+                            <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-600">
+                              Utbetalning just nu: {actualPayout} kr
+                            </span>
+                          </div>
 
                           {referredPeople.length > 0 ? (
                             <ul className="space-y-2">
-                              {referredPeople.map((person) => (
-                                <li
-                                  key={person.referred_user_id}
-                                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
-                                >
-                                  {getDisplayName(person)}
-                                  {person.payment_status === "paid" && (
-                                    <span className="ml-2 font-semibold text-emerald-700">
-                                      (betald)
+                              {referredPeople.map((person) => {
+                                const isPaid = person.payment_status === "paid";
+
+                                return (
+                                  <li
+                                    key={person.referred_user_id}
+                                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                                  >
+                                    <span className="min-w-0 truncate">
+                                      {getDisplayName(person)}
                                     </span>
-                                  )}
-                                </li>
-                              ))}
+
+                                    <span
+                                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${
+                                        isPaid
+                                          ? "bg-emerald-100 text-emerald-800"
+                                          : "bg-slate-100 text-slate-600"
+                                      }`}
+                                    >
+                                      {isPaid ? "Betald" : "Ej betald"}
+                                    </span>
+                                  </li>
+                                );
+                              })}
                             </ul>
                           ) : (
                             <p className="text-sm text-slate-600">
@@ -470,10 +641,23 @@ export default function ReferralPage() {
             <h2 className="text-2xl font-black tracking-tight text-slate-900">
               Så fungerar det
             </h2>
+
+            <div className="mt-4 rounded-2xl border border-emerald-200 bg-white/70 p-4">
+              <p className="text-sm font-bold text-slate-900">Kort förklaring</p>
+              <p className="mt-2 text-sm leading-6 text-slate-700 md:text-base">
+                Betalande värvningar visas för alla deltagare i tabellen. Endast topp 2
+                får utbetalning. Kolumnen <span className="font-bold">Möjlig ersättning</span> visar
+                vad dina betalande värvningar är värda, medan faktisk utbetalning bara gäller
+                för deltagare på utbetalningsplats.
+              </p>
+            </div>
+
             <ul className="mt-4 space-y-2 text-sm leading-6 text-slate-700 md:text-base">
-              <li>• Endast betalande deltagare räknas för utbetalningen.</li>
-              <li>• Topp 1 och topp 2 får 20 kr per betalande värvning.</li>
+              <li>• Endast betalande deltagare räknas för ersättningen.</li>
+              <li>• Endast topp 1 och topp 2 får utbetalning.</li>
+              <li>• Varje betalande värvning är värd 20 kr.</li>
               <li>• Max ersättning är 500 kr per person.</li>
+              <li>• Vid lika antal betalande värvningar gäller den som nådde nivån först.</li>
               <li>• Samma person kan bara räknas en gång.</li>
               <li>• Dubbelkonton och missbruk diskvalificeras.</li>
               <li>• Admin har sista ordet vid oklarheter.</li>

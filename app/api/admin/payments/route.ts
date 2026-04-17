@@ -25,12 +25,17 @@ export async function GET() {
 
   const { data, error } = await supabaseAdmin
     .from("profiles")
-    .select("id, first_name, last_name, email, payment_code, payment_status, is_admin")
+    .select(
+      "id, first_name, last_name, email, payment_code, payment_status, is_admin"
+    )
     .order("payment_status", { ascending: true })
     .order("first_name", { ascending: true });
 
   if (error) {
-    return NextResponse.json({ error: "Kunde inte läsa användare" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Kunde inte läsa användare" },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ profiles: data });
@@ -58,11 +63,29 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const { profileId, paymentStatus } = body;
+  const { profileId, paymentStatus } = body as {
+    profileId?: string;
+    paymentStatus?: "paid" | "unpaid";
+  };
+
+  if (!profileId || (paymentStatus !== "paid" && paymentStatus !== "unpaid")) {
+    return NextResponse.json({ error: "Ogiltig payload" }, { status: 400 });
+  }
+
+  const updateData =
+    paymentStatus === "paid"
+      ? {
+          payment_status: "paid",
+          paid_at: new Date().toISOString(),
+        }
+      : {
+          payment_status: "unpaid",
+          paid_at: null,
+        };
 
   const { error } = await supabaseAdmin
     .from("profiles")
-    .update({ payment_status: paymentStatus })
+    .update(updateData)
     .eq("id", profileId);
 
   if (error) {
