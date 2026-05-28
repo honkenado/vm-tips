@@ -200,6 +200,30 @@ export async function POST(request: NextRequest) {
   const goldenBoot =
     typeof body.goldenBoot === "string" ? body.goldenBoot.trim() : "";
 
+    if (goldenBoot) {
+  const { data: validGoldenBoot, error: goldenBootError } =
+    await serviceSupabase
+      .from("team_players")
+      .select("id")
+      .eq("name", goldenBoot)
+      .limit(1)
+      .maybeSingle();
+
+  if (goldenBootError) {
+    return NextResponse.json(
+      { error: goldenBootError.message },
+      { status: 500 }
+    );
+  }
+
+  if (!validGoldenBoot) {
+    return NextResponse.json(
+      { error: "Skyttekungen måste väljas från VM-trupperna." },
+      { status: 400 }
+    );
+  }
+}
+
   const { data: tournament, error: tournamentError } = await serviceSupabase
     .from("tournaments")
     .select("id")

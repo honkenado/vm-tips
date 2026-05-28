@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthStatus from "@/components/auth-status";
 import BestThirdsSection from "@/components/BestThirdsSection";
-import GoldenBootSection from "@/components/GoldenBootSection";
+import GoldenBootSection, {
+  type GoldenBootOption,
+} from "@/components/GoldenBootSection";
 import GroupSection from "@/components/GroupSection";
 import KnockoutFullSection from "@/components/KnockoutFullSection";
 import LeaguesSection from "@/components/leagues-section";
 import SectionCard from "@/components/SectionCard";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { isDeadlinePassed } from "@/lib/config";
 import {
   clearDependentKnockoutSelections,
@@ -88,6 +90,9 @@ export default function TipsPage() {
     {}
   );
   const [goldenBoot, setGoldenBoot] = useState("");
+  const [goldenBootOptions, setGoldenBootOptions] = useState<GoldenBootOption[]>(
+  []
+);
   const [viewMode, setViewMode] = useState<AppViewMode>("all");
   const [activeGroupLetter, setActiveGroupLetter] = useState("A");
   const [isSaving, setIsSaving] = useState(false);
@@ -98,6 +103,7 @@ export default function TipsPage() {
   const [predictionUnlockUntil, setPredictionUnlockUntil] = useState<string | null>(
     null
   );
+  const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!saveMessage) return;
@@ -108,6 +114,28 @@ export default function TipsPage() {
 
     return () => window.clearTimeout(timeout);
   }, [saveMessage]);
+
+  async function loadGoldenBootOptions(query = "") {
+  try {
+    const params = new URLSearchParams();
+
+    if (query.trim()) {
+      params.set("q", query.trim());
+    }
+
+    const res = await fetch(`/api/golden-boot-options?${params.toString()}`, {
+      cache: "no-store",
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) return;
+
+    setGoldenBootOptions(data.options ?? []);
+  } catch (error) {
+    console.error("Kunde inte hämta skyttekung-lista", error);
+  }
+}
 
   async function loadMyLeagues() {
     try {
@@ -156,7 +184,8 @@ export default function TipsPage() {
     }
 
     loadPredictionFromDatabase();
-    loadMyLeagues();
+loadMyLeagues();
+loadGoldenBootOptions();
   }, []);
 
   async function createLeague() {
@@ -360,6 +389,35 @@ export default function TipsPage() {
       setIsSaving(false);
     }
   }
+
+  useEffect(() => {
+  if (!hasLoadedFromDatabase) return;
+  if (!hasUnsavedChanges) return;
+  if (isSaving) return;
+  if (deadlinePassed) return;
+
+  if (autosaveTimeoutRef.current) {
+    clearTimeout(autosaveTimeoutRef.current);
+  }
+
+  autosaveTimeoutRef.current = setTimeout(() => {
+    savePredictionToDatabase();
+  }, 2000);
+
+  return () => {
+    if (autosaveTimeoutRef.current) {
+      clearTimeout(autosaveTimeoutRef.current);
+    }
+  };
+}, [
+  groups,
+  knockoutWinners,
+  goldenBoot,
+  hasLoadedFromDatabase,
+  hasUnsavedChanges,
+  isSaving,
+  deadlinePassed,
+]);
 
   async function handleTeamNavigate(teamName: string) {
     const slug = slugifyTeamName(teamName);
@@ -781,13 +839,15 @@ export default function TipsPage() {
 
           {(viewMode === "all" || viewMode === "goldenboot") && (
             <GoldenBootSection
-              value={goldenBoot}
-              onChange={(value) => {
-                setGoldenBoot(value);
-                setHasUnsavedChanges(true);
-                setSaveMessage(null);
-              }}
-            />
+  value={goldenBoot}
+  options={goldenBootOptions}
+  onSearch={loadGoldenBootOptions}
+  onChange={(value) => {
+    setGoldenBoot(value);
+    setHasUnsavedChanges(true);
+    setSaveMessage(null);
+  }}
+/>
           )}
 
           {viewMode === "leagues" && (

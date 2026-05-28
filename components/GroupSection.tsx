@@ -48,7 +48,7 @@ export default function GroupSection({
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr] xl:gap-6">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-6">
       <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.04] shadow-[0_10px_30px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:rounded-[1.75rem]">
         <div className="border-b border-white/10 bg-[linear-gradient(90deg,rgba(16,185,129,0.16),rgba(2,6,23,0.92)_35%,rgba(2,6,23,0.92)_65%,rgba(16,185,129,0.08))] px-4 py-3 text-white sm:px-5 sm:py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -248,7 +248,7 @@ export default function GroupSection({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.04] shadow-[0_10px_30px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:rounded-[1.75rem]">
+      <div className="w-full max-w-[360px] overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.04] shadow-[0_10px_30px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:rounded-[1.75rem]">
         <div className="border-b border-white/10 bg-[linear-gradient(90deg,rgba(2,6,23,0.96),rgba(16,185,129,0.12),rgba(2,6,23,0.96))] px-4 py-3 text-white sm:px-5 sm:py-4">
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/60 sm:text-xs">
             Gruppställning
