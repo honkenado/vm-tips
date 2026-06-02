@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+
 
 type ChatReaction = {
   emoji: string;
@@ -95,52 +95,17 @@ export default function GlobalChat({
     loadMessages();
   }, []);
 
-  useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!url || !anonKey) return;
-
-    const supabase = createClient(url, anonKey);
-
-    const channel = supabase
-      .channel("global-chat-live")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "chat_messages",
-        },
-        () => {
-          loadMessages({ silent: true });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "chat_message_reactions",
-        },
-        () => {
-          loadMessages({ silent: true });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  
 
   useEffect(() => {
-    const interval = window.setInterval(() => {
-      loadMessages({ silent: true });
-    }, 30000);
+  if (!isLoggedIn) return;
 
-    return () => window.clearInterval(interval);
-  }, []);
+  const interval = window.setInterval(() => {
+    loadMessages({ silent: true });
+  }, 120000);
+
+  return () => window.clearInterval(interval);
+}, [isLoggedIn]);
 
   useEffect(() => {
     if (!listRef.current || !lastMessageId) return;

@@ -24,7 +24,7 @@ export default function LeagueChat({
 
   useEffect(() => {
     loadMessages();
-    const interval = setInterval(loadMessages, 8000);
+    const interval = setInterval(loadMessages, 180000);
     return () => clearInterval(interval);
   }, [leagueId]);
 
