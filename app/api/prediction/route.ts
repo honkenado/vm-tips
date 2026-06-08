@@ -245,13 +245,14 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   const payload = {
-    user_id: user.id,
-    tournament_id: tournament.id,
-    group_stage: groups,
-    knockout,
-    golden_boot: goldenBoot,
-    golden_boot_corrected: existingPrediction?.golden_boot_corrected ?? null,
-  };
+  user_id: user.id,
+  tournament_id: tournament.id,
+  group_stage: groups,
+  knockout,
+  golden_boot: goldenBoot,
+  golden_boot_corrected: existingPrediction?.golden_boot_corrected ?? null,
+  updated_at: new Date().toISOString(),
+};
 
   const { error } = await serviceSupabase.from("predictions").upsert(payload, {
     onConflict: "user_id,tournament_id",
