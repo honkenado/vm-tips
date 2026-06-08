@@ -322,7 +322,23 @@ export async function POST() {
     const results = [];
 
     const FINAL_SQUAD_TEAMS = [
-  "Bosnien och Hercegovina",
+  "Algeriet",
+  "Argentina",
+  "Australien",
+  "Ecuador",
+  "Egypten",
+  "Ghana",
+  "Iran",
+  "Jordanien",
+  "Mexiko",
+  "Paraguay",
+  "Saudiarabien",
+  "Senegal",
+  "Sydafrika",
+  "Tjeckien",
+  "Turkiet",
+  "Uruguay",
+  "Uzbekistan",
 ];
 
     for (const team of (teams ?? []) as TeamRow[]) {
