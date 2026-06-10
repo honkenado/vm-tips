@@ -21,16 +21,46 @@ type MembersResponse = {
 };
 
 function getDeadlineDate() {
-  const now = new Date();
-  const year = now.getFullYear();
-  return new Date(year, 5, 10, 23, 59, 59);
+  return new Date("2026-06-10T23:59:59+02:00");
 }
 
-function getDaysLeftToDeadline() {
+function getCountdownToDeadline() {
   const now = new Date();
   const deadline = getDeadlineDate();
   const diff = deadline.getTime() - now.getTime();
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+
+  if (diff <= 0) {
+    return {
+      expired: true,
+      urgent: false,
+      veryUrgent: false,
+      text: "Deadline passerad",
+    };
+  }
+
+  const totalMinutes = Math.floor(diff / 60000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+
+  const urgent = totalMinutes <= 24 * 60;
+  const veryUrgent = totalMinutes <= 3 * 60;
+
+  if (days > 0) {
+    return {
+      expired: false,
+      urgent,
+      veryUrgent,
+      text: `${days}d ${hours}h`,
+    };
+  }
+
+  return {
+    expired: false,
+    urgent,
+    veryUrgent,
+    text: `${hours}h ${minutes}m`,
+  };
 }
 
 function isBeforeDeadline() {
@@ -80,7 +110,7 @@ export default async function HomePage() {
   }
 
   const beforeDeadline = isBeforeDeadline();
-  const daysLeft = getDaysLeftToDeadline();
+  const countdown = getCountdownToDeadline();
 
   const schedule = getGroupStageSchedule();
   const upcomingMatches = getUpcomingMatches(schedule);
@@ -143,10 +173,8 @@ export default async function HomePage() {
   }
 
   const mobileHeaderNote = beforeDeadline
-    ? `${daysLeft} dagar kvar till deadline`
-    : featuredMatch
-    ? `Nästa match: ${featuredMatch.homeTeam} - ${featuredMatch.awayTeam}`
-    : "VM-tipset är öppet";
+    ? `Deadline om ${countdown.text}`
+    : "🔒 Deadline har passerat – inga fler ändringar kan göras";
 
   const navItems = [
     { href: "/rules", label: "Regler" },
@@ -276,7 +304,13 @@ export default async function HomePage() {
             </div>
           )}
 
-          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/80 backdrop-blur-xl">
+          <div
+            className={`mt-3 rounded-2xl border px-4 py-3 text-sm font-bold backdrop-blur-xl ${
+              beforeDeadline
+                ? "border-amber-400/20 bg-amber-500/10 text-amber-100"
+                : "border-red-500/30 bg-red-500/15 text-red-100"
+            }`}
+          >
             {mobileHeaderNote}
           </div>
 
@@ -320,6 +354,33 @@ export default async function HomePage() {
                     andra om ära, poäng och topplaceringar i tabellen.
                   </p>
 
+                  {!beforeDeadline && (
+                    <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/15 p-4 shadow-[0_12px_35px_rgba(239,68,68,0.12)]">
+                      <div className="text-lg font-black text-red-300">
+                        🔒 Deadline har passerat
+                      </div>
+
+                      <div className="mt-1 text-sm leading-6 text-red-100">
+                        Det går inte längre att ändra matcher, tabeller,
+                        skyttekung eller världsmästare. Det tips som låg sparat
+                        när deadline gick ut är det som gäller i tävlingen.
+                      </div>
+                    </div>
+                  )}
+
+                  {beforeDeadline && countdown.veryUrgent && (
+                    <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/15 p-4 shadow-[0_12px_35px_rgba(239,68,68,0.12)]">
+                      <div className="text-lg font-black text-red-300">
+                        ⚠️ Sista chansen
+                      </div>
+
+                      <div className="mt-1 text-sm leading-6 text-red-100">
+                        Deadline är ikväll 23:59. Kontrollera att alla matcher,
+                        tabeller, skyttekung och världsmästare är sparade.
+                      </div>
+                    </div>
+                  )}
+
                   <p className="mt-2 text-sm leading-6 text-white/78 md:leading-7">
                     Tippa gruppspel, slutspel och hela vägen fram till världsmästaren.
                   </p>
@@ -334,8 +395,31 @@ export default async function HomePage() {
                     </Link>
 
                     <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                      <div className="text-3xl font-black text-white">{daysLeft}</div>
-                      <div className="text-sm text-white/75">dagar kvar</div>
+                      <div
+                        className={`text-3xl font-black ${
+                          countdown.expired
+                            ? "text-red-400"
+                            : countdown.veryUrgent
+                            ? "animate-pulse text-red-400"
+                            : countdown.urgent
+                            ? "text-amber-300"
+                            : "text-white"
+                        }`}
+                      >
+                        {countdown.text}
+                      </div>
+
+                      <div
+                        className={`text-sm ${
+                          countdown.expired
+                            ? "text-red-300"
+                            : countdown.urgent
+                            ? "text-amber-200"
+                            : "text-white/75"
+                        }`}
+                      >
+                        {countdown.expired ? "Tipset är låst" : "Tid kvar"}
+                      </div>
                     </div>
 
                     <div className="hidden min-w-[110px] rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] md:block">
@@ -354,7 +438,7 @@ export default async function HomePage() {
                         href="/tips"
                         className="flex w-full items-center justify-center rounded-2xl bg-emerald-500/95 px-8 py-4 text-lg font-bold text-white shadow-[0_12px_30px_rgba(16,185,129,0.35)] transition hover:bg-emerald-400 md:inline-flex md:min-w-[240px] md:w-auto md:py-3.5 md:text-base"
                       >
-                        Gå till tipset
+                        {beforeDeadline ? "Gå till tipset" : "Visa mitt tips"}
                       </Link>
                     ) : (
                       <Link
