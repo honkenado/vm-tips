@@ -6,13 +6,15 @@ export default function MatchButtons({
   selectedWinners,
   onSelectWinner,
   compact = false,
+  isLocked,
 }: {
   match: KnockoutMatch;
   selectedWinners: Record<string, string>;
   onSelectWinner: (matchId: string, team: string) => void;
   compact?: boolean;
+  isLocked?: boolean;
 }) {
-  const deadlinePassed = isDeadlinePassed();
+  const deadlinePassed = isLocked ?? isDeadlinePassed();
 
   const homeDisabled =
     deadlinePassed || !match.home || match.home.startsWith("?");

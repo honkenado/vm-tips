@@ -829,12 +829,13 @@ loadGoldenBootOptions();
 
           {(viewMode === "all" || viewMode === "knockout") && (
             <KnockoutFullSection
-              groups={groups}
-              knockoutWinners={knockoutWinners}
-              onSelectWinner={selectWinner}
-              onResetKnockout={resetKnockout}
-              isGroupStageComplete={isGroupStageComplete}
-            />
+  groups={groups}
+  knockoutWinners={knockoutWinners}
+  onSelectWinner={selectWinner}
+  onResetKnockout={resetKnockout}
+  isGroupStageComplete={isGroupStageComplete}
+  isLocked={deadlinePassed}
+/>
           )}
 
           {(viewMode === "all" || viewMode === "goldenboot") && (

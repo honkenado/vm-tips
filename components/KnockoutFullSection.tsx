@@ -16,12 +16,14 @@ export default function KnockoutFullSection({
   onSelectWinner,
   onResetKnockout,
   isGroupStageComplete,
+  isLocked = false,
 }: {
   groups: GroupData[];
   knockoutWinners: Record<string, string>;
   onSelectWinner: (matchId: string, team: string) => void;
   onResetKnockout: () => void;
   isGroupStageComplete: boolean;
+  isLocked?: boolean;
 }) {
   const { round32 } = useMemo(() => getKnockoutSeedData(groups), [groups]);
 
@@ -110,11 +112,12 @@ export default function KnockoutFullSection({
       >
         <div className={wrapperClass}>
           <MatchButtons
-            match={match}
-            selectedWinners={knockoutWinners}
-            onSelectWinner={onSelectWinner}
-            compact
-          />
+  match={match}
+  selectedWinners={knockoutWinners}
+  onSelectWinner={onSelectWinner}
+  compact
+  isLocked={isLocked}
+/>
         </div>
       </div>
     );
@@ -168,12 +171,13 @@ export default function KnockoutFullSection({
               <div className="grid gap-2.5 sm:gap-3">
                 {round.matches.map((match) => (
                   <MatchButtons
-                    key={match.id}
-                    match={match}
-                    selectedWinners={knockoutWinners}
-                    onSelectWinner={onSelectWinner}
-                    compact
-                  />
+  key={match.id}
+  match={match}
+  selectedWinners={knockoutWinners}
+  onSelectWinner={onSelectWinner}
+  compact
+  isLocked={isLocked}
+/>
                 ))}
               </div>
             </div>
