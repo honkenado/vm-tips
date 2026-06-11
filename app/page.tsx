@@ -225,13 +225,7 @@ export default async function HomePage() {
     </section>
   ) : null;
 
-  if (!beforeDeadline) {
-  return (
-    <main className="min-h-screen bg-[#020617] pb-24 md:pb-0">
-      <PostDeadlineDashboard />
-    </main>
-  );
-}
+ 
 
   return (
     <main className="min-h-screen bg-[#020617] pb-24 md:pb-0">
