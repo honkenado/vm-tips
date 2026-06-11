@@ -451,8 +451,50 @@ export async function GET(request: NextRequest) {
     .slice(0, 5);
 
   const schedule = getGroupStageSchedule();
-  const upcomingMatches = getUpcomingMatches(schedule);
-  const nextMatch = upcomingMatches[0] ?? schedule[0] ?? null;
+
+const firstUnplayedMatch =
+  schedule.find((match) => {
+    const resultMatch = findGroupMatch(officialGroupStage, match.matchNumber);
+    return !hasScore(resultMatch);
+  }) ?? null;
+
+const firstUnplayedIndex = firstUnplayedMatch
+  ? schedule.findIndex((match) => match.matchNumber === firstUnplayedMatch.matchNumber)
+  : -1;
+
+const upcoming24HourMatches =
+  firstUnplayedIndex >= 0
+    ? schedule
+        .slice(firstUnplayedIndex)
+        .filter((match) => {
+          const resultMatch = findGroupMatch(officialGroupStage, match.matchNumber);
+          return !hasScore(resultMatch);
+        })
+        .slice(0, 4)
+    : [];
+
+const completedPreviousMatches =
+  firstUnplayedIndex > 0
+    ? schedule
+        .slice(Math.max(0, firstUnplayedIndex - 2), firstUnplayedIndex)
+        .filter((match) => {
+          const resultMatch = findGroupMatch(officialGroupStage, match.matchNumber);
+          return hasScore(resultMatch);
+        })
+    : [];
+
+const todayMatches = [...completedPreviousMatches, ...upcoming24HourMatches];
+
+
+
+const firstUnplayedToday =
+  todayMatches.find((match) => {
+    const resultMatch = findGroupMatch(officialGroupStage, match.matchNumber);
+    return !hasScore(resultMatch);
+  }) ?? todayMatches[0] ?? null;
+
+const nextMatch = firstUnplayedToday ?? firstUnplayedMatch ?? schedule[0] ?? null;
+
   const nextMatchStats = nextMatch?.stage === "group"
     ? buildNextMatchStats({
         matchNumber: nextMatch.matchNumber,
@@ -460,6 +502,42 @@ export async function GET(request: NextRequest) {
         currentUserId: user.id,
       })
     : null;
+
+  const todayMatchCards = todayMatches.map((match) => {
+    const stats =
+      match.stage === "group"
+        ? buildNextMatchStats({
+            matchNumber: match.matchNumber,
+            predictions: predictionRows,
+            currentUserId: user.id,
+          })
+        : null;
+
+    const resultMatch = findGroupMatch(officialGroupStage, match.matchNumber);
+    const predictedMatch = findGroupMatch(userGroups, match.matchNumber);
+    const isCompleted = hasScore(resultMatch);
+    const userPoints = isCompleted ? pointsForMatch(predictedMatch, resultMatch) : null;
+
+    return {
+      matchNumber: match.matchNumber,
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      date: match.date,
+      time: match.time,
+      groupName: match.groupName,
+      tvChannel: match.tvChannel ?? null,
+      userTip: stats?.userTip ?? null,
+      peopleTip: stats?.peopleTip ?? null,
+      sameTipPercent: stats?.sameTipPercent ?? null,
+      outcomeDistribution: stats?.outcomeDistribution ?? null,
+      isCompleted,
+      result: isCompleted
+        ? `${resultMatch?.homeGoals}–${resultMatch?.awayGoals}`
+        : null,
+      userPoints,
+      isOpen: match.matchNumber === firstUnplayedToday?.matchNumber,
+    };
+  });
 
   const leagueSummaries: LeagueSummary[] = [];
 
@@ -547,6 +625,7 @@ export async function GET(request: NextRequest) {
     },
     rankHistory,
     latestPoints,
+    todayMatches: todayMatchCards,
     nextMatch: nextMatch
       ? {
           matchNumber: nextMatch.matchNumber,

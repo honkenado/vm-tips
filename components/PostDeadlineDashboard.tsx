@@ -30,6 +30,28 @@ type RankHistoryItem = {
   points: number;
 };
 
+type TodayMatchCard = {
+  matchNumber: number;
+  homeTeam: string;
+  awayTeam: string;
+  date: string;
+  time: string;
+  groupName: string;
+  tvChannel: string | null;
+  userTip: string | null;
+  peopleTip: string | null;
+  sameTipPercent: number | null;
+  isCompleted?: boolean;
+  result?: string | null;
+  userPoints?: number | null;
+  isOpen?: boolean;
+  outcomeDistribution: {
+    home: number;
+    draw: number;
+    away: number;
+  } | null;
+};
+
 type DashboardResponse = {
   user: {
     id: string;
@@ -49,23 +71,8 @@ type DashboardResponse = {
   };
   rankHistory: RankHistoryItem[];
   latestPoints: LatestPoint[];
-  nextMatch: {
-    matchNumber: number;
-    homeTeam: string;
-    awayTeam: string;
-    date: string;
-    time: string;
-    groupName: string;
-    tvChannel: string | null;
-    userTip: string | null;
-    peopleTip: string | null;
-    sameTipPercent: number | null;
-    outcomeDistribution: {
-      home: number;
-      draw: number;
-      away: number;
-    } | null;
-  } | null;
+  todayMatches: TodayMatchCard[];
+  nextMatch: TodayMatchCard | null;
   error?: string;
 };
 
@@ -280,7 +287,12 @@ export default function PostDeadlineDashboard() {
   ) ?? [];
   const latestUpdate = dashboard?.hero.latestUpdate ?? null;
   const nextMatch = dashboard?.nextMatch ?? null;
-  const outcomeDistribution = nextMatch?.outcomeDistribution ?? null;
+  const todayMatches = dashboard?.todayMatches ?? [];
+  console.log("todayMatches", todayMatches);
+  const defaultOpenMatchNumber =
+    todayMatches.find((match) => !match.isCompleted)?.matchNumber ??
+    todayMatches[0]?.matchNumber ??
+    null;
   const totalParticipants = dashboard?.hero.totalParticipants ?? 0;
 
   const overviewContent = dashboard ? (
@@ -517,79 +529,152 @@ export default function PostDeadlineDashboard() {
 
       <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-2xl font-black">Inför nästa match</h2>
-          
+          <div>
+            <h2 className="text-2xl font-black">Kommande matcher</h2>
+            <p className="mt-1 text-sm font-semibold text-white/55">
+              Dagens matcher, dina tips och folkets vanligaste resultat.
+            </p>
+          </div>
+
+          <Link
+            href="/tv-guide"
+            className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-xs font-black text-emerald-200"
+          >
+            TV-guide
+          </Link>
         </div>
 
-        {nextMatch ? (
-          <>
-            <div className="mt-5 rounded-[1.7rem] border border-white/10 bg-black/25 p-5 text-center">
-              <div className="grid grid-cols-3 items-center gap-3">
-                <div>
-                  <p className="text-xl font-black">{nextMatch.homeTeam}</p>
-                </div>
-                <div>
-                  <p className="text-3xl font-black">{nextMatch.time}</p>
-                  <p className="text-xs font-bold text-white/50">{nextMatch.date}</p>
-                  <p className="text-xs font-bold text-white/50">{nextMatch.groupName}</p>
-                </div>
-                <div>
-                  <p className="text-xl font-black">{nextMatch.awayTeam}</p>
-                </div>
-              </div>
-            </div>
+        {todayMatches.length > 0 ? (
+          <div className="mt-5 space-y-3">
+            {todayMatches.map((match) => {
+              const outcomeDistribution = match.outcomeDistribution;
 
-            <div className="mt-3 grid grid-cols-3 gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-4 text-center">
-                <p className="text-xs font-black uppercase tracking-[0.15em] text-white/45">Ditt tips</p>
-                <p className="mt-2 text-3xl font-black text-emerald-300">{nextMatch.userTip ?? "—"}</p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-4 text-center">
-                <p className="text-xs font-black uppercase tracking-[0.15em] text-white/45">Vanligaste resultat</p>
-                <p className="mt-2 text-3xl font-black">{nextMatch.peopleTip ?? "—"}</p>
-              </div>
-
-              <Link
-  href="/tv-guide"
-  className="rounded-2xl border border-white/10 bg-white/[0.05] p-4 text-center transition hover:bg-white/[0.08]"
+              return (
+                <details
+  key={match.matchNumber}
+  open={match.matchNumber === defaultOpenMatchNumber}
+  className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/25"
 >
-  <p className="text-xs font-black uppercase tracking-[0.15em] text-white/45">
-    TV-kanal
-  </p>
+                  <summary className="cursor-pointer list-none px-4 py-4 transition hover:bg-white/[0.04]">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {match.isCompleted ? (
+                            <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2.5 py-1 text-xs font-black text-emerald-200">
+                              Klar
+                            </span>
+                          ) : (
+                            <span className="rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs font-black text-white/60">
+                              {match.time}
+                            </span>
+                          )}
 
-  <p className="mt-2 text-2xl font-black">
-    {nextMatch.tvChannel ?? "TV-guide"}
-  </p>
+                          <span className="text-xs font-bold text-white/45">
+                            {match.groupName}
+                          </span>
+                        </div>
 
-  <p className="mt-1 text-xs font-semibold text-emerald-300">
-    Visa guide →
-  </p>
-</Link>
-            </div>
+                        <p className="mt-2 truncate text-lg font-black text-white">
+                          {match.homeTeam}
+                          {match.isCompleted && match.result ? ` ${match.result} ` : " – "}
+                          {match.awayTeam}
+                        </p>
+                      </div>
 
-            {outcomeDistribution ? (
-              <div className="mt-4 rounded-[1.5rem] border border-white/10 bg-white/[0.05] p-4">
-                <h3 className="font-black">Utfallsfördelning</h3>
-
-                {[
-                  [nextMatch.homeTeam, outcomeDistribution.home],
-                  ["Kryss", outcomeDistribution.draw],
-                  [nextMatch.awayTeam, outcomeDistribution.away],
-                ].map(([label, percent]) => (
-                  <div key={label} className="mt-3">
-                    <div className="mb-1 flex justify-between text-xs font-bold text-white/60">
-                      <span>{label}</span>
-                      <span>{percent}%</span>
+                      {match.isCompleted ? (
+                        <div className="shrink-0 text-right">
+                          <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">
+                            Dina poäng
+                          </p>
+                          <p className="text-2xl font-black text-emerald-300">
+                            +{match.userPoints ?? 0}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="shrink-0 text-right">
+                          <p className="text-xs font-black uppercase tracking-[0.14em] text-white/45">
+                            Start
+                          </p>
+                          <p className="text-xl font-black text-white">
+                            {match.time}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                    <div className="h-2 rounded-full bg-white/10">
-                      <div className="h-2 rounded-full bg-emerald-400" style={{ width: `${percent}%` }} />
+                  </summary>
+
+                  <div className="border-t border-white/10 px-4 pb-4 pt-3">
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-4 text-center">
+                        <p className="text-xs font-black uppercase tracking-[0.15em] text-white/45">
+                          Ditt tips
+                        </p>
+                        <p className="mt-2 text-3xl font-black text-emerald-300">
+                          {match.userTip ?? "—"}
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-4 text-center">
+                        <p className="text-xs font-black uppercase tracking-[0.15em] text-white/45">
+                          Vanligaste resultat
+                        </p>
+                        <p className="mt-2 text-3xl font-black">
+                          {match.peopleTip ?? "—"}
+                        </p>
+                      </div>
+
+                      <Link
+                        href="/tv-guide"
+                        className="rounded-2xl border border-white/10 bg-white/[0.05] p-4 text-center transition hover:bg-white/[0.08]"
+                      >
+                        <p className="text-xs font-black uppercase tracking-[0.15em] text-white/45">
+                          TV
+                        </p>
+
+                        <p className="mt-2 text-2xl font-black">
+                          {match.tvChannel ?? "TV-guide"}
+                        </p>
+
+                        <p className="mt-1 text-xs font-semibold text-emerald-300">
+                          Visa guide →
+                        </p>
+                      </Link>
                     </div>
+
+                    {outcomeDistribution ? (
+                      <div className="mt-4 rounded-[1.5rem] border border-white/10 bg-white/[0.05] p-4">
+                        <h3 className="font-black">Utfallsfördelning</h3>
+
+                        {[
+                          [match.homeTeam, outcomeDistribution.home],
+                          ["Kryss", outcomeDistribution.draw],
+                          [match.awayTeam, outcomeDistribution.away],
+                        ].map(([label, percent]) => (
+                          <div key={label} className="mt-3">
+                            <div className="mb-1 flex justify-between text-xs font-bold text-white/60">
+                              <span>{label}</span>
+                              <span>{percent}%</span>
+                            </div>
+
+                            <div className="h-2 rounded-full bg-white/10">
+                              <div
+                                className="h-2 rounded-full bg-emerald-400"
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
-                ))}
-              </div>
-            ) : null}
-          </>
+                </details>
+              );
+            })}
+          </div>
+        ) : nextMatch ? (
+          <div className="mt-5 rounded-[1.7rem] border border-white/10 bg-black/25 p-5 text-sm font-semibold text-white/65">
+            Ingen match hittades för dagen.
+          </div>
         ) : (
           <div className="mt-5 rounded-[1.7rem] border border-white/10 bg-black/25 p-5 text-sm font-semibold text-white/65">
             Ingen kommande match hittades.

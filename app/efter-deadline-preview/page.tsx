@@ -279,6 +279,7 @@ export default function EfterDeadlinePreviewPage() {
     (league) => league.id !== mainLeague?.id
   ) ?? [];
   const latestUpdate = dashboard?.hero.latestUpdate ?? null;
+  console.log("DASHBOARD", dashboard);
   const nextMatch = dashboard?.nextMatch ?? null;
   const outcomeDistribution = nextMatch?.outcomeDistribution ?? null;
   const totalParticipants = dashboard?.hero.totalParticipants ?? 0;
@@ -517,7 +518,7 @@ export default function EfterDeadlinePreviewPage() {
 
       <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-2xl font-black">Inför nästa match</h2>
+          <h2 className="text-2xl font-black">VM idag</h2>
           
         </div>
 

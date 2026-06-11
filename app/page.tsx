@@ -157,9 +157,7 @@ export default async function HomePage() {
   
   
 
-  const mobileHeaderNote = beforeDeadline
-    ? `Deadline om ${countdown.text}`
-    : "🔒 Deadline har passerat – inga fler ändringar kan göras";
+  
 
   const navItems = [
     { href: "/rules", label: "Regler" },
@@ -256,15 +254,7 @@ export default async function HomePage() {
             </div>
           )}
 
-          <div
-            className={`mt-3 rounded-2xl border px-4 py-3 text-sm font-bold backdrop-blur-xl ${
-              beforeDeadline
-                ? "border-amber-400/20 bg-amber-500/10 text-amber-100"
-                : "border-red-500/30 bg-red-500/15 text-red-100"
-            }`}
-          >
-            {mobileHeaderNote}
-          </div>
+          
 
           
         </div>
@@ -273,11 +263,51 @@ export default async function HomePage() {
   <div>
     {isLoggedIn ? (
       <>
-        <div className="mb-4 hidden md:flex md:justify-end">
-          <div className="w-full max-w-[380px] rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
-            <AuthStatus />
-          </div>
-        </div>
+        <div className="mb-5 hidden md:flex md:justify-end">
+  <div className="w-full max-w-[420px] overflow-hidden rounded-[1.6rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.055),rgba(255,255,255,0.025))] p-4 text-white shadow-[0_18px_55px_rgba(0,0,0,0.38)] backdrop-blur-xl">
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <div>
+        <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-300">
+          Konto
+        </p>
+        <p className="mt-1 text-lg font-black text-white">
+          {displayName}
+        </p>
+      </div>
+
+      {isAdmin ? (
+        <Link
+          href="/admin"
+          className="rounded-full border border-emerald-400/25 bg-emerald-500/12 px-3 py-1.5 text-xs font-black text-emerald-100 transition hover:bg-emerald-500/20"
+        >
+          Admin
+        </Link>
+      ) : null}
+    </div>
+
+    <div className="mb-3 flex flex-wrap gap-2">
+      {profile?.payment_code ? (
+        <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-sm font-black text-white/90">
+          {profile.payment_code}
+        </span>
+      ) : null}
+
+      <span
+        className={`rounded-full px-3 py-1.5 text-sm font-black ${
+          isPaid
+            ? "border border-emerald-400/20 bg-emerald-500/12 text-emerald-100"
+            : "border border-amber-400/20 bg-amber-500/12 text-amber-100"
+        }`}
+      >
+        {isPaid ? "Betald" : "Ej betald"}
+      </span>
+    </div>
+
+    <div className="rounded-[1.2rem] border border-white/10 bg-black/20 p-3">
+      <AuthStatus />
+    </div>
+  </div>
+</div>
 
         <PostDeadlineDashboard />
       </>
