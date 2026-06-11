@@ -44,6 +44,7 @@ export default function AdminAccessPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteHours, setInviteHours] = useState("2");
   const [inviteNote, setInviteNote] = useState("");
+  const [search, setSearch] = useState("");
 
   async function loadData() {
     try {
@@ -206,17 +207,35 @@ export default function AdminAccessPage() {
       setBusyInviteId(null);
     }
   }
+const sortedProfiles = useMemo(() => {
+  return [...profiles].sort((a, b) => {
+    const aHasUnlock = a.prediction_unlock_until ? 1 : 0;
+    const bHasUnlock = b.prediction_unlock_until ? 1 : 0;
 
-  const sortedProfiles = useMemo(() => {
-    return [...profiles].sort((a, b) => {
-      const aHasUnlock = a.prediction_unlock_until ? 1 : 0;
-      const bHasUnlock = b.prediction_unlock_until ? 1 : 0;
+    if (aHasUnlock !== bHasUnlock) return bHasUnlock - aHasUnlock;
 
-      if (aHasUnlock !== bHasUnlock) return bHasUnlock - aHasUnlock;
+    return formatName(a).localeCompare(formatName(b), "sv");
+  });
+}, [profiles]);
 
-      return formatName(a).localeCompare(formatName(b), "sv");
-    });
-  }, [profiles]);
+const filteredProfiles = useMemo(() => {
+  const q = search.trim().toLowerCase();
+
+  if (!q) return sortedProfiles;
+
+  return sortedProfiles.filter((profile) =>
+    [
+      profile.first_name,
+      profile.last_name,
+      profile.username,
+      profile.email,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(q)
+  );
+}, [sortedProfiles, search]);
 
   return (
     <main className="min-h-screen overflow-x-hidden px-3 py-3 pb-10 sm:px-4 sm:py-4 md:px-6 md:py-8">
@@ -265,11 +284,20 @@ export default function AdminAccessPage() {
               </button>
             </div>
 
+            <div className="mt-5">
+  <input
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+    placeholder="Sök namn, användarnamn eller e-post..."
+    className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-white outline-none placeholder:text-white/40"
+  />
+</div>
+
             <div className="mt-5 space-y-3">
               {loading ? (
                 <p className="text-sm text-white/70">Laddar...</p>
               ) : (
-                sortedProfiles.map((profile) => {
+                filteredProfiles.map((profile) => {
                   const isBusy = busyUserId === profile.id;
 
                   return (
