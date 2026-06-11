@@ -297,11 +297,14 @@ export default function EfterDeadlinePreviewPage() {
             Placering
           </p>
           <p className="mt-2 text-3xl font-black text-white">
-            {mainLeague ? `#${mainLeague.rank ?? "—"}` : "—"}
-          </p>
-          <p className="mt-1 text-xs font-bold text-white/45">
-            {mainLeague ? `av ${mainLeague.total}` : "Global liga"}
-          </p>
+  {mainLeague?.rank && mainLeague?.total
+    ? `${mainLeague.rank} / ${mainLeague.total}`
+    : "—"}
+</p>
+
+<p className="mt-1 text-xs font-bold text-white/45">
+  Globala ligan
+</p>
         </div>
 
         <div className="rounded-[1.3rem] border border-white/10 bg-white/[0.05] p-4">
@@ -492,10 +495,8 @@ export default function EfterDeadlinePreviewPage() {
 
       <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-2xl font-black">Nästa match</h2>
-          <Link href="/tv-guide" className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-xs font-black text-emerald-200">
-            TV-guide
-          </Link>
+          <h2 className="text-2xl font-black">Inför nästa match</h2>
+          
         </div>
 
         {nextMatch ? (
@@ -527,12 +528,22 @@ export default function EfterDeadlinePreviewPage() {
                 <p className="mt-2 text-3xl font-black">{nextMatch.peopleTip ?? "—"}</p>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-4 text-center">
-                <p className="text-xs font-black uppercase tracking-[0.15em] text-white/45">Samma tips</p>
-                <p className="mt-2 text-3xl font-black">
-                  {nextMatch.sameTipPercent == null ? "—" : `${nextMatch.sameTipPercent}%`}
-                </p>
-              </div>
+              <Link
+  href="/tv-guide"
+  className="rounded-2xl border border-white/10 bg-white/[0.05] p-4 text-center transition hover:bg-white/[0.08]"
+>
+  <p className="text-xs font-black uppercase tracking-[0.15em] text-white/45">
+    TV-kanal
+  </p>
+
+  <p className="mt-2 text-2xl font-black">
+    {nextMatch.tvChannel ?? "TV-guide"}
+  </p>
+
+  <p className="mt-1 text-xs font-semibold text-emerald-300">
+    Visa guide →
+  </p>
+</Link>
             </div>
 
             {outcomeDistribution ? (
