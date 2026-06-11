@@ -328,10 +328,36 @@ export default async function HomePage() {
 
 {!beforeDeadline ? (
   <div>
-    <div className="mb-4 hidden md:flex md:justify-end">
-      <div className="w-full max-w-[380px] rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
-        <AuthStatus />
-      </div>
+    <div className="mb-4">
+      {isLoggedIn ? (
+        <div className="hidden md:flex md:justify-end">
+          <div className="w-full max-w-[380px] rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+            <AuthStatus />
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+          <div className="text-lg font-black text-white">Addes VM-tips</div>
+          <p className="mt-2 text-sm text-white/78">
+            Logga in för att följa dina poäng, placeringar och ligor.
+          </p>
+
+          <div className="mt-4 flex gap-2">
+            <Link
+              href="/login"
+              className="rounded-xl bg-emerald-500/95 px-4 py-2 text-sm font-bold text-white shadow-[0_10px_24px_rgba(16,185,129,0.28)] transition hover:bg-emerald-400"
+            >
+              Logga in
+            </Link>
+            <Link
+              href="/register"
+              className="rounded-xl border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-bold text-white transition hover:bg-white/[0.1]"
+            >
+              Skapa konto
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
 
     {adminPaymentCard ? (
