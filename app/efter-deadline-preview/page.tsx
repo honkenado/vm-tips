@@ -268,6 +268,9 @@ export default function EfterDeadlinePreviewPage() {
     () => (dashboard?.rankHistory ?? []).map((item) => item.date),
     [dashboard]
   );
+  const hasRealRankHistory =
+  (dashboard?.rankHistory ?? []).length >= 2 &&
+  new Set((dashboard?.rankHistory ?? []).map((item) => item.date)).size >= 2;
 
   const mainLeague = dashboard?.hero.leagueSummaries[0] ?? null;
   const miniLeagues = dashboard?.hero.leagueSummaries.slice(1, 3) ?? [];
@@ -466,9 +469,9 @@ export default function EfterDeadlinePreviewPage() {
           <div>
             <h2 className="text-3xl font-black">{chartMode === "rank" ? "Placering över tid" : "Poängutveckling"}</h2>
             <p className="mt-1 text-sm font-semibold text-white/55">
-              {rankValues.length > 1
-                ? "Följ hur du klättrar eller tappar placering under turneringen."
-                : "Placeringen visas här när rankhistorik börjar sparas."}
+              {hasRealRankHistory
+  ? "Följ hur du klättrar eller tappar placering under turneringen."
+  : "Historiken visas här när de första poängen har delats ut."}
             </p>
           </div>
 
@@ -483,14 +486,31 @@ export default function EfterDeadlinePreviewPage() {
           </div>
         </div>
 
-        <div className="mt-4 rounded-[1.5rem] border border-white/10 bg-black/20 p-3">
-          <MiniLineChart
-            values={chartMode === "rank" ? rankValues : pointValues}
-            labels={chartLabels}
-            maxRank={totalParticipants}
-            inverted={chartMode === "rank"}
-          />
-        </div>
+        <div className="mt-4 rounded-[1.5rem] border border-white/10 bg-black/20 p-5">
+  {hasRealRankHistory ? (
+    <MiniLineChart
+      values={chartMode === "rank" ? rankValues : pointValues}
+      labels={chartLabels}
+      maxRank={totalParticipants}
+      inverted={chartMode === "rank"}
+    />
+  ) : (
+    <div className="flex min-h-[210px] flex-col items-center justify-center text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full border border-emerald-300/20 bg-emerald-400/10 text-2xl">
+        📈
+      </div>
+
+      <h3 className="mt-4 text-xl font-black text-white">
+        Rankhistorik startar snart
+      </h3>
+
+      <p className="mt-2 max-w-md text-sm font-semibold leading-6 text-white/55">
+        När de första poänggivande matcherna är registrerade visas din
+        placering och poängutveckling här.
+      </p>
+    </div>
+  )}
+</div>
 
         
       </section>
