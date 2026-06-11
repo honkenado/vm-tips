@@ -113,7 +113,7 @@ function MiniLineChart({
     : [0, Math.round(pointMax * 0.25), Math.round(pointMax * 0.5), Math.round(pointMax * 0.75), pointMax];
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-80 w-full">
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-56 w-full sm:h-64">
       <polygon points={area} className="fill-emerald-400/10" />
 
       {axisLabels.map((label) => {
@@ -478,7 +478,7 @@ export default function EfterDeadlinePreviewPage() {
           </div>
         </div>
 
-        <div className="mt-6 rounded-[1.8rem] border border-white/10 bg-black/20 p-4">
+        <div className="mt-4 rounded-[1.5rem] border border-white/10 bg-black/20 p-3">
           <MiniLineChart
             values={chartMode === "rank" ? rankValues : pointValues}
             labels={chartLabels}
@@ -487,26 +487,7 @@ export default function EfterDeadlinePreviewPage() {
           />
         </div>
 
-        <div className="mt-4 rounded-[1.6rem] border border-emerald-300/15 bg-emerald-400/10 p-4">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-200">Senaste poäng</p>
-              <p className="mt-1 text-xl font-black">
-                {dashboard.latestPoints.length > 0
-                  ? `${dashboard.latestPoints.length} senaste poänggivande matcher`
-                  : "Inga poänggivande matcher ännu"}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {dashboard.latestPoints.slice(0, 5).map((item) => (
-                <div key={`${item.match}-${item.points}`} className="rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs font-black text-white/80">
-                  <span className="text-emerald-300">+{item.points}</span> {item.match}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        
       </section>
 
       <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
