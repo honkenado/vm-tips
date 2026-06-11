@@ -186,6 +186,29 @@ function formatLeagueRank(league: LeagueSummary) {
   if (!league.rank || league.total <= 0) return "—";
   return `${league.rank} / ${league.total}`;
 }
+function TrendBadge({ value = 0 }: { value?: number | null }) {
+  if (value == null || value === 0) {
+    return (
+      <span className="rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs font-black text-white/45">
+        →
+      </span>
+    );
+  }
+
+  if (value > 0) {
+    return (
+      <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2.5 py-1 text-xs font-black text-emerald-300">
+        ↑ {value}
+      </span>
+    );
+  }
+
+  return (
+    <span className="rounded-full border border-red-300/20 bg-red-400/10 px-2.5 py-1 text-xs font-black text-red-300">
+      ↓ {Math.abs(value)}
+    </span>
+  );
+}
 
 export default function EfterDeadlinePreviewPage() {
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
@@ -256,133 +279,182 @@ export default function EfterDeadlinePreviewPage() {
 
   const overviewContent = dashboard ? (
     <div className="space-y-5">
-      <section className="overflow-hidden rounded-[2.25rem] border border-emerald-400/15 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.26),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.18),transparent_34%),linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,0.99))] p-6 shadow-[0_24px_90px_rgba(0,0,0,0.65)] lg:p-8">
-        <div className="grid gap-8 xl:grid-cols-[0.9fr_1.1fr] xl:items-start">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">Mitt VM</p>
+      
+<section className="overflow-hidden rounded-[2rem] border border-emerald-400/15 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.22),transparent_34%),linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,0.99))] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.65)] lg:p-6">
+  <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr] xl:items-stretch">
+    <div className="rounded-[1.6rem] border border-white/10 bg-black/20 p-5">
+      <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">
+        Mitt VM
+      </p>
 
-            <h1 className="mt-3 text-2xl font-black text-white/80 sm:text-3xl">
-              {dashboard.user.displayName}
-            </h1>
+      <h1 className="mt-2 truncate text-2xl font-black text-white sm:text-3xl">
+        {dashboard.user.displayName}
+      </h1>
 
-            <div className="mt-8">
-              <p className="text-7xl font-black leading-none tracking-tight sm:text-8xl">
-                {dashboard.hero.totalPoints}
-              </p>
-              <p className="mt-2 text-sm font-black uppercase tracking-[0.24em] text-emerald-300">poäng</p>
-            </div>
-
-            <div className="mt-7 rounded-[1.8rem] border border-white/10 bg-black/25 p-5">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-white/45">
-                Senaste poänguppdatering
-              </p>
-
-              {latestUpdate ? (
-                <>
-                  <p className="mt-3 text-2xl font-black">{latestUpdate.match}</p>
-                  <div className="mt-4 flex items-end justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-white/55">Ditt tips: {latestUpdate.prediction}</p>
-                      <p className="text-sm font-semibold text-white/55">{latestUpdate.note}</p>
-                    </div>
-                    <p className="text-4xl font-black text-emerald-300">+{latestUpdate.points}p</p>
-                  </div>
-                </>
-              ) : (
-                <p className="mt-3 text-sm font-semibold text-white/65">
-                  Inga poänggivande matcher registrerade ännu.
-                </p>
-              )}
-
-              <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300">
-                📰 Senaste nytt finns i nyhetsflödet
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="rounded-[1.8rem] border border-emerald-300/15 bg-emerald-400/10 p-5">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-200">🏆 Ligaplacering</p>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                {leagueCards.length > 0 ? (
-                  leagueCards.map((league) => (
-                    <Link key={league.id} href={league.href} className="block rounded-[1.25rem] border border-white/10 bg-black/10 p-3 transition hover:bg-white/[0.05]">
-                      <p className="truncate text-sm font-black">{league.name}</p>
-                      <p className="mt-1 text-3xl font-black text-white">{formatLeagueRank(league)}</p>
-                      <p className="mt-1 text-xs font-bold text-white/45">{league.note}</p>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="rounded-[1.25rem] border border-white/10 bg-black/10 p-3 sm:col-span-3">
-                    <p className="text-sm font-semibold text-white/65">Ingen placering hittades ännu.</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[1.3rem] border border-white/10 bg-white/[0.05] p-4">
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-white/45">Topp 10</p>
-                  <p className="mt-2 text-2xl font-black">
-                    {dashboard.hero.pointsToTop10 == null ? "—" : `${dashboard.hero.pointsToTop10}p`}
-                  </p>
-                </div>
-
-                <div className="rounded-[1.3rem] border border-white/10 bg-white/[0.05] p-4">
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-white/45">Ledaren</p>
-                  <p className="mt-2 text-2xl font-black">
-                    {dashboard.hero.pointsToLeader == null ? "—" : `${dashboard.hero.pointsToLeader}p`}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[1.8rem] border border-white/10 bg-white/[0.05] p-5">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/45">Skyttekung</p>
-                <p className="mt-2 truncate text-xl font-black text-emerald-300">{dashboard.hero.chosenGoldenBoot}</p>
-                <p className="mt-1 text-sm font-semibold text-white/55">Ditt val i skyttekungstävlingen</p>
-              </div>
-
-              <div className="rounded-[1.8rem] border border-white/10 bg-white/[0.05] p-5">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/45">VM-läget</p>
-                <p className="mt-2 text-xl font-black">{totalParticipants} deltagare</p>
-                <p className="mt-1 text-sm font-semibold text-white/55">
-                  {mainLeague ? `Global placering: ${formatLeagueRank(mainLeague)}` : "Placering saknas"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Link href="/mitt-resultat" className="rounded-full bg-emerald-500 px-5 py-3 text-sm font-black text-white hover:bg-emerald-400">
-                Visa mitt resultat
-              </Link>
-
-              <Link href="/tips" className="rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white/85 hover:bg-white/[0.1]">
-                Visa mina tips
-              </Link>
-            </div>
-          </div>
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="rounded-[1.3rem] border border-white/10 bg-white/[0.05] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-white/45">
+            Placering
+          </p>
+          <p className="mt-2 text-3xl font-black text-white">
+            {mainLeague ? `#${mainLeague.rank ?? "—"}` : "—"}
+          </p>
+          <p className="mt-1 text-xs font-bold text-white/45">
+            {mainLeague ? `av ${mainLeague.total}` : "Global liga"}
+          </p>
         </div>
-      </section>
 
-      <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-4 lg:p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-2xl font-black">VM-status</h2>
-            <p className="mt-1 text-sm font-semibold text-white/55">
-              {miniLeagues.length > 0
-                ? `Du följer ${miniLeagues.length} egen liga utöver globala ligan.`
-                : "Du följer globala ligan."}
+        <div className="rounded-[1.3rem] border border-white/10 bg-white/[0.05] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-white/45">
+            Poäng
+          </p>
+          <p className="mt-2 text-3xl font-black text-emerald-300">
+            {dashboard.hero.totalPoints}p
+          </p>
+          <p className="mt-1 text-xs font-bold text-white/45">
+            totalt just nu
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="rounded-[1.3rem] border border-white/10 bg-white/[0.04] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-white/45">
+            Till topp 10
+          </p>
+          <p className="mt-2 text-2xl font-black">
+            {dashboard.hero.pointsToTop10 == null ? "—" : `${dashboard.hero.pointsToTop10}p`}
+          </p>
+        </div>
+
+        <div className="rounded-[1.3rem] border border-white/10 bg-white/[0.04] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-white/45">
+            Till ledaren
+          </p>
+          <p className="mt-2 text-2xl font-black">
+            {dashboard.hero.pointsToLeader == null ? "—" : `${dashboard.hero.pointsToLeader}p`}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-[1.3rem] border border-white/10 bg-black/25 p-4">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-white/45">
+          Senaste poäng
+        </p>
+
+        {latestUpdate ? (
+          <div className="mt-2 flex items-end justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-lg font-black">{latestUpdate.match}</p>
+              <p className="text-xs font-semibold text-white/55">
+                Ditt tips: {latestUpdate.prediction}
+              </p>
+            </div>
+            <p className="shrink-0 text-3xl font-black text-emerald-300">
+              +{latestUpdate.points}p
             </p>
           </div>
+        ) : (
+          <p className="mt-2 text-sm font-semibold text-white/65">
+            Inga poänggivande matcher ännu.
+          </p>
+        )}
+      </div>
+    </div>
 
-          <div className="text-left sm:text-right">
-            <p className="text-3xl font-black text-emerald-300">{dashboard.hero.totalPoints}p</p>
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-white/45">din poäng</p>
-          </div>
+    <div className="rounded-[1.6rem] border border-emerald-300/15 bg-emerald-400/10 p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-200">
+            Mina ligor
+          </p>
+          <h2 className="mt-1 text-xl font-black text-white">
+            Placeringar
+          </h2>
         </div>
-      </section>
+
+        <div className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs font-black text-white/55">
+          {dashboard.hero.leagueSummaries.length} ligor
+        </div>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-[1.3rem] border border-white/10 bg-black/15">
+        {dashboard.hero.leagueSummaries.length > 0 ? (
+          dashboard.hero.leagueSummaries.slice(0, 5).map((league, index) => (
+            <Link
+              key={league.id}
+              href={league.href}
+              className={`grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 px-4 py-3 transition hover:bg-white/[0.05] ${
+                index > 0 ? "border-t border-white/10" : ""
+              }`}
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-white">
+                  {league.name}
+                </p>
+                <p className="mt-0.5 truncate text-xs font-semibold text-white/45">
+                  {league.note}
+                </p>
+              </div>
+
+              <div className="text-right">
+                <p className="text-lg font-black text-white">
+                  {league.rank ? `#${league.rank}` : "—"}
+                </p>
+                <p className="text-xs font-bold text-white/45">
+                  av {league.total}
+                </p>
+              </div>
+
+              <TrendBadge value={0} />
+            </Link>
+          ))
+        ) : (
+          <div className="p-4 text-sm font-semibold text-white/65">
+            Ingen ligaplacering hittades ännu.
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-[1.3rem] border border-white/10 bg-white/[0.05] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-white/45">
+            Skyttekung
+          </p>
+          <p className="mt-2 truncate text-lg font-black text-emerald-300">
+            {dashboard.hero.chosenGoldenBoot}
+          </p>
+        </div>
+
+        <div className="rounded-[1.3rem] border border-white/10 bg-white/[0.05] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-white/45">
+            VM-läget
+          </p>
+          <p className="mt-2 text-lg font-black">
+            {totalParticipants} deltagare
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Link
+          href="/mitt-resultat"
+          className="rounded-full bg-emerald-500 px-5 py-3 text-sm font-black text-white hover:bg-emerald-400"
+        >
+          Visa mitt resultat
+        </Link>
+
+        <Link
+          href="/tips"
+          className="rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white/85 hover:bg-white/[0.1]"
+        >
+          Visa mina tips
+        </Link>
+      </div>
+    </div>
+  </div>
+</section>
+      
 
       <section className="rounded-[2.25rem] border border-white/10 bg-white/[0.04] p-5 lg:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
