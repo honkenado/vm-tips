@@ -271,7 +271,10 @@ export default function EfterDeadlinePreviewPage() {
 
   const mainLeague = dashboard?.hero.leagueSummaries[0] ?? null;
   const miniLeagues = dashboard?.hero.leagueSummaries.slice(1, 3) ?? [];
-  const leagueCards = dashboard?.hero.leagueSummaries.slice(0, 3) ?? [];
+  const leagueCards =
+  dashboard?.hero.leagueSummaries.filter(
+    (league) => league.id !== mainLeague?.id
+  ) ?? [];
   const latestUpdate = dashboard?.hero.latestUpdate ?? null;
   const nextMatch = dashboard?.nextMatch ?? null;
   const outcomeDistribution = nextMatch?.outcomeDistribution ?? null;
@@ -292,20 +295,24 @@ export default function EfterDeadlinePreviewPage() {
       </h1>
 
       <div className="mt-5 grid grid-cols-2 gap-3">
-        <div className="rounded-[1.3rem] border border-white/10 bg-white/[0.05] p-4">
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-white/45">
-            Placering
-          </p>
-          <p className="mt-2 text-3xl font-black text-white">
-  {mainLeague?.rank && mainLeague?.total
-    ? `${mainLeague.rank} / ${mainLeague.total}`
-    : "—"}
-</p>
+        <Link
+  href="/league"
+  className="rounded-[1.3rem] border border-white/10 bg-white/[0.05] p-4 transition hover:bg-white/[0.08]"
+>
+  <p className="text-xs font-black uppercase tracking-[0.16em] text-white/45">
+    Placering
+  </p>
 
-<p className="mt-1 text-xs font-bold text-white/45">
-  Globala ligan
-</p>
-        </div>
+  <p className="mt-2 text-3xl font-black text-white">
+    {mainLeague?.rank && mainLeague?.total
+      ? `${mainLeague.rank} / ${mainLeague.total}`
+      : "—"}
+  </p>
+
+  <p className="mt-1 text-xs font-bold text-emerald-300">
+    Visa huvudligan →
+  </p>
+</Link>
 
         <div className="rounded-[1.3rem] border border-white/10 bg-white/[0.05] p-4">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-white/45">
@@ -376,18 +383,16 @@ export default function EfterDeadlinePreviewPage() {
           </h2>
         </div>
 
-        <div className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs font-black text-white/55">
-          {dashboard.hero.leagueSummaries.length} ligor
-        </div>
+        
       </div>
 
       <div className="mt-4 overflow-hidden rounded-[1.3rem] border border-white/10 bg-black/15">
-        {dashboard.hero.leagueSummaries.length > 0 ? (
-          dashboard.hero.leagueSummaries.slice(0, 5).map((league, index) => (
+        {leagueCards.length > 0 ? (
+  leagueCards.map((league, index) => (
             <Link
               key={league.id}
               href={league.href}
-              className={`grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 px-4 py-3 transition hover:bg-white/[0.05] ${
+              className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition hover:bg-white/[0.05] ${
                 index > 0 ? "border-t border-white/10" : ""
               }`}
             >
@@ -402,14 +407,11 @@ export default function EfterDeadlinePreviewPage() {
 
               <div className="text-right">
                 <p className="text-lg font-black text-white">
-                  {league.rank ? `#${league.rank}` : "—"}
-                </p>
-                <p className="text-xs font-bold text-white/45">
-                  av {league.total}
-                </p>
+  {league.rank ? `${league.rank} / ${league.total}` : "—"}
+</p>
               </div>
 
-              <TrendBadge value={0} />
+              
             </Link>
           ))
         ) : (
@@ -524,7 +526,7 @@ export default function EfterDeadlinePreviewPage() {
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-4 text-center">
-                <p className="text-xs font-black uppercase tracking-[0.15em] text-white/45">Folkets</p>
+                <p className="text-xs font-black uppercase tracking-[0.15em] text-white/45">Vanligaste resultat</p>
                 <p className="mt-2 text-3xl font-black">{nextMatch.peopleTip ?? "—"}</p>
               </div>
 
