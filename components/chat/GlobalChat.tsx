@@ -116,9 +116,9 @@ export default function GlobalChat({
     }
 
     listRef.current.scrollTo({
-      top: listRef.current.scrollHeight,
-      behavior: "smooth",
-    });
+  top: 0,
+  behavior: "smooth",
+});
   }, [lastMessageId]);
 
   async function handleSendMessage() {

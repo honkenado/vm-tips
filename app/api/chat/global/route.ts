@@ -24,7 +24,7 @@ export async function GET(_req: Request) {
       .from("chat_messages")
       .select("id, user_id, message, created_at")
       .eq("scope", "global")
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
       .limit(80);
 
     if (error) {

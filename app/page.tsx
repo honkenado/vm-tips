@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PostDeadlineDashboard from "@/components/PostDeadlineDashboard";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import NewsPreview from "@/components/NewsPreview";
@@ -224,6 +225,14 @@ export default async function HomePage() {
     </section>
   ) : null;
 
+  if (!beforeDeadline) {
+  return (
+    <main className="min-h-screen bg-[#020617] pb-24 md:pb-0">
+      <PostDeadlineDashboard />
+    </main>
+  );
+}
+
   return (
     <main className="min-h-screen bg-[#020617] pb-24 md:pb-0">
       <div className="mx-auto w-full max-w-[1400px] px-4 py-4 md:px-6">
@@ -317,7 +326,23 @@ export default async function HomePage() {
           {adminPaymentCard ? <div className="mt-3">{adminPaymentCard}</div> : null}
         </div>
 
-        <section className="relative overflow-hidden rounded-[2rem] border border-white/6 bg-[#020617] text-white shadow-[0_30px_100px_rgba(0,0,0,0.7)]">
+{!beforeDeadline ? (
+  <div>
+    <div className="mb-4 hidden md:flex md:justify-end">
+      <div className="w-full max-w-[380px] rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+        <AuthStatus />
+      </div>
+    </div>
+
+    {adminPaymentCard ? (
+      <div className="mb-4 hidden md:block">{adminPaymentCard}</div>
+    ) : null}
+
+    <PostDeadlineDashboard />
+  </div>
+) : (
+  <>
+    <section className="relative overflow-hidden rounded-[2rem] border border-white/6 bg-[#020617] text-white shadow-[0_30px_100px_rgba(0,0,0,0.7)]">
           <div className="pointer-events-none absolute -left-28 -top-24 h-[420px] w-[420px] rounded-full bg-emerald-500/14 blur-[140px]" />
           <div className="pointer-events-none absolute left-[18%] top-[58%] h-[280px] w-[280px] rounded-full bg-emerald-400/6 blur-[120px]" />
           <div className="pointer-events-none absolute -right-24 top-1/2 h-[300px] w-[300px] -translate-y-1/2 rounded-full bg-emerald-300/8 blur-[120px]" />
@@ -614,7 +639,7 @@ export default async function HomePage() {
           </section>
         </div>
 
-        <div className="mt-4 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+                <div className="mt-4 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
           <div className="min-w-0">
             <NewsPreview />
           </div>
@@ -627,6 +652,8 @@ export default async function HomePage() {
             />
           </div>
         </div>
+      </>
+    )}
       </div>
     </main>
   );
