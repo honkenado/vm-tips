@@ -515,7 +515,7 @@ export default function EfterDeadlinePreviewPage() {
 
   return (
     <main className="min-h-screen bg-[#020617] px-4 py-6 text-white">
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-[1500px]">
         <div className="mb-5 flex items-center justify-between gap-3">
           <Link href="/" className="rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-bold text-white/80 hover:bg-white/[0.1]">
             ← Till startsidan
@@ -536,30 +536,37 @@ export default function EfterDeadlinePreviewPage() {
           <>
             <MobileTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
-            <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-5">
-              <div className={activeTab === "overview" ? "block" : "hidden lg:block"}>{overviewContent}</div>
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+  <div className={activeTab === "overview" ? "block" : "hidden lg:block"}>
+    {overviewContent}
+  </div>
 
-              <aside className="hidden space-y-5 lg:block">
-                <NewsPreview />
-                <GlobalChat
-                  isLoggedIn={dashboard.user.isLoggedIn}
-                  isAdmin={dashboard.user.isAdmin}
-                  currentUserId={dashboard.user.id}
-                />
-              </aside>
+  <aside className="hidden xl:block">
+    <div className="sticky top-5">
+      <GlobalChat
+        isLoggedIn={dashboard.user.isLoggedIn}
+        isAdmin={dashboard.user.isAdmin}
+        currentUserId={dashboard.user.id}
+      />
+    </div>
+  </aside>
 
-              <div className={activeTab === "news" ? "block lg:hidden" : "hidden"}>
-                <NewsPreview />
-              </div>
+  <div className={activeTab === "news" ? "block lg:hidden" : "hidden"}>
+    <NewsPreview />
+  </div>
 
-              <div className={activeTab === "chat" ? "block lg:hidden" : "hidden"}>
-                <GlobalChat
-                  isLoggedIn={dashboard.user.isLoggedIn}
-                  isAdmin={dashboard.user.isAdmin}
-                  currentUserId={dashboard.user.id}
-                />
-              </div>
-            </div>
+  <div className={activeTab === "chat" ? "block lg:hidden" : "hidden"}>
+    <GlobalChat
+      isLoggedIn={dashboard.user.isLoggedIn}
+      isAdmin={dashboard.user.isAdmin}
+      currentUserId={dashboard.user.id}
+    />
+  </div>
+</div>
+
+<div className="mt-5 hidden lg:block">
+  <NewsPreview />
+</div>
           </>
         ) : null}
       </div>
