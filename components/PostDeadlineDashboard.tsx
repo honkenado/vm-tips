@@ -108,8 +108,8 @@ function MiniLineChart({
 
   const axisMin = inverted ? 1 : 0;
   const axisMax = inverted
-    ? Math.max(50, Math.ceil((maxRank ?? Math.max(...safeValues, 1)) / 50) * 50)
-    : Math.max(10, Math.ceil(Math.max(...safeValues, 10) / 10) * 10);
+  ? Math.max(1, maxRank ?? Math.max(...safeValues, 1))
+  : Math.max(10, Math.ceil(Math.max(...safeValues, 10) / 10) * 10);
 
   const range = axisMax - axisMin || 1;
 
