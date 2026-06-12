@@ -88,19 +88,34 @@ function MiniLineChart({
   maxRank?: number;
   inverted?: boolean;
 }) {
-  const safeValues = values.length > 1 ? values : values.length === 1 ? [values[0], values[0]] : [0, 0];
-  const safeLabels = labels.length > 1 ? labels : labels.length === 1 ? [labels[0], labels[0]] : ["Start", "Idag"];
+  const safeValues =
+    values.length > 1
+      ? values
+      : values.length === 1
+        ? [values[0], values[0]]
+        : [0, 0];
+
+  const safeLabels =
+    labels.length > 1
+      ? labels
+      : labels.length === 1
+        ? [labels[0], labels[0]]
+        : ["Start", "Idag"];
 
   const width = 900;
   const height = 260;
   const padding = 52;
-  const min = Math.min(...safeValues);
-  const max = Math.max(...safeValues);
-  const range = max - min || 1;
+
+  const axisMin = inverted ? 1 : 0;
+  const axisMax = inverted
+    ? Math.max(50, Math.ceil((maxRank ?? Math.max(...safeValues, 1)) / 50) * 50)
+    : Math.max(10, Math.ceil(Math.max(...safeValues, 10) / 10) * 10);
+
+  const range = axisMax - axisMin || 1;
 
   const points = safeValues.map((value, index) => {
     const x = padding + (index / (safeValues.length - 1)) * (width - padding * 2);
-    const normalized = (value - min) / range;
+    const normalized = (value - axisMin) / range;
 
     const y = inverted
       ? padding + normalized * (height - padding * 2)
@@ -112,45 +127,70 @@ function MiniLineChart({
   const line = points.map((point) => `${point.x},${point.y}`).join(" ");
   const area = `${points[0].x},${height - padding} ${line} ${points[points.length - 1].x},${height - padding}`;
 
-  const rankMax = maxRank ?? Math.max(...safeValues, 1);
-  const roundedRankMax = Math.max(50, Math.ceil(rankMax / 50) * 50);
-  const pointMax = Math.max(10, Math.ceil(Math.max(...safeValues, 10) / 10) * 10);
-
   const axisLabels = inverted
-    ? [1, Math.round(roundedRankMax * 0.25), Math.round(roundedRankMax * 0.5), Math.round(roundedRankMax * 0.75), roundedRankMax]
-    : [0, Math.round(pointMax * 0.25), Math.round(pointMax * 0.5), Math.round(pointMax * 0.75), pointMax];
+    ? [1, Math.round(axisMax * 0.25), Math.round(axisMax * 0.5), Math.round(axisMax * 0.75), axisMax]
+    : [0, Math.round(axisMax * 0.25), Math.round(axisMax * 0.5), Math.round(axisMax * 0.75), axisMax];
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="h-56 w-full sm:h-64">
       <polygon points={area} className="fill-emerald-400/10" />
 
       {axisLabels.map((label) => {
-        const axisMin = inverted ? 1 : 0;
-        const axisMax = inverted ? roundedRankMax : pointMax;
-        const normalized = (label - axisMin) / (axisMax - axisMin);
+        const normalized = (label - axisMin) / range;
+
         const y = inverted
           ? padding + normalized * (height - padding * 2)
           : height - padding - normalized * (height - padding * 2);
 
         return (
           <g key={label}>
-            <line x1={padding} x2={width - padding} y1={y} y2={y} className="stroke-white/10" strokeWidth="1" />
-            <text x={padding - 12} y={y + 5} textAnchor="end" className="fill-white/35 text-[14px] font-bold">
+            <line
+              x1={padding}
+              x2={width - padding}
+              y1={y}
+              y2={y}
+              className="stroke-white/10"
+              strokeWidth="1"
+            />
+            <text
+              x={padding - 12}
+              y={y + 5}
+              textAnchor="end"
+              className="fill-white/35 text-[14px] font-bold"
+            >
               {label}
             </text>
           </g>
         );
       })}
 
-      <polyline points={line} fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400" />
+      <polyline
+        points={line}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="text-emerald-400"
+      />
 
       {points.map((point, index) => (
         <g key={index}>
           <circle cx={point.x} cy={point.y} r="7" className="fill-emerald-300" />
-          <text x={point.x} y={point.y - 16} textAnchor="middle" className="fill-white text-[20px] font-black">
+          <text
+            x={point.x}
+            y={point.y - 16}
+            textAnchor="middle"
+            className="fill-white text-[20px] font-black"
+          >
             {point.value}
           </text>
-          <text x={point.x} y={height - 4} textAnchor="middle" className="fill-white/45 text-[16px] font-bold">
+          <text
+            x={point.x}
+            y={height - 4}
+            textAnchor="middle"
+            className="fill-white/45 text-[16px] font-bold"
+          >
             {safeLabels[index]}
           </text>
         </g>
@@ -162,9 +202,13 @@ function MiniLineChart({
 function MobileTabs({
   activeTab,
   setActiveTab,
+  hasUnreadNews,
+  markNewsAsRead,
 }: {
   activeTab: TabKey;
   setActiveTab: (tab: TabKey) => void;
+  hasUnreadNews: boolean;
+  markNewsAsRead: () => void;
 }) {
   return (
     <div className="sticky top-0 z-20 -mx-4 mb-5 border-b border-white/10 bg-[#020617]/95 px-4 py-3 backdrop-blur lg:hidden">
@@ -175,21 +219,29 @@ function MobileTabs({
   ["chat", "Chatt"],
 ].map(([value, label]) => (
   <button
-    key={value}
-    type="button"
-    onClick={() => setActiveTab(value as TabKey)}
-    className={`relative rounded-full px-3 py-2 text-sm font-black ${
-      activeTab === value ? "bg-emerald-500 text-white" : "text-white/55"
-    }`}
-  >
-    <span className="inline-flex items-center justify-center gap-2">
-      {label}
+  key={value}
+  type="button"
+  onClick={() => {
+    setActiveTab(value as TabKey);
 
-      {value === "news" ? (
-        <span className="h-2.5 w-2.5 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.9)]" />
-      ) : null}
-    </span>
-  </button>
+    if (value === "news") {
+      markNewsAsRead();
+    }
+  }}
+  className={`relative rounded-full px-3 py-2 text-sm font-black ${
+    activeTab === value ? "bg-emerald-500 text-white" : "text-white/55"
+  }`}
+>
+  <span className="inline-flex items-center justify-center gap-2">
+    {label}
+
+    {value === "news" && hasUnreadNews ? (
+      <span className="rounded-full bg-emerald-300 px-2 py-0.5 text-[10px] font-black text-black shadow-[0_0_14px_rgba(110,231,183,0.9)]">
+        NY
+      </span>
+    ) : null}
+  </span>
+</button>
 ))}
       </div>
     </div>
@@ -240,6 +292,17 @@ export default function PostDeadlineDashboard({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [chartMode, setChartMode] = useState<ChartMode>("rank");
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const [hasUnreadNews, setHasUnreadNews] = useState(false);
+
+useEffect(() => {
+  const hasSeenNews = window.localStorage.getItem("vm-news-seen") === "true";
+  setHasUnreadNews(!hasSeenNews);
+}, []);
+
+function markNewsAsRead() {
+  window.localStorage.setItem("vm-news-seen", "true");
+  setHasUnreadNews(false);
+}
 
   useEffect(() => {
     let isMounted = true;
@@ -712,7 +775,12 @@ export default function PostDeadlineDashboard({
           </div>
         ) : dashboard ? (
           <>
-            <MobileTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+            <MobileTabs
+  activeTab={activeTab}
+  setActiveTab={setActiveTab}
+  hasUnreadNews={hasUnreadNews}
+  markNewsAsRead={markNewsAsRead}
+/>
 
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
   <div className={activeTab === "overview" ? "block" : "hidden lg:block"}>
