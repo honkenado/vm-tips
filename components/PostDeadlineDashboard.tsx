@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import NewsPreview from "@/components/NewsPreview";
+import AuthStatus from "@/components/auth-status";
 import GlobalChat from "@/components/chat/GlobalChat";
 
 type TabKey = "overview" | "news" | "chat";
@@ -169,21 +170,27 @@ function MobileTabs({
     <div className="sticky top-0 z-20 -mx-4 mb-5 border-b border-white/10 bg-[#020617]/95 px-4 py-3 backdrop-blur lg:hidden">
       <div className="grid grid-cols-3 gap-2 rounded-full border border-white/10 bg-black/20 p-1">
         {[
-          ["overview", "Översikt"],
-          ["news", "Nyheter"],
-          ["chat", "Chatt"],
-        ].map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setActiveTab(value as TabKey)}
-            className={`rounded-full px-3 py-2 text-sm font-black ${
-              activeTab === value ? "bg-emerald-500 text-white" : "text-white/55"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+  ["overview", "Översikt"],
+  ["news", "Nyheter"],
+  ["chat", "Chatt"],
+].map(([value, label]) => (
+  <button
+    key={value}
+    type="button"
+    onClick={() => setActiveTab(value as TabKey)}
+    className={`relative rounded-full px-3 py-2 text-sm font-black ${
+      activeTab === value ? "bg-emerald-500 text-white" : "text-white/55"
+    }`}
+  >
+    <span className="inline-flex items-center justify-center gap-2">
+      {label}
+
+      {value === "news" ? (
+        <span className="h-2.5 w-2.5 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.9)]" />
+      ) : null}
+    </span>
+  </button>
+))}
       </div>
     </div>
   );
@@ -217,7 +224,17 @@ function TrendBadge({ value = 0 }: { value?: number | null }) {
   );
 }
 
-export default function PostDeadlineDashboard() {
+export default function PostDeadlineDashboard({
+  displayName,
+  paymentCode,
+  isPaid,
+  isAdmin,
+}: {
+  displayName: string;
+  paymentCode: string | null;
+  isPaid: boolean;
+  isAdmin: boolean;
+}) {
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -275,9 +292,7 @@ export default function PostDeadlineDashboard() {
     () => (dashboard?.rankHistory ?? []).map((item) => item.date),
     [dashboard]
   );
-  const hasRealRankHistory =
-  (dashboard?.rankHistory ?? []).length >= 2 &&
-  new Set((dashboard?.rankHistory ?? []).map((item) => item.date)).size >= 2;
+  const hasRealRankHistory = (dashboard?.rankHistory ?? []).length > 0;
 
   const mainLeague = dashboard?.hero.leagueSummaries[0] ?? null;
   const miniLeagues = dashboard?.hero.leagueSummaries.slice(1, 3) ?? [];
@@ -705,8 +720,56 @@ export default function PostDeadlineDashboard() {
   </div>
 
   <aside className="hidden xl:block">
-    <div className="sticky top-5">
-      <GlobalChat
+  <div className="sticky top-5 space-y-5">
+    <div className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-4 text-white shadow-[0_18px_55px_rgba(0,0,0,0.38)] backdrop-blur-xl">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-300">
+            Konto
+          </p>
+          <p className="mt-1 text-lg font-black text-white">{displayName}</p>
+        </div>
+
+        {isAdmin ? (
+          <Link
+            href="/admin"
+            className="rounded-full border border-emerald-400/25 bg-emerald-500/12 px-3 py-1.5 text-xs font-black text-emerald-100"
+          >
+            Admin
+          </Link>
+        ) : null}
+      </div>
+
+      <div className="mb-3 flex flex-wrap gap-2">
+        {paymentCode ? (
+          <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-sm font-black text-white/90">
+            {paymentCode}
+          </span>
+        ) : null}
+
+        <span
+          className={`rounded-full px-3 py-1.5 text-sm font-black ${
+            isPaid
+              ? "border border-emerald-400/20 bg-emerald-500/12 text-emerald-100"
+              : "border border-amber-400/20 bg-amber-500/12 text-amber-100"
+          }`}
+        >
+          {isPaid ? "Betald" : "Ej betald"}
+        </span>
+      </div>
+
+      <details>
+        <summary className="cursor-pointer list-none rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm font-bold text-white/80">
+          Konto & betalning
+        </summary>
+
+        <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
+          <AuthStatus />
+        </div>
+      </details>
+    </div>
+
+    <GlobalChat
         isLoggedIn={dashboard.user.isLoggedIn}
         isAdmin={dashboard.user.isAdmin}
         currentUserId={dashboard.user.id}
