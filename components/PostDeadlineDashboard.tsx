@@ -109,7 +109,10 @@ function MiniLineChart({
   const axisMin = inverted ? 1 : 0;
   const axisMax = inverted
   ? Math.max(1, maxRank ?? Math.max(...safeValues, 1))
-  : Math.max(10, Math.ceil(Math.max(...safeValues, 10) / 10) * 10);
+  : Math.max(
+    10,
+    Math.ceil(Math.max(...safeValues, 10) * 1.15)
+  );
 
   const range = axisMax - axisMin || 1;
 
@@ -128,8 +131,19 @@ function MiniLineChart({
   const area = `${points[0].x},${height - padding} ${line} ${points[points.length - 1].x},${height - padding}`;
 
   const axisLabels = inverted
-    ? [1, Math.round(axisMax * 0.25), Math.round(axisMax * 0.5), Math.round(axisMax * 0.75), axisMax]
-    : [0, Math.round(axisMax * 0.25), Math.round(axisMax * 0.5), Math.round(axisMax * 0.75), axisMax];
+  ? [
+      1,
+      Math.round(axisMax * 0.33),
+      Math.round(axisMax * 0.66),
+      axisMax,
+    ]
+  : [
+      0,
+      Math.round(axisMax * 0.25),
+      Math.round(axisMax * 0.5),
+      Math.round(axisMax * 0.75),
+      axisMax,
+    ];
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="h-56 w-full sm:h-64">
