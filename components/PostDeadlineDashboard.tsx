@@ -133,8 +133,9 @@ function MiniLineChart({
   const axisLabels = inverted
   ? [
       1,
-      Math.round(axisMax * 0.33),
-      Math.round(axisMax * 0.66),
+      Math.round((axisMax * 0.25) / 10) * 10,
+      Math.round((axisMax * 0.5) / 10) * 10,
+      Math.round((axisMax * 0.75) / 10) * 10,
       axisMax,
     ]
   : [
