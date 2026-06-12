@@ -154,7 +154,22 @@ export default function AdminResultsPage() {
         return;
       }
 
-      setMessage("Facit sparat");
+      const snapshotRes = await fetch("/api/admin/rank-snapshot", {
+  method: "POST",
+});
+
+const snapshotData = await snapshotRes.json();
+
+if (!snapshotRes.ok) {
+  setMessage(
+    `Facit sparat, men rankhistoriken kunde inte uppdateras: ${
+      snapshotData.error || "Okänt fel"
+    }`
+  );
+  return;
+}
+
+setMessage(`Facit sparat. Rankhistorik uppdaterad för ${snapshotData.saved} deltagare.`);
     } catch (error) {
       console.error(error);
       setMessage("Något gick fel");

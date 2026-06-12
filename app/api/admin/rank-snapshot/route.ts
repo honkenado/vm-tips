@@ -148,52 +148,65 @@ export async function POST(request: NextRequest) {
     (predictions ?? []).map((prediction: any) => [prediction.user_id, prediction])
   );
 
-  const leaderboard = (profiles ?? [])
-    .map((profile: any) => {
-      const prediction = predictionMap.get(profile.id) as any | undefined;
+  const snapshotDate = new Date().toISOString().slice(0, 10);
 
-      const predictedGroupStage = asGroups(prediction?.group_stage);
-      const predictedKnockout = asKnockout(prediction?.knockout);
-      const predictedGoldenBoot =
-        prediction?.golden_boot_corrected?.trim() || prediction?.golden_boot?.trim() || "";
+const leaderboard = (profiles ?? [])
+  .map((profile: any) => {
+    const prediction = predictionMap.get(profile.id) as any | undefined;
+    const hasPrediction = Boolean(prediction);
 
-      const breakdown = prediction
-        ? scorePrediction(
-            predictedGroupStage,
-            predictedKnockout,
-            officialGroupStage,
-            officialKnockout,
-            predictedGoldenBoot,
-            officialGoldenBoot
-          )
-        : null;
+    const predictedGroupStage = asGroups(prediction?.group_stage);
+    const predictedKnockout = asKnockout(prediction?.knockout);
+    const predictedGoldenBoot =
+      prediction?.golden_boot_corrected?.trim() ||
+      prediction?.golden_boot?.trim() ||
+      "";
 
-      const predictedGroupGoals = prediction ? getTotalGroupGoals(predictedGroupStage) : 0;
-      const groupGoalsDiff = prediction
-        ? Math.abs(predictedGroupGoals - officialGroupGoals)
-        : Number.MAX_SAFE_INTEGER;
+    const breakdown = hasPrediction
+      ? scorePrediction(
+          predictedGroupStage,
+          predictedKnockout,
+          officialGroupStage,
+          officialKnockout,
+          predictedGoldenBoot,
+          officialGoldenBoot
+        )
+      : null;
 
-      return {
-        id: profile.id,
-        points: breakdown?.total ?? 0,
-        groupGoalsDiff,
-        hasPrediction: Boolean(prediction),
-        displayName: displayName(profile),
-      };
-    })
-    .sort((a, b) => {
-      if (b.points !== a.points) return b.points - a.points;
-      if (a.groupGoalsDiff !== b.groupGoalsDiff) return a.groupGoalsDiff - b.groupGoalsDiff;
-      if (a.hasPrediction && !b.hasPrediction) return -1;
-      if (!a.hasPrediction && b.hasPrediction) return 1;
-      return a.displayName.localeCompare(b.displayName, "sv");
-    })
-    .map((entry, index) => ({
-      user_id: entry.id,
-      snapshot_date: new Date().toISOString().slice(0, 10),
-      rank: index + 1,
-      points: entry.points,
-    }));
+    const predictedGroupGoals = hasPrediction
+      ? getTotalGroupGoals(predictedGroupStage)
+      : 0;
+
+    const groupGoalsDiff = hasPrediction
+      ? Math.abs(predictedGroupGoals - officialGroupGoals)
+      : Number.MAX_SAFE_INTEGER;
+
+    return {
+      id: profile.id,
+      points: breakdown?.total ?? 0,
+      groupGoalsDiff,
+      hasPrediction,
+      displayName: displayName(profile),
+    };
+  })
+  .sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+
+    if (a.groupGoalsDiff !== b.groupGoalsDiff) {
+      return a.groupGoalsDiff - b.groupGoalsDiff;
+    }
+
+    if (a.hasPrediction && !b.hasPrediction) return -1;
+    if (!a.hasPrediction && b.hasPrediction) return 1;
+
+    return a.displayName.localeCompare(b.displayName, "sv");
+  })
+  .map((entry, index) => ({
+    user_id: entry.id,
+    snapshot_date: snapshotDate,
+    rank: index + 1,
+    points: entry.points,
+  }));
 
   const { error: upsertError } = await serviceSupabase
     .from("user_rank_snapshots")
@@ -208,6 +221,6 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     ok: true,
     saved: leaderboard.length,
-    snapshotDate: new Date().toISOString().slice(0, 10),
+    snapshotDate,
   });
 }
