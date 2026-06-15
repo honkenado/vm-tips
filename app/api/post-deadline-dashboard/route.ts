@@ -402,8 +402,10 @@ export async function GET(request: NextRequest) {
     serviceSupabase.from("profiles").select(profileColumns).eq("id", user.id).maybeSingle(),
     serviceSupabase
   .from("match_bets")
-  .select("*")
+  .select("match_number, market, selection, odds, comment, created_at")
   .eq("is_active", true)
+  .order("created_at", { ascending: false })
+  .limit(1)
   .maybeSingle(),
   ]);
 
@@ -612,10 +614,10 @@ const nextMatch = firstUnplayedToday ?? firstUnplayedMatch ?? schedule[0] ?? nul
       : [];
       const matchBet = activeBet
   ? {
-      matchNumber: activeBet.match_number,
+      matchNumber: Number(activeBet.match_number),
       market: activeBet.market,
       selection: activeBet.selection,
-      odds: activeBet.odds,
+      odds: Number(activeBet.odds),
       comment: activeBet.comment,
     }
   : null;
