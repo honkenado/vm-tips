@@ -77,6 +77,7 @@ type DashboardResponse = {
   error?: string;
 
   matchBet: {
+  matchNumber: number;
   market: string;
   selection: string;
   odds: number;
@@ -581,34 +582,7 @@ function markNewsAsRead() {
     </div>
   </div>
 </section>
-<section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-  <div className="flex items-center justify-between">
-    <div>
-      <h2 className="text-2xl font-black">🎯 Matchens Bet</h2>
-      <p className="mt-1 text-sm font-semibold text-white/55">
-        Utvalt spel inför nästa match.
-      </p>
-    </div>
-  </div>
 
-  <div className="mt-4 rounded-[1.5rem] border border-emerald-400/15 bg-emerald-500/10 p-5">
-    <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300">
-      Asian Handicap
-    </div>
-
-    <div className="mt-2 text-3xl font-black text-white">
-      Spanien -2,5
-    </div>
-
-    <div className="mt-3 inline-flex rounded-full border border-white/10 bg-black/20 px-3 py-1 text-lg font-black text-emerald-300">
-      Odds 1.95
-    </div>
-
-    <p className="mt-4 text-sm leading-6 text-white/75">
-      Kap Verde kommer få jaga boll stora delar av matchen och Spanien bör skapa tillräckligt många chanser för att vinna komfortabelt.
-    </p>
-  </div>
-</section>
       
 
       <section className="rounded-[2.25rem] border border-white/10 bg-white/[0.04] p-5 lg:p-6">
@@ -664,47 +638,20 @@ function markNewsAsRead() {
 
       <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
         <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-2xl font-black">Kommande matcher</h2>
-            <p className="mt-1 text-sm font-semibold text-white/55">
-              Dagens matcher, dina tips och folkets vanligaste resultat.
-            </p>
-          </div>
-          {dashboard.matchBet && (
-  <section className="rounded-[2rem] border border-emerald-400/15 bg-emerald-500/10 p-5">
-    <h2 className="text-2xl font-black">
-      🎯 Matchens Bet
-    </h2>
+  <div>
+    <h2 className="text-2xl font-black">Kommande matcher</h2>
+    <p className="mt-1 text-sm font-semibold text-white/55">
+      Dagens matcher, dina tips och folkets vanligaste resultat.
+    </p>
+  </div>
 
-    <div className="mt-4">
-      <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300">
-        {dashboard.matchBet.market}
-      </div>
-
-      <div className="mt-2 text-3xl font-black text-white">
-        {dashboard.matchBet.selection}
-      </div>
-
-      <div className="mt-3 inline-flex rounded-full border border-white/10 bg-black/20 px-3 py-1 text-lg font-black text-emerald-300">
-        Odds {dashboard.matchBet.odds}
-      </div>
-
-      {dashboard.matchBet.comment ? (
-        <p className="mt-4 text-sm leading-6 text-white/75">
-          {dashboard.matchBet.comment}
-        </p>
-      ) : null}
-    </div>
-  </section>
-)}
-
-          <Link
-            href="/tv-guide"
-            className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-xs font-black text-emerald-200"
-          >
-            TV-guide
-          </Link>
-        </div>
+  <Link
+    href="/tv-guide"
+    className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-xs font-black text-emerald-200"
+  >
+    TV-guide
+  </Link>
+</div>
 
         {todayMatches.length > 0 ? (
           <div className="mt-5 space-y-3">
@@ -802,6 +749,30 @@ function markNewsAsRead() {
                         </p>
                       </Link>
                     </div>
+
+                    {dashboard.matchBet && dashboard.matchBet.matchNumber === match.matchNumber ? (
+                      <div className="mt-4 rounded-[1.5rem] border border-emerald-400/15 bg-emerald-500/10 p-4">
+                        <h3 className="text-lg font-black text-white">🎯 Matchens Bet</h3>
+
+                        <p className="mt-2 text-xs font-black uppercase tracking-[0.16em] text-emerald-300">
+                          {dashboard.matchBet.market}
+                        </p>
+
+                        <p className="mt-1 text-2xl font-black text-white">
+                          {dashboard.matchBet.selection}
+                        </p>
+
+                        <p className="mt-2 inline-flex rounded-full border border-white/10 bg-black/20 px-3 py-1 text-sm font-black text-emerald-300">
+                          Odds {dashboard.matchBet.odds}
+                        </p>
+
+                        {dashboard.matchBet.comment ? (
+                          <p className="mt-3 text-sm leading-6 text-white/75">
+                            {dashboard.matchBet.comment}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
 
                     {outcomeDistribution ? (
                       <div className="mt-4 rounded-[1.5rem] border border-white/10 bg-white/[0.05] p-4">

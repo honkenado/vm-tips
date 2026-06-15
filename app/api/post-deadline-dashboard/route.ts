@@ -612,6 +612,7 @@ const nextMatch = firstUnplayedToday ?? firstUnplayedMatch ?? schedule[0] ?? nul
       : [];
       const matchBet = activeBet
   ? {
+      matchNumber: activeBet.match_number,
       market: activeBet.market,
       selection: activeBet.selection,
       odds: activeBet.odds,

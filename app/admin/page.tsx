@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getGroupStageSchedule } from "@/lib/match-schedule";
 
 type Profile = {
   id: string;
@@ -98,6 +99,8 @@ export default function AdminPage() {
   const [savingOfficialGoldenBoot, setSavingOfficialGoldenBoot] = useState(false);
 
   const [message, setMessage] = useState<string | null>(null);
+  const schedule = getGroupStageSchedule();
+const [betMatchNumber, setBetMatchNumber] = useState("");
   const [betMarket, setBetMarket] = useState("");
 const [betSelection, setBetSelection] = useState("");
 const [betOdds, setBetOdds] = useState("");
@@ -283,11 +286,12 @@ const [savingBet, setSavingBet] = useState(false);
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        market: betMarket,
-        selection: betSelection,
-        odds: Number(betOdds),
-        comment: betComment,
-      }),
+  matchNumber: Number(betMatchNumber),
+  market: betMarket,
+  selection: betSelection,
+  odds: Number(betOdds),
+  comment: betComment,
+}),
     });
 
     const data = await res.json();
@@ -298,6 +302,36 @@ const [savingBet, setSavingBet] = useState(false);
     }
 
     setMessage("Matchens Bet sparad");
+  } catch (error) {
+    console.error(error);
+    setMessage("Något gick fel");
+  } finally {
+    setSavingBet(false);
+  }
+}
+async function deleteMatchBet() {
+  try {
+    setSavingBet(true);
+    setMessage(null);
+
+    const res = await fetch("/api/admin/match-bet", {
+      method: "DELETE",
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setMessage(data.error || "Kunde inte ta bort Matchens Bet");
+      return;
+    }
+
+    setBetMatchNumber("");
+    setBetMarket("");
+    setBetSelection("");
+    setBetOdds("");
+    setBetComment("");
+
+    setMessage("Matchens Bet borttagen från startsidan");
   } catch (error) {
     console.error(error);
     setMessage("Något gick fel");
@@ -524,56 +558,103 @@ const [savingBet, setSavingBet] = useState(false);
             </div>
           </div>
         )}
-        {activeTab === "matchBet" && (
+       {activeTab === "matchBet" && (
   <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-    <h2 className="text-xl font-black text-slate-900">
-      🎯 Matchens Bet
-    </h2>
+    <h2 className="text-xl font-black text-slate-900">🎯 Matchens Bet</h2>
 
     <p className="mt-2 text-sm text-slate-600">
-      Lägg in spelet som ska visas på startsidan.
+      Välj vilken match spelet hör till och fyll i marknad, spel och odds.
     </p>
 
-    <div className="mt-6 space-y-4">
-      <input
-        type="text"
-        value={betMarket}
-        onChange={(e) => setBetMarket(e.target.value)}
-        placeholder="Marknad (t.ex. Asian Handicap)"
-        className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-      />
+    <div className="mt-6 space-y-5">
+      <div>
+        <label className="mb-2 block text-sm font-bold text-slate-800">
+          Match
+        </label>
+        <select
+          value={betMatchNumber}
+          onChange={(e) => setBetMatchNumber(e.target.value)}
+          className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+        >
+          <option value="">Välj match...</option>
+          {schedule.map((match) => (
+            <option key={match.matchNumber} value={match.matchNumber}>
+              {match.date} {match.time} · {match.homeTeam} – {match.awayTeam}
+            </option>
+          ))}
+        </select>
+      </div>
 
-      <input
-        type="text"
-        value={betSelection}
-        onChange={(e) => setBetSelection(e.target.value)}
-        placeholder="Spel (t.ex. Spanien -2,5)"
-        className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-      />
+      <div>
+        <label className="mb-2 block text-sm font-bold text-slate-800">
+          Marknad
+        </label>
+        <input
+          type="text"
+          value={betMarket}
+          onChange={(e) => setBetMarket(e.target.value)}
+          placeholder="T.ex. Under 2,5"
+          className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+        />
+      </div>
 
-      <input
-        type="text"
-        value={betOdds}
-        onChange={(e) => setBetOdds(e.target.value)}
-        placeholder="Odds"
-        className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-      />
+      <div>
+        <label className="mb-2 block text-sm font-bold text-slate-800">
+          Spel
+        </label>
+        <input
+          type="text"
+          value={betSelection}
+          onChange={(e) => setBetSelection(e.target.value)}
+          placeholder="T.ex. Belgien–Egypten under 2,5"
+          className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+        />
+      </div>
 
-      <textarea
-        value={betComment}
-        onChange={(e) => setBetComment(e.target.value)}
-        placeholder="Motivering"
-        rows={4}
-        className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-      />
+      <div>
+        <label className="mb-2 block text-sm font-bold text-slate-800">
+          Odds
+        </label>
+        <input
+          type="text"
+          value={betOdds}
+          onChange={(e) => setBetOdds(e.target.value)}
+          placeholder="T.ex. 1.90"
+          className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+        />
+      </div>
 
-      <button
-  onClick={saveMatchBet}
-  disabled={savingBet}
-  className="rounded-2xl bg-emerald-600 px-5 py-3 font-bold text-white disabled:opacity-60"
->
-  {savingBet ? "Sparar..." : "Spara Matchens Bet"}
-</button>
+      <div>
+        <label className="mb-2 block text-sm font-bold text-slate-800">
+          Motivering
+        </label>
+        <textarea
+          value={betComment}
+          onChange={(e) => setBetComment(e.target.value)}
+          placeholder="Valfri kort motivering..."
+          rows={4}
+          className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+        />
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row">
+  <button
+    onClick={saveMatchBet}
+    disabled={savingBet}
+    className="rounded-2xl bg-emerald-600 px-5 py-3 font-bold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+  >
+    {savingBet ? "Sparar..." : "Spara Matchens Bet"}
+  </button>
+
+  <button
+    type="button"
+    onClick={deleteMatchBet}
+    disabled={savingBet}
+    className="rounded-2xl border border-red-200 bg-red-50 px-5 py-3 font-bold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+  >
+    🗑 Ta bort Matchens Bet
+  </button>
+</div>
     </div>
   </div>
 )}
