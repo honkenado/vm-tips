@@ -383,11 +383,12 @@ export async function GET(request: NextRequest) {
     "id, username, first_name, last_name, email, role, is_admin, payment_status, created_at";
 
   const [
-    { data: profiles, error: profilesError },
-    { data: predictions, error: predictionsError },
-    { data: resultsRow, error: resultsError },
-    { data: currentProfile },
-  ] = await Promise.all([
+  { data: profiles, error: profilesError },
+  { data: predictions, error: predictionsError },
+  { data: resultsRow, error: resultsError },
+  { data: currentProfile },
+  { data: activeBet },
+] = await Promise.all([
     serviceSupabase.from("profiles").select(profileColumns).order("created_at", { ascending: true }),
     serviceSupabase
       .from("predictions")
@@ -399,6 +400,11 @@ export async function GET(request: NextRequest) {
       .eq("tournament_id", tournament.id)
       .maybeSingle(),
     serviceSupabase.from("profiles").select(profileColumns).eq("id", user.id).maybeSingle(),
+    serviceSupabase
+  .from("match_bets")
+  .select("*")
+  .eq("is_active", true)
+  .maybeSingle(),
   ]);
 
   if (profilesError) return NextResponse.json({ error: profilesError.message }, { status: 500 });
@@ -604,6 +610,14 @@ const nextMatch = firstUnplayedToday ?? firstUnplayedMatch ?? schedule[0] ?? nul
           },
         ]
       : [];
+      const matchBet = activeBet
+  ? {
+      market: activeBet.market,
+      selection: activeBet.selection,
+      odds: activeBet.odds,
+      comment: activeBet.comment,
+    }
+  : null;
 
   return NextResponse.json({
     user: {
@@ -641,5 +655,6 @@ const nextMatch = firstUnplayedToday ?? firstUnplayedMatch ?? schedule[0] ?? nul
           outcomeDistribution: nextMatchStats?.outcomeDistribution ?? null,
         }
       : null,
+      matchBet,
   });
 }

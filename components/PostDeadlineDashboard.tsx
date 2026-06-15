@@ -75,6 +75,13 @@ type DashboardResponse = {
   todayMatches: TodayMatchCard[];
   nextMatch: TodayMatchCard | null;
   error?: string;
+
+  matchBet: {
+  market: string;
+  selection: string;
+  odds: number;
+  comment: string | null;
+} | null;
 };
 
 function MiniLineChart({
@@ -550,21 +557,56 @@ function markNewsAsRead() {
       </div>
 
       <div className="mt-4 flex flex-wrap gap-3">
-        <Link
-          href="/mitt-resultat"
-          className="rounded-full bg-emerald-500 px-5 py-3 text-sm font-black text-white hover:bg-emerald-400"
-        >
-          Visa mitt resultat
-        </Link>
+  <Link
+    href="/mitt-resultat"
+    className="rounded-full bg-emerald-500 px-5 py-3 text-sm font-black text-white hover:bg-emerald-400"
+  >
+    Visa mitt resultat
+  </Link>
 
-        <Link
-          href="/tips"
-          className="rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white/85 hover:bg-white/[0.1]"
-        >
-          Visa mina tips
-        </Link>
-      </div>
+  <Link
+    href="/tips"
+    className="rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white/85 hover:bg-white/[0.1]"
+  >
+    Visa mina tips
+  </Link>
+
+  <Link
+    href="/addes-tips"
+    className="rounded-full border border-amber-400/20 bg-amber-500/10 px-5 py-3 text-sm font-bold text-amber-100 hover:bg-amber-500/20"
+  >
+    🏆 Visa Addes VM-tips
+  </Link>
+</div>
     </div>
+  </div>
+</section>
+<section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+  <div className="flex items-center justify-between">
+    <div>
+      <h2 className="text-2xl font-black">🎯 Matchens Bet</h2>
+      <p className="mt-1 text-sm font-semibold text-white/55">
+        Utvalt spel inför nästa match.
+      </p>
+    </div>
+  </div>
+
+  <div className="mt-4 rounded-[1.5rem] border border-emerald-400/15 bg-emerald-500/10 p-5">
+    <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300">
+      Asian Handicap
+    </div>
+
+    <div className="mt-2 text-3xl font-black text-white">
+      Spanien -2,5
+    </div>
+
+    <div className="mt-3 inline-flex rounded-full border border-white/10 bg-black/20 px-3 py-1 text-lg font-black text-emerald-300">
+      Odds 1.95
+    </div>
+
+    <p className="mt-4 text-sm leading-6 text-white/75">
+      Kap Verde kommer få jaga boll stora delar av matchen och Spanien bör skapa tillräckligt många chanser för att vinna komfortabelt.
+    </p>
   </div>
 </section>
       
@@ -628,6 +670,33 @@ function markNewsAsRead() {
               Dagens matcher, dina tips och folkets vanligaste resultat.
             </p>
           </div>
+          {dashboard.matchBet && (
+  <section className="rounded-[2rem] border border-emerald-400/15 bg-emerald-500/10 p-5">
+    <h2 className="text-2xl font-black">
+      🎯 Matchens Bet
+    </h2>
+
+    <div className="mt-4">
+      <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300">
+        {dashboard.matchBet.market}
+      </div>
+
+      <div className="mt-2 text-3xl font-black text-white">
+        {dashboard.matchBet.selection}
+      </div>
+
+      <div className="mt-3 inline-flex rounded-full border border-white/10 bg-black/20 px-3 py-1 text-lg font-black text-emerald-300">
+        Odds {dashboard.matchBet.odds}
+      </div>
+
+      {dashboard.matchBet.comment ? (
+        <p className="mt-4 text-sm leading-6 text-white/75">
+          {dashboard.matchBet.comment}
+        </p>
+      ) : null}
+    </div>
+  </section>
+)}
 
           <Link
             href="/tv-guide"

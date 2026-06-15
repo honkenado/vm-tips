@@ -12,7 +12,7 @@ type Profile = {
   is_admin: boolean;
 };
 
-type AdminTab = "payments" | "goldenBoot";
+type AdminTab = "payments" | "goldenBoot" | "matchBet";
 
 type GoldenBootEntry = {
   user_id: string;
@@ -98,6 +98,11 @@ export default function AdminPage() {
   const [savingOfficialGoldenBoot, setSavingOfficialGoldenBoot] = useState(false);
 
   const [message, setMessage] = useState<string | null>(null);
+  const [betMarket, setBetMarket] = useState("");
+const [betSelection, setBetSelection] = useState("");
+const [betOdds, setBetOdds] = useState("");
+const [betComment, setBetComment] = useState("");
+const [savingBet, setSavingBet] = useState(false);
 
   async function loadProfiles() {
     try {
@@ -267,6 +272,40 @@ export default function AdminPage() {
     }
   }
 
+  async function saveMatchBet() {
+  try {
+    setSavingBet(true);
+    setMessage(null);
+
+    const res = await fetch("/api/admin/match-bet", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        market: betMarket,
+        selection: betSelection,
+        odds: Number(betOdds),
+        comment: betComment,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setMessage(data.error || "Kunde inte spara Matchens Bet");
+      return;
+    }
+
+    setMessage("Matchens Bet sparad");
+  } catch (error) {
+    console.error(error);
+    setMessage("Något gick fel");
+  } finally {
+    setSavingBet(false);
+  }
+}
+
   useEffect(() => {
     loadProfiles();
     loadGoldenBootData();
@@ -316,6 +355,16 @@ export default function AdminPage() {
             >
               Skyttekung
             </button>
+            <button
+  onClick={() => setActiveTab("matchBet")}
+  className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
+    activeTab === "matchBet"
+      ? "bg-slate-900 text-white"
+      : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+  }`}
+>
+  Matchens Bet
+</button>
           </div>
         </div>
 
@@ -475,6 +524,59 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+        {activeTab === "matchBet" && (
+  <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <h2 className="text-xl font-black text-slate-900">
+      🎯 Matchens Bet
+    </h2>
+
+    <p className="mt-2 text-sm text-slate-600">
+      Lägg in spelet som ska visas på startsidan.
+    </p>
+
+    <div className="mt-6 space-y-4">
+      <input
+        type="text"
+        value={betMarket}
+        onChange={(e) => setBetMarket(e.target.value)}
+        placeholder="Marknad (t.ex. Asian Handicap)"
+        className="w-full rounded-2xl border border-slate-200 px-4 py-3"
+      />
+
+      <input
+        type="text"
+        value={betSelection}
+        onChange={(e) => setBetSelection(e.target.value)}
+        placeholder="Spel (t.ex. Spanien -2,5)"
+        className="w-full rounded-2xl border border-slate-200 px-4 py-3"
+      />
+
+      <input
+        type="text"
+        value={betOdds}
+        onChange={(e) => setBetOdds(e.target.value)}
+        placeholder="Odds"
+        className="w-full rounded-2xl border border-slate-200 px-4 py-3"
+      />
+
+      <textarea
+        value={betComment}
+        onChange={(e) => setBetComment(e.target.value)}
+        placeholder="Motivering"
+        rows={4}
+        className="w-full rounded-2xl border border-slate-200 px-4 py-3"
+      />
+
+      <button
+  onClick={saveMatchBet}
+  disabled={savingBet}
+  className="rounded-2xl bg-emerald-600 px-5 py-3 font-bold text-white disabled:opacity-60"
+>
+  {savingBet ? "Sparar..." : "Spara Matchens Bet"}
+</button>
+    </div>
+  </div>
+)}
       </div>
     </main>
   );
