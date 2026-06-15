@@ -750,7 +750,33 @@ function markNewsAsRead() {
                       </Link>
                     </div>
 
-                   
+                    {dashboard.matchBet &&
+                    dashboard.matchBet.matchNumber === match.matchNumber ? (
+                      <div className="mt-4 rounded-[1.5rem] border border-emerald-400/15 bg-emerald-500/10 p-4">
+                        <h3 className="text-lg font-black text-white">
+                          🎯 Matchens Bet
+                        </h3>
+
+                        <p className="mt-2 text-xs font-black uppercase tracking-[0.16em] text-emerald-300">
+                          {dashboard.matchBet.market}
+                        </p>
+
+                        <p className="mt-1 text-2xl font-black text-white">
+                          {dashboard.matchBet.selection}
+                        </p>
+
+                        <p className="mt-2 inline-flex rounded-full border border-white/10 bg-black/20 px-3 py-1 text-sm font-black text-emerald-300">
+                          Odds {dashboard.matchBet.odds}
+                        </p>
+
+                        {dashboard.matchBet.comment ? (
+                          <p className="mt-3 text-sm leading-6 text-white/75">
+                            {dashboard.matchBet.comment}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+
                     {outcomeDistribution ? (
                       <div className="mt-4 rounded-[1.5rem] border border-white/10 bg-white/[0.05] p-4">
                         <h3 className="font-black">Utfallsfördelning</h3>
