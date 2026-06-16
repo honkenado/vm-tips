@@ -28,6 +28,25 @@ type GoldenBootRowProps = {
   onSave: (userId: string, correctedGoldenBoot: string) => Promise<void>;
 };
 
+type MatchBetHistory = {
+  id: string;
+  match_number: number;
+  market: string;
+  selection: string;
+  odds: number;
+  result_status: "pending" | "won" | "lost" | "void";
+};
+
+type MatchBetStats = {
+  total: number;
+  pending: number;
+  won: number;
+  lost: number;
+  voided: number;
+  profit: number;
+  roi: number;
+};
+
 function GoldenBootRow({ entry, onSave }: GoldenBootRowProps) {
   const [value, setValue] = useState(
     entry.golden_boot_corrected || entry.golden_boot
@@ -106,6 +125,8 @@ const [betSelection, setBetSelection] = useState("");
 const [betOdds, setBetOdds] = useState("");
 const [betComment, setBetComment] = useState("");
 const [savingBet, setSavingBet] = useState(false);
+const [betHistory, setBetHistory] = useState<MatchBetHistory[]>([]);
+const [betStats, setBetStats] = useState<MatchBetStats | null>(null);
 
   async function loadProfiles() {
     try {
@@ -340,10 +361,58 @@ async function deleteMatchBet() {
   }
 }
 
+async function loadBetHistory() {
+  try {
+    const res = await fetch("/api/admin/match-bet", {
+      cache: "no-store",
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) return;
+
+    setBetHistory(data.bets ?? []);
+    setBetStats(data.stats ?? null);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+async function settleBet(
+  betId: string,
+  resultStatus: "won" | "lost" | "void"
+) {
+  try {
+    const res = await fetch("/api/admin/match-bet", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        betId,
+        resultStatus,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setMessage(data.error || "Kunde inte rätta spelet");
+      return;
+    }
+
+    await loadBetHistory();
+    setMessage("Spel rättat");
+  } catch (error) {
+    console.error(error);
+  }
+}
+
   useEffect(() => {
-    loadProfiles();
-    loadGoldenBootData();
-  }, []);
+  loadProfiles();
+  loadGoldenBootData();
+  loadBetHistory();
+}, []);
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 md:px-6">
@@ -566,6 +635,52 @@ async function deleteMatchBet() {
       Välj vilken match spelet hör till och fyll i marknad, spel och odds.
     </p>
 
+    {betStats && (
+  <div className="mt-4 rounded-2xl bg-slate-100 p-4">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
+      <div>
+        <div className="text-xs text-slate-500">Spel</div>
+        <div className="font-black">{betStats.total}</div>
+      </div>
+
+      <div>
+        <div className="text-xs text-slate-500">Vinster</div>
+        <div className="font-black text-emerald-600">
+          {betStats.won}
+        </div>
+      </div>
+
+      <div>
+        <div className="text-xs text-slate-500">Förluster</div>
+        <div className="font-black text-red-600">
+          {betStats.lost}
+        </div>
+      </div>
+
+      <div>
+        <div className="text-xs text-slate-500">Pågående</div>
+        <div className="font-black">
+          {betStats.pending}
+        </div>
+      </div>
+
+      <div>
+        <div className="text-xs text-slate-500">Units</div>
+        <div className="font-black">
+          {betStats.profit.toFixed(2)}
+        </div>
+      </div>
+
+      <div>
+        <div className="text-xs text-slate-500">ROI</div>
+        <div className="font-black">
+          {betStats.roi.toFixed(1)}%
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
     <div className="mt-6 space-y-5">
       <div>
         <label className="mb-2 block text-sm font-bold text-slate-800">
@@ -656,6 +771,64 @@ async function deleteMatchBet() {
   </button>
 </div>
     </div>
+
+    <div className="mt-8 border-t pt-6">
+  <h3 className="mb-4 text-lg font-black">
+    Historik
+  </h3>
+
+  <div className="space-y-3">
+    {betHistory.map((bet) => (
+      <div
+        key={bet.id}
+        className="rounded-2xl border border-slate-200 p-4"
+      >
+        <div className="font-bold">
+          Match {bet.match_number}
+        </div>
+
+        <div className="text-sm text-slate-600">
+          {bet.market}
+        </div>
+
+        <div className="text-sm font-semibold">
+          {bet.selection}
+        </div>
+
+        <div className="text-sm">
+          Odds {bet.odds}
+        </div>
+
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={() => settleBet(bet.id, "won")}
+            className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-bold text-white"
+          >
+            Vinst
+          </button>
+
+          <button
+            onClick={() => settleBet(bet.id, "lost")}
+            className="rounded-lg bg-red-600 px-3 py-1 text-xs font-bold text-white"
+          >
+            Förlust
+          </button>
+
+          <button
+            onClick={() => settleBet(bet.id, "void")}
+            className="rounded-lg bg-slate-600 px-3 py-1 text-xs font-bold text-white"
+          >
+            Void
+          </button>
+
+          <span className="ml-auto text-xs font-bold uppercase">
+            {bet.result_status}
+          </span>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
   </div>
 )}
       </div>
