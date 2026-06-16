@@ -11,6 +11,7 @@ type ProfileRow = {
   role: string | null;
   payment_status: string | null;
   prediction_unlock_until: string | null;
+  knockout_unlock_until: string | null;
 };
 
 type InviteRow = {
@@ -106,6 +107,73 @@ export default function AdminAccessPage() {
       setBusyUserId(null);
     }
   }
+
+  async function setKnockoutUnlock(userId: string, hours: number) {
+  try {
+    setBusyUserId(userId);
+    setMessage(null);
+
+    const res = await fetch("/api/admin/access", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: "set_knockout_unlock",
+        userId,
+        hours,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setMessage(data.error || "Kunde inte låsa upp slutspelet");
+      return;
+    }
+
+    setMessage(`Slutspelet öppnades i ${hours} tim för deltagaren.`);
+    await loadData();
+  } catch (error) {
+    console.error(error);
+    setMessage("Något gick fel");
+  } finally {
+    setBusyUserId(null);
+  }
+}
+
+async function clearKnockoutUnlock(userId: string) {
+  try {
+    setBusyUserId(userId);
+    setMessage(null);
+
+    const res = await fetch("/api/admin/access", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: "clear_knockout_unlock",
+        userId,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setMessage(data.error || "Kunde inte rensa slutspels-upplåsningen");
+      return;
+    }
+
+    setMessage("Slutspels-upplåsningen rensades.");
+    await loadData();
+  } catch (error) {
+    console.error(error);
+    setMessage("Något gick fel");
+  } finally {
+    setBusyUserId(null);
+  }
+}
 
   async function clearPredictionUnlock(userId: string) {
     try {
@@ -319,6 +387,11 @@ const filteredProfiles = useMemo(() => {
                               : "Ingen aktiv upplåsning"}
                           </div>
                         </div>
+<div className="mt-1 text-xs text-emerald-300/80">
+  {profile.knockout_unlock_until
+    ? `Slutspel öppet till: ${formatDateTime(profile.knockout_unlock_until)}`
+    : "Slutspel ej separat upplåst"}
+</div>
 
                         <div className="flex flex-wrap gap-2">
                           <button
@@ -344,6 +417,30 @@ const filteredProfiles = useMemo(() => {
                           >
                             Rensa
                           </button>
+
+                          <button
+  onClick={() => setKnockoutUnlock(profile.id, 1)}
+  disabled={isBusy}
+  className="rounded-full bg-cyan-500/95 px-4 py-2 text-sm font-bold text-white transition hover:bg-cyan-400 disabled:opacity-50"
+>
+  Slutspel 1h
+</button>
+
+<button
+  onClick={() => setKnockoutUnlock(profile.id, 2)}
+  disabled={isBusy}
+  className="rounded-full bg-cyan-500/95 px-4 py-2 text-sm font-bold text-white transition hover:bg-cyan-400 disabled:opacity-50"
+>
+  Slutspel 2h
+</button>
+
+<button
+  onClick={() => clearKnockoutUnlock(profile.id)}
+  disabled={isBusy}
+  className="rounded-full border border-cyan-300/20 bg-cyan-500/10 px-4 py-2 text-sm font-bold text-cyan-100 transition hover:bg-cyan-500/20 disabled:opacity-50"
+>
+  Rensa slutspel
+</button>
                         </div>
                       </div>
                     </div>

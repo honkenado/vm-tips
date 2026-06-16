@@ -1,18 +1,25 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "@/lib/auth-admin";
 import { addHoursToIso, normalizeEmail } from "@/lib/access-overrides";
 
+function getServiceSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
+
 export async function GET() {
   await requireAdmin();
-  const supabase = await createClient();
+  const supabase = getServiceSupabase();
 
   const [{ data: profiles, error: profilesError }, { data: invites, error: invitesError }] =
     await Promise.all([
       supabase
         .from("profiles")
         .select(
-          "id, email, first_name, last_name, username, role, payment_status, prediction_unlock_until"
+          "id, email, first_name, last_name, username, role, payment_status, prediction_unlock_until, knockout_unlock_until"
         )
         .order("created_at", { ascending: false }),
       supabase
@@ -43,7 +50,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const admin = await requireAdmin();
-  const supabase = await createClient();
+  const supabase = getServiceSupabase();
   const body = await request.json();
 
   const action = body?.action;
@@ -72,6 +79,30 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, unlockUntil });
   }
+  if (action === "set_knockout_unlock") {
+  const userId = String(body?.userId ?? "");
+  const hours = Number(body?.hours ?? 0);
+
+  if (!userId || !Number.isFinite(hours) || hours <= 0) {
+    return NextResponse.json({ error: "Ogiltiga värden" }, { status: 400 });
+  }
+
+  const unlockUntil = addHoursToIso(hours);
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ knockout_unlock_until: unlockUntil })
+    .eq("id", userId);
+
+  if (error) {
+    return NextResponse.json(
+      { error: error.message || "Kunde inte uppdatera slutspels-upplåsning" },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ ok: true, unlockUntil });
+}
 
   if (action === "clear_prediction_unlock") {
     const userId = String(body?.userId ?? "");
@@ -94,6 +125,28 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true });
   }
+
+  if (action === "clear_knockout_unlock") {
+  const userId = String(body?.userId ?? "");
+
+  if (!userId) {
+    return NextResponse.json({ error: "Saknar userId" }, { status: 400 });
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ knockout_unlock_until: null })
+    .eq("id", userId);
+
+  if (error) {
+    return NextResponse.json(
+      { error: error.message || "Kunde inte rensa slutspels-upplåsning" },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ ok: true });
+}
 
   if (action === "create_late_registration_invite") {
     const email = normalizeEmail(String(body?.email ?? ""));

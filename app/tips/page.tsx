@@ -103,6 +103,9 @@ export default function TipsPage() {
   const [predictionUnlockUntil, setPredictionUnlockUntil] = useState<string | null>(
     null
   );
+  const [knockoutUnlockUntil, setKnockoutUnlockUntil] = useState<string | null>(
+    null
+  );
   const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -175,6 +178,7 @@ export default function TipsPage() {
         }
 
         setPredictionUnlockUntil(data.prediction_unlock_until ?? null);
+        setKnockoutUnlockUntil(data.knockout_unlock_until ?? null);
         setHasUnsavedChanges(false);
       } catch (error) {
         console.error("Kunde inte läsa från databasen", error);
@@ -347,10 +351,19 @@ loadGoldenBootOptions();
     !!predictionUnlockUntil &&
     new Date(predictionUnlockUntil).getTime() > Date.now();
 
+  const hasKnockoutOverride =
+    !!knockoutUnlockUntil &&
+    new Date(knockoutUnlockUntil).getTime() > Date.now();
+
   const deadlinePassed = isDeadlinePassed() && !hasPredictionOverride;
 
+  const knockoutLocked =
+    isDeadlinePassed() && !hasPredictionOverride && !hasKnockoutOverride;
+
+  const saveLocked = deadlinePassed && !hasKnockoutOverride;
+
   async function savePredictionToDatabase() {
-    if (deadlinePassed) {
+    if (saveLocked) {
       setSaveMessage("Deadline har passerat – tipset är låst");
       return false;
     }
@@ -394,7 +407,7 @@ loadGoldenBootOptions();
   if (!hasLoadedFromDatabase) return;
   if (!hasUnsavedChanges) return;
   if (isSaving) return;
-  if (deadlinePassed) return;
+  if (saveLocked) return;
 
   if (autosaveTimeoutRef.current) {
     clearTimeout(autosaveTimeoutRef.current);
@@ -416,7 +429,7 @@ loadGoldenBootOptions();
   hasLoadedFromDatabase,
   hasUnsavedChanges,
   isSaving,
-  deadlinePassed,
+  saveLocked,
 ]);
 
   async function handleTeamNavigate(teamName: string) {
@@ -493,6 +506,10 @@ loadGoldenBootOptions();
   }, [groupProgress, knockoutProgress, goldenBootDone]);
 
   const smartStatus = useMemo(() => {
+    if (deadlinePassed && hasKnockoutOverride) {
+      return "Endast slutspelet är tillfälligt öppet. Gruppspel och skyttekung är låsta.";
+    }
+
     if (deadlinePassed) {
       return "Deadline har passerat. Tipset är låst.";
     }
@@ -519,6 +536,7 @@ loadGoldenBootOptions();
     return "Allt ser komplett ut. Snyggt jobbat.";
   }, [
     deadlinePassed,
+    hasKnockoutOverride,
     groupProgress,
     knockoutProgress,
     goldenBoot,
@@ -603,7 +621,7 @@ loadGoldenBootOptions();
                 <div className="shrink-0">
                   <button
                     onClick={savePredictionToDatabase}
-                    disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
+                    disabled={isSaving || !hasLoadedFromDatabase || saveLocked}
                     className="inline-flex h-11 items-center justify-center rounded-2xl bg-emerald-500/95 px-4 text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(16,185,129,0.30)] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isSaving ? "Sparar..." : "Spara"}
@@ -615,12 +633,19 @@ loadGoldenBootOptions();
                 Fokusera bara på tippningen här.
               </p>
 
-              {(deadlinePassed || saveMessage || hasUnsavedChanges || hasPredictionOverride) && (
+              {(deadlinePassed || saveMessage || hasUnsavedChanges || hasPredictionOverride || hasKnockoutOverride) && (
                 <div className="mt-3 flex flex-col gap-2">
                   {hasPredictionOverride && predictionUnlockUntil && (
                     <p className="text-sm font-semibold text-emerald-300">
                       Du har tillfälligt öppet att ändra tipset till{" "}
                       {new Date(predictionUnlockUntil).toLocaleString("sv-SE")}.
+                    </p>
+                  )}
+
+                  {!hasPredictionOverride && hasKnockoutOverride && knockoutUnlockUntil && (
+                    <p className="text-sm font-semibold text-cyan-300">
+                      Endast slutspelet är öppet till{" "}
+                      {new Date(knockoutUnlockUntil).toLocaleString("sv-SE")}.
                     </p>
                   )}
 
@@ -678,10 +703,10 @@ loadGoldenBootOptions();
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={savePredictionToDatabase}
-                      disabled={isSaving || !hasLoadedFromDatabase || deadlinePassed}
+                      disabled={isSaving || !hasLoadedFromDatabase || saveLocked}
                       className={primaryButtonClassName()}
                     >
-                      {deadlinePassed
+                      {saveLocked
                         ? "Deadline passerad"
                         : isSaving
                         ? "Sparar..."
@@ -734,6 +759,13 @@ loadGoldenBootOptions();
                   <p className="mt-3 text-sm font-semibold text-emerald-300">
                     Tillfälligt upplåst till{" "}
                     {new Date(predictionUnlockUntil).toLocaleString("sv-SE")}.
+                  </p>
+                )}
+
+                {!hasPredictionOverride && hasKnockoutOverride && knockoutUnlockUntil && (
+                  <p className="mt-3 text-sm font-semibold text-cyan-300">
+                    Endast slutspelet är öppet till{" "}
+                    {new Date(knockoutUnlockUntil).toLocaleString("sv-SE")}.
                   </p>
                 )}
 
@@ -834,7 +866,7 @@ loadGoldenBootOptions();
   onSelectWinner={selectWinner}
   onResetKnockout={resetKnockout}
   isGroupStageComplete={isGroupStageComplete}
-  isLocked={deadlinePassed}
+  isLocked={knockoutLocked}
 />
           )}
 

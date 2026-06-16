@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
         .single(),
       serviceSupabase
         .from("profiles")
-        .select("prediction_unlock_until")
+        .select("prediction_unlock_until, knockout_unlock_until")
         .eq("id", user.id)
         .single(),
     ]);
@@ -130,6 +130,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       prediction: null,
       prediction_unlock_until: profile?.prediction_unlock_until ?? null,
+      knockout_unlock_until: profile?.knockout_unlock_until ?? null,
     });
   }
 
@@ -139,6 +140,7 @@ export async function GET(request: NextRequest) {
       group_stage: migrateLegacyGroupStage(prediction.group_stage),
     },
     prediction_unlock_until: profile?.prediction_unlock_until ?? null,
+    knockout_unlock_until: profile?.knockout_unlock_until ?? null,
   });
 }
 
@@ -171,7 +173,7 @@ export async function POST(request: NextRequest) {
 
   const { data: profile, error: profileError } = await serviceSupabase
     .from("profiles")
-    .select("prediction_unlock_until")
+    .select("prediction_unlock_until, knockout_unlock_until")
     .eq("id", user.id)
     .single();
 
@@ -186,7 +188,11 @@ export async function POST(request: NextRequest) {
     profile?.prediction_unlock_until ?? null
   );
 
-  if (isDeadlinePassed() && !hasPredictionOverride) {
+  const hasKnockoutOverride = hasActiveTimeOverride(
+  profile?.knockout_unlock_until ?? null
+);
+
+  if (isDeadlinePassed() && !hasPredictionOverride && !hasKnockoutOverride) {
     return NextResponse.json(
       { error: "Deadline har passerat – tipset är låst" },
       { status: 403 }
@@ -200,7 +206,10 @@ export async function POST(request: NextRequest) {
   const goldenBoot =
     typeof body.goldenBoot === "string" ? body.goldenBoot.trim() : "";
 
-    if (goldenBoot) {
+    const onlyKnockoutUnlocked =
+  isDeadlinePassed() && !hasPredictionOverride && hasKnockoutOverride;
+
+if (!onlyKnockoutUnlocked && goldenBoot) {
   const { data: validGoldenBoot, error: goldenBootError } =
     await serviceSupabase
       .from("team_players")
@@ -238,18 +247,23 @@ export async function POST(request: NextRequest) {
   }
 
   const { data: existingPrediction } = await serviceSupabase
-    .from("predictions")
-    .select("golden_boot_corrected")
-    .eq("user_id", user.id)
-    .eq("tournament_id", tournament.id)
-    .maybeSingle();
+  .from("predictions")
+  .select("group_stage, knockout, golden_boot, golden_boot_corrected")
+  .eq("user_id", user.id)
+  .eq("tournament_id", tournament.id)
+  .maybeSingle();
 
-  const payload = {
+  
+const payload = {
   user_id: user.id,
   tournament_id: tournament.id,
-  group_stage: groups,
+  group_stage: onlyKnockoutUnlocked
+    ? existingPrediction?.group_stage ?? []
+    : groups,
   knockout,
-  golden_boot: goldenBoot,
+  golden_boot: onlyKnockoutUnlocked
+    ? existingPrediction?.golden_boot ?? ""
+    : goldenBoot,
   golden_boot_corrected: existingPrediction?.golden_boot_corrected ?? null,
   updated_at: new Date().toISOString(),
 };
