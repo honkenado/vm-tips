@@ -557,26 +557,33 @@ function markNewsAsRead() {
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-3">
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
   <Link
     href="/mitt-resultat"
-    className="rounded-full bg-emerald-500 px-5 py-3 text-sm font-black text-white hover:bg-emerald-400"
+    className="rounded-full bg-emerald-500 px-5 py-3 text-center text-sm font-black text-white hover:bg-emerald-400"
   >
     Visa mitt resultat
   </Link>
 
   <Link
     href="/tips"
-    className="rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-bold text-white/85 hover:bg-white/[0.1]"
+    className="rounded-full border border-white/10 bg-white/[0.06] px-5 py-3 text-center text-sm font-bold text-white/85 hover:bg-white/[0.1]"
   >
     Visa mina tips
   </Link>
 
   <Link
     href="/addes-tips"
-    className="rounded-full border border-amber-400/20 bg-amber-500/10 px-5 py-3 text-sm font-bold text-amber-100 hover:bg-amber-500/20"
+    className="rounded-full border border-amber-400/20 bg-amber-500/10 px-5 py-3 text-center text-sm font-bold text-amber-100 hover:bg-amber-500/20"
   >
     🏆 Visa Addes VM-tips
+  </Link>
+
+  <Link
+    href="/podcast"
+    className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-5 py-3 text-center text-sm font-bold text-cyan-100 hover:bg-cyan-500/20"
+  >
+    🎙️ Lyssna på VM Tugg
   </Link>
 </div>
     </div>

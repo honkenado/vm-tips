@@ -8,6 +8,7 @@ import LeagueInviteBadge from "@/components/leagues/LeagueInviteBadge";
 import { getGroupStageSchedule } from "@/lib/match-schedule";
 import { getUpcomingMatches } from "@/lib/match-utils";
 import AuthStatus from "@/components/auth-status";
+import LatestPodcastEpisode from "@/components/LatestPodcastEpisode";
 
 type MembersResponse = {
   members?: Array<{
