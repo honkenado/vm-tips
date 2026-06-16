@@ -781,19 +781,27 @@ async function settleBet(
     {betHistory.map((bet) => (
       <div
         key={bet.id}
-        className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+        className={`rounded-2xl border p-4 ${
+  bet.result_status === "won"
+    ? "border-emerald-300 bg-emerald-50"
+    : bet.result_status === "lost"
+    ? "border-red-300 bg-red-50"
+    : bet.result_status === "void"
+    ? "border-amber-300 bg-amber-50"
+    : "border-slate-200 bg-slate-50"
+}`}
       >
         <div className="text-sm font-black text-slate-900">
           Match {bet.match_number}
         </div>
 
-        <div className="mt-1 text-sm font-bold text-slate-700">
-          {bet.market}
-        </div>
+        <div className="mt-1 text-xs font-bold uppercase tracking-wider text-slate-500">
+  {bet.market}
+</div>
 
-        <div className="mt-1 text-sm font-semibold text-slate-900">
-          {bet.selection}
-        </div>
+        <div className="mt-2 text-lg font-black text-slate-900">
+  {bet.selection}
+</div>
 
         <div className="mt-1 text-sm font-bold text-emerald-700">
           Odds {bet.odds}
@@ -821,9 +829,19 @@ async function settleBet(
             Void
           </button>
 
-          <span className="ml-auto rounded-full bg-slate-200 px-2 py-1 text-xs font-black uppercase text-slate-700">
-            {bet.result_status}
-          </span>
+          <span
+  className={`ml-auto rounded-full px-3 py-1 text-xs font-black uppercase ${
+    bet.result_status === "won"
+      ? "bg-emerald-600 text-white"
+      : bet.result_status === "lost"
+      ? "bg-red-600 text-white"
+      : bet.result_status === "void"
+      ? "bg-amber-500 text-white"
+      : "bg-slate-300 text-slate-800"
+  }`}
+>
+  {bet.result_status}
+</span>
         </div>
       </div>
     ))}
