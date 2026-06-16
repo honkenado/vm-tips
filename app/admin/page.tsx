@@ -781,21 +781,21 @@ async function settleBet(
     {betHistory.map((bet) => (
       <div
         key={bet.id}
-        className="rounded-2xl border border-slate-200 p-4"
+        className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
       >
-        <div className="font-bold">
+        <div className="text-sm font-black text-slate-900">
           Match {bet.match_number}
         </div>
 
-        <div className="text-sm text-slate-600">
+        <div className="mt-1 text-sm font-bold text-slate-700">
           {bet.market}
         </div>
 
-        <div className="text-sm font-semibold">
+        <div className="mt-1 text-sm font-semibold text-slate-900">
           {bet.selection}
         </div>
 
-        <div className="text-sm">
+        <div className="mt-1 text-sm font-bold text-emerald-700">
           Odds {bet.odds}
         </div>
 
@@ -821,7 +821,7 @@ async function settleBet(
             Void
           </button>
 
-          <span className="ml-auto text-xs font-bold uppercase">
+          <span className="ml-auto rounded-full bg-slate-200 px-2 py-1 text-xs font-black uppercase text-slate-700">
             {bet.result_status}
           </span>
         </div>
