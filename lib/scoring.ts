@@ -239,14 +239,23 @@ function scoreTeamsInRound(
   return points;
 }
 
-function hasWinnersForMatchIds(
+
+function teamsFromWinnerRange(
   winners: KnockoutSelections,
-  matchIds: string[]
+  from: number,
+  to: number
 ) {
-  return matchIds.every((matchId) => {
-    const winner = winners[matchId];
-    return typeof winner === "string" && winner.trim() !== "";
-  });
+  const teams = new Set<string>();
+
+  for (let matchNumber = from; matchNumber <= to; matchNumber += 1) {
+    const team = winners[`m${matchNumber}`];
+
+    if (team) {
+      teams.add(team);
+    }
+  }
+
+  return teams;
 }
 
 export function scoreKnockout(
@@ -264,22 +273,6 @@ export function scoreKnockout(
   const officialGroupStageComplete = isTournamentGroupStageComplete(resultGroups);
 
   const canScoreRound32 = officialGroupStageComplete;
-  const canScoreRound16 = hasWinnersForMatchIds(
-    resultKnockout,
-    officialRounds.round32.map((match) => match.id)
-  );
-  const canScoreQuarterfinals = hasWinnersForMatchIds(
-    resultKnockout,
-    officialRounds.round16.map((match) => match.id)
-  );
-  const canScoreSemifinals = hasWinnersForMatchIds(
-    resultKnockout,
-    officialRounds.quarterfinals.map((match) => match.id)
-  );
-  const canScoreFinalAndBronze = hasWinnersForMatchIds(
-    resultKnockout,
-    officialRounds.semifinals.map((match) => match.id)
-  );
   const canScoreWinner = Boolean(resultKnockout["m104"]);
 
   const round32Points = canScoreRound32
@@ -290,45 +283,35 @@ export function scoreKnockout(
       )
     : 0;
 
-  const round16Points = canScoreRound16
-    ? scoreTeamsInRound(
-        uniqueTeamsFromMatches(predictedRounds.round16),
-        uniqueTeamsFromMatches(officialRounds.round16),
-        2
-      )
-    : 0;
+  const round16Points = scoreTeamsInRound(
+    teamsFromWinnerRange(predictionKnockout, 73, 88),
+    teamsFromWinnerRange(resultKnockout, 73, 88),
+    2
+  );
 
-  const quarterfinalPoints = canScoreQuarterfinals
-    ? scoreTeamsInRound(
-        uniqueTeamsFromMatches(predictedRounds.quarterfinals),
-        uniqueTeamsFromMatches(officialRounds.quarterfinals),
-        3
-      )
-    : 0;
+  const quarterfinalPoints = scoreTeamsInRound(
+    teamsFromWinnerRange(predictionKnockout, 89, 96),
+    teamsFromWinnerRange(resultKnockout, 89, 96),
+    3
+  );
 
-  const semifinalPoints = canScoreSemifinals
-    ? scoreTeamsInRound(
-        uniqueTeamsFromMatches(predictedRounds.semifinals),
-        uniqueTeamsFromMatches(officialRounds.semifinals),
-        4
-      )
-    : 0;
+  const semifinalPoints = scoreTeamsInRound(
+    teamsFromWinnerRange(predictionKnockout, 97, 100),
+    teamsFromWinnerRange(resultKnockout, 97, 100),
+    4
+  );
 
-  const finalPoints = canScoreFinalAndBronze
-    ? scoreTeamsInRound(
-        uniqueTeamsFromMatches(predictedRounds.final),
-        uniqueTeamsFromMatches(officialRounds.final),
-        7
-      )
-    : 0;
+  const finalPoints = scoreTeamsInRound(
+    teamsFromWinnerRange(predictionKnockout, 101, 102),
+    teamsFromWinnerRange(resultKnockout, 101, 102),
+    7
+  );
 
-  const bronzeMatchPoints = canScoreFinalAndBronze
-    ? scoreTeamsInRound(
-        uniqueTeamsFromMatches(predictedRounds.bronze),
-        uniqueTeamsFromMatches(officialRounds.bronze),
-        5
-      )
-    : 0;
+  const bronzeMatchPoints = scoreTeamsInRound(
+    teamsFromWinnerRange(predictionKnockout, 103, 103),
+    teamsFromWinnerRange(resultKnockout, 103, 103),
+    5
+  );
 
   const predictedWinner = predictionKnockout["m104"] ?? "";
   const officialWinner = resultKnockout["m104"] ?? "";
