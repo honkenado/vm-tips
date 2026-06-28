@@ -4,7 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 import { scorePrediction } from "@/lib/scoring";
 import { getGroupStageSchedule } from "@/lib/match-schedule";
 import { getUpcomingMatches } from "@/lib/match-utils";
-import type { GroupData, Match } from "@/types/tournament";
+import type { GroupData, Match, KnockoutMatch } from "@/types/tournament";
+import { buildNextRound, getKnockoutSeedData } from "@/lib/tournament";
 
 const TOURNAMENT_SLUG = "world-cup-2026";
 
@@ -342,6 +343,118 @@ async function getRankSnapshots(
   }
 }
 
+function knockoutMatchId(matchNumber: number) {
+  return `m${matchNumber}`;
+}
+
+function getKnockoutLoser(match: KnockoutMatch, winners: KnockoutSelections) {
+  const winner = winners[match.id];
+
+  if (!winner) return "";
+  if (winner === match.home) return match.away;
+  if (winner === match.away) return match.home;
+
+  return "";
+}
+
+function buildOfficialKnockoutMatchMap(
+  groups: GroupData[],
+  winners: KnockoutSelections
+) {
+  const { round32 } = getKnockoutSeedData(groups);
+
+  const round16 = buildNextRound(round32, winners, "r16", "Åttondelsfinal").map(
+    (match, index) => ({
+      ...match,
+      id: `m${89 + index}`,
+    })
+  );
+
+  const quarterfinals = buildNextRound(
+    round16,
+    winners,
+    "qf",
+    "Kvartsfinal"
+  ).map((match, index) => ({
+    ...match,
+    id: `m${97 + index}`,
+  }));
+
+  const semifinals = buildNextRound(
+    quarterfinals,
+    winners,
+    "sf",
+    "Semifinal"
+  ).map((match, index) => ({
+    ...match,
+    id: `m${101 + index}`,
+  }));
+
+  const final = buildNextRound(semifinals, winners, "final", "Final").map(
+    (match) => ({
+      ...match,
+      id: "m104",
+    })
+  );
+
+  const bronze =
+    semifinals.length === 2
+      ? [
+          {
+            id: "m103",
+            label: "Bronsmatch",
+            home: getKnockoutLoser(semifinals[0], winners),
+            away: getKnockoutLoser(semifinals[1], winners),
+          },
+        ]
+      : [];
+
+  const allMatches = [
+    ...round32,
+    ...round16,
+    ...quarterfinals,
+    ...semifinals,
+    ...bronze,
+    ...final,
+  ];
+
+  return new Map(
+    allMatches.map((match) => [
+      Number(match.id.replace("m", "")),
+      match,
+    ])
+  );
+}
+
+function getKnockoutRoundPoints(matchNumber: number) {
+  if (matchNumber >= 73 && matchNumber <= 88) return { from: 73, to: 88, points: 2 };
+  if (matchNumber >= 89 && matchNumber <= 96) return { from: 89, to: 96, points: 3 };
+  if (matchNumber >= 97 && matchNumber <= 100) return { from: 97, to: 100, points: 4 };
+  if (matchNumber >= 101 && matchNumber <= 102) return { from: 101, to: 102, points: 7 };
+  if (matchNumber === 103) return { from: 103, to: 103, points: 5 };
+
+  return null;
+}
+
+function pointsForKnockoutMatch(
+  matchNumber: number,
+  predictionKnockout: KnockoutSelections,
+  officialKnockout: KnockoutSelections
+) {
+  const officialWinner = officialKnockout[knockoutMatchId(matchNumber)];
+  const round = getKnockoutRoundPoints(matchNumber);
+
+  if (!officialWinner || !round) return 0;
+
+  for (let number = round.from; number <= round.to; number += 1) {
+    if (predictionKnockout[knockoutMatchId(number)] === officialWinner) {
+      return round.points;
+    }
+  }
+
+  return 0;
+}
+
 export async function GET(request: NextRequest) {
   const authSupabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -417,6 +530,40 @@ export async function GET(request: NextRequest) {
   const officialGroupStage = asGroups(resultsRow?.group_stage);
   const officialKnockout = asKnockout(resultsRow?.knockout);
   const officialGoldenBoot = typeof resultsRow?.golden_boot === "string" ? resultsRow.golden_boot : "";
+  const officialKnockoutMatchMap = buildOfficialKnockoutMatchMap(
+  officialGroupStage,
+  officialKnockout
+);
+
+function isScheduleMatchCompleted(match: { stage: string; matchNumber: number }) {
+  if (match.stage === "group") {
+    const resultMatch = findGroupMatch(officialGroupStage, match.matchNumber);
+    return hasScore(resultMatch);
+  }
+
+  return Boolean(officialKnockout[knockoutMatchId(match.matchNumber)]);
+}
+
+function getDisplayTeams(match: {
+  stage: string;
+  matchNumber: number;
+  homeTeam: string;
+  awayTeam: string;
+}) {
+  if (match.stage !== "knockout") {
+    return {
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+    };
+  }
+
+  const officialMatch = officialKnockoutMatchMap.get(match.matchNumber);
+
+  return {
+    homeTeam: officialMatch?.home || match.homeTeam,
+    awayTeam: officialMatch?.away || match.awayTeam,
+  };
+}
 
   const leaderboard = buildLeaderboard({
     profiles: (profiles ?? []) as DbProfileRow[],
@@ -461,10 +608,7 @@ export async function GET(request: NextRequest) {
   const schedule = getGroupStageSchedule();
 
 const firstUnplayedMatch =
-  schedule.find((match) => {
-    const resultMatch = findGroupMatch(officialGroupStage, match.matchNumber);
-    return !hasScore(resultMatch);
-  }) ?? null;
+  schedule.find((match) => !isScheduleMatchCompleted(match)) ?? null;
 
 const firstUnplayedIndex = firstUnplayedMatch
   ? schedule.findIndex((match) => match.matchNumber === firstUnplayedMatch.matchNumber)
@@ -475,8 +619,7 @@ const upcoming24HourMatches =
     ? schedule
         .slice(firstUnplayedIndex)
         .filter((match) => {
-          const resultMatch = findGroupMatch(officialGroupStage, match.matchNumber);
-          return !hasScore(resultMatch);
+          return !isScheduleMatchCompleted(match);
         })
         .slice(0, 4)
     : [];
@@ -486,8 +629,7 @@ const completedPreviousMatches =
     ? schedule
         .slice(Math.max(0, firstUnplayedIndex - 2), firstUnplayedIndex)
         .filter((match) => {
-          const resultMatch = findGroupMatch(officialGroupStage, match.matchNumber);
-          return hasScore(resultMatch);
+          return isScheduleMatchCompleted(match);
         })
     : [];
 
@@ -497,8 +639,7 @@ const todayMatches = [...completedPreviousMatches, ...upcoming24HourMatches];
 
 const firstUnplayedToday =
   todayMatches.find((match) => {
-    const resultMatch = findGroupMatch(officialGroupStage, match.matchNumber);
-    return !hasScore(resultMatch);
+    return !isScheduleMatchCompleted(match);
   }) ?? todayMatches[0] ?? null;
 
 const nextMatch = firstUnplayedToday ?? firstUnplayedMatch ?? schedule[0] ?? null;
@@ -511,41 +652,56 @@ const nextMatch = firstUnplayedToday ?? firstUnplayedMatch ?? schedule[0] ?? nul
       })
     : null;
 
-  const todayMatchCards = todayMatches.map((match) => {
-    const stats =
-      match.stage === "group"
-        ? buildNextMatchStats({
-            matchNumber: match.matchNumber,
-            predictions: predictionRows,
-            currentUserId: user.id,
-          })
-        : null;
+ const todayMatchCards = todayMatches.map((match) => {
+  const displayTeams = getDisplayTeams(match);
+  const userKnockout = asKnockout(userPrediction?.knockout);
 
-    const resultMatch = findGroupMatch(officialGroupStage, match.matchNumber);
-    const predictedMatch = findGroupMatch(userGroups, match.matchNumber);
-    const isCompleted = hasScore(resultMatch);
-    const userPoints = isCompleted ? pointsForMatch(predictedMatch, resultMatch) : null;
+  const stats =
+    match.stage === "group"
+      ? buildNextMatchStats({
+          matchNumber: match.matchNumber,
+          predictions: predictionRows,
+          currentUserId: user.id,
+        })
+      : null;
 
-    return {
-      matchNumber: match.matchNumber,
-      homeTeam: match.homeTeam,
-      awayTeam: match.awayTeam,
-      date: match.date,
-      time: match.time,
-      groupName: match.groupName,
-      tvChannel: match.tvChannel ?? null,
-      userTip: stats?.userTip ?? null,
-      peopleTip: stats?.peopleTip ?? null,
-      sameTipPercent: stats?.sameTipPercent ?? null,
-      outcomeDistribution: stats?.outcomeDistribution ?? null,
-      isCompleted,
-      result: isCompleted
-        ? `${resultMatch?.homeGoals}–${resultMatch?.awayGoals}`
-        : null,
-      userPoints,
-      isOpen: match.matchNumber === firstUnplayedToday?.matchNumber,
-    };
-  });
+  const resultMatch = findGroupMatch(officialGroupStage, match.matchNumber);
+  const predictedMatch = findGroupMatch(userGroups, match.matchNumber);
+
+  const isCompleted = isScheduleMatchCompleted(match);
+
+  const userPoints = isCompleted
+    ? match.stage === "group"
+      ? pointsForMatch(predictedMatch, resultMatch)
+      : pointsForKnockoutMatch(
+          match.matchNumber,
+          userKnockout,
+          officialKnockout
+        )
+    : null;
+
+  return {
+    matchNumber: match.matchNumber,
+    homeTeam: displayTeams.homeTeam,
+    awayTeam: displayTeams.awayTeam,
+    date: match.date,
+    time: match.time,
+    groupName: match.groupName,
+    tvChannel: match.tvChannel ?? null,
+    userTip: stats?.userTip ?? null,
+    peopleTip: stats?.peopleTip ?? null,
+    sameTipPercent: stats?.sameTipPercent ?? null,
+    outcomeDistribution: stats?.outcomeDistribution ?? null,
+    isCompleted,
+    result: isCompleted
+      ? resultMatch
+        ? `${resultMatch.homeGoals}–${resultMatch.awayGoals}`
+        : null
+      : null,
+    userPoints,
+    isOpen: match.matchNumber === firstUnplayedToday?.matchNumber,
+  };
+});
 
   const leagueSummaries: LeagueSummary[] = [];
 
@@ -622,6 +778,8 @@ const nextMatch = firstUnplayedToday ?? firstUnplayedMatch ?? schedule[0] ?? nul
     }
   : null;
 
+  const nextMatchDisplayTeams = nextMatch ? getDisplayTeams(nextMatch) : null;
+
   return NextResponse.json({
     user: {
       id: user.id,
@@ -646,8 +804,8 @@ const nextMatch = firstUnplayedToday ?? firstUnplayedMatch ?? schedule[0] ?? nul
     nextMatch: nextMatch
       ? {
           matchNumber: nextMatch.matchNumber,
-          homeTeam: nextMatch.homeTeam,
-          awayTeam: nextMatch.awayTeam,
+          homeTeam: nextMatchDisplayTeams?.homeTeam ?? nextMatch.homeTeam,
+awayTeam: nextMatchDisplayTeams?.awayTeam ?? nextMatch.awayTeam,
           date: nextMatch.date,
           time: nextMatch.time,
           groupName: nextMatch.groupName,
